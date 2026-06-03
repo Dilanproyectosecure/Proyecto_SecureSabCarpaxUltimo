@@ -1,0 +1,232 @@
+# apps/autenticacion/views.py
+
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from apps.login.models import Usuarios, RoleUser
+from apps.reporte_monitoreo.coordinador.models import AsistenciaAmbiente, Competencia, Justificacion
+from django.core.cache import cache
+from django.views.decorators.cache import never_cache
+from django.contrib.auth.hashers import make_password
+from django.views.decorators.csrf import csrf_protect
+from django.conf import settings
+import time
+from apps.gestor_sistema.services import registrar_actividad
+
+
+from .forms import RecuperarForm, ConfirmarCodigoForm, NuevaPasswordForm
+from .utils import generar_codigo_recuperacion, enviar_codigo_recuperacion, generar_token_seguro
+from apps.login.models import Usuarios
+
+
+
+def login_view(request):
+    """
+    Vista de login - Autenticación con cédula y contraseña
+    """
+    if request.method == 'POST':
+        cedula = request.POST.get('cedula')
+        password = request.POST.get('password')
+        
+        # Intento de autenticación con Django
+        user = authenticate(request, username=cedula, password=password)
+        
+        if user:
+            # Login exitoso
+            login(request, user)
+            
+            # Obtener el rol del usuario
+            rol = user.get_rol()
+            
+            # Guardar rol en sesión
+            request.session['user_rol'] = rol
+
+             # ✅ REGISTRAR INICIO DE SESIÓN
+            registrar_actividad(
+                usuario=user,
+                tipo_accion='LOGIN',
+                actividad='Inicio de sesión',
+                descripcion=f'Usuario {user.nombre} {user.apellido} inició sesión correctamente',
+                request=request
+            )
+            
+            # Redirigir según el rol
+            if rol == 'aprendiz':
+                messages.success(request, f'¡Bienvenido {user.nombre}!')
+                return redirect('aprendiz:consultar_asistencia')
+            elif rol == 'instructor':
+                messages.success(request, f'¡Bienvenido Instructor {user.nombre}!')
+                return redirect('instructor:fichas_instructor')
+            elif rol == 'coordinador':
+                messages.success(request, f'¡Bienvenido Coordinador {user.nombre}!')
+                return redirect('coordinador:inicio')
+            elif rol == 'vigilante':
+                messages.success(request, f'¡Bienvenido Vigilante {user.nombre}!')
+                return redirect('vigilante:iniciov')
+            elif rol == 'gestor':
+                messages.success(request, f'¡Bienvenido Gestor {user.nombre}!')
+                return redirect('gestor_sistema:crear_usuario')
+            else:
+                # Si no tiene rol, redirigir a home genérico
+                messages.warning(request, 'Usuario sin rol asignado')
+                return redirect('login:mi_perfil')
+        else:
+             # ✅ REGISTRAR INTENTO FALLIDO
+            registrar_actividad(
+                usuario=None,
+                tipo_accion='LOGIN_FAILED',
+                actividad='Intento de inicio fallido',
+                descripcion=f'Intento fallido con cédula {cedula}',
+                request=request
+            )
+            # Login fallido
+            messages.error(request, 'Cédula o contraseña incorrectos')
+    
+    # GET - Mostrar formulario de login
+    return render(request, 'login.html', {
+        'error': 'Cédula o contraseña incorrectos' if request.method == 'POST' else None
+    })
+
+
+def logout_view(request):
+    user = request.user
+    nombre = f"{user.nombre} {user.apellido}"
+    """
+    Vista para cerrar sesión
+    """
+     # ✅ REGISTRAR CIERRE DE SESIÓN
+    registrar_actividad(
+        usuario=user,
+        tipo_accion='LOGOUT',
+        actividad='Cierre de sesión',
+        descripcion=f'Usuario {nombre} cerró sesión',
+        request=request
+    )
+
+    logout(request)
+    messages.success(request, 'Sesión cerrada correctamente')
+    return redirect('login:login')
+
+
+@login_required
+def mi_perfil(request):
+    """
+    Vista del perfil de usuario (accesible para todos los roles)
+    """
+    return render(request, 'mi_perfil.html', {
+        'usuario': request.user
+    })
+
+
+def landing_page(request):
+    """Página de inicio del sistema (landing page)"""
+    return render(request, 'landing.html')
+
+
+@never_cache
+def recuperar(request):
+    """Paso 1: Ingresar correo para recuperación"""
+    if request.method == 'POST':
+        form = RecuperarForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email']
+            usuario = form.usuario
+            
+            # Generar código y guardar en caché (expira en 10 minutos)
+            codigo = generar_codigo_recuperacion()
+            cache.set(f'recuperacion_{email}', {
+                'codigo': codigo,
+                'usuario_id': usuario.id_usuario,
+                'timestamp': time.time()
+            }, timeout=600)  # 10 minutos
+            
+            # Enviar correo
+            enviado, error_envio = enviar_codigo_recuperacion(email, codigo)
+            if enviado:
+                messages.success(request, f'Se ha enviado un código de verificación a {email}')
+                return redirect('login:recuperar_confirmar', email=email)
+            else:
+                detalle_error = f' Detalle: {error_envio}' if settings.DEBUG and error_envio else ''
+                messages.error(request, f'Error al enviar el correo. Intenta nuevamente.{detalle_error}')
+    else:
+        form = RecuperarForm()
+    
+    return render(request, 'recuperar.html', {'form': form})
+
+
+@never_cache
+def recuperar_confirmar(request, email):
+    """Paso 2: Ingresar código de verificación"""
+    # Verificar que el email está en proceso de recuperación
+    datos = cache.get(f'recuperacion_{email}')
+    if not datos:
+        messages.error(request, 'La sesión de recuperación ha expirado. Por favor, inicia nuevamente.')
+        return redirect('login:recuperar')
+    
+    if request.method == 'POST':
+        form = ConfirmarCodigoForm(request.POST)
+        if form.is_valid():
+            codigo_ingresado = form.cleaned_data['codigo']
+            
+            if codigo_ingresado == datos['codigo']:
+                # Código correcto, generar token y redirigir
+                token = generar_token_seguro(email)
+                cache.set(f'recuperacion_token_{token}', {
+                    'email': email,
+                    'usuario_id': datos['usuario_id']
+                }, timeout=600)
+                return redirect('login:recuperar_nueva_pass', token=token)
+            else:
+                messages.error(request, 'Código incorrecto. Verifica e intenta nuevamente.')
+    else:
+        form = ConfirmarCodigoForm()
+    
+    context = {
+        'form': form,
+        'email': email
+    }
+    return render(request, 'recuperar_confirmar.html', context)
+
+
+def recuperar_nueva_pass(request, token):
+    datos = cache.get(f'recuperacion_token_{token}')
+    if not datos:
+        messages.error(request, 'El enlace de recuperación ha expirado')
+        return redirect('login:recuperar')
+    
+    email = datos['email']
+    usuario_id = datos['usuario_id']
+    
+    if request.method == 'POST':
+        form = NuevaPasswordForm(request.POST)
+        if form.is_valid():
+            nueva_password = form.cleaned_data['password']
+            
+            try:
+                usuario = Usuarios.objects.get(id_usuario=usuario_id)
+                usuario.password = make_password(nueva_password)
+                usuario.save()
+                
+                # Limpiar caché
+                cache.delete(f'recuperacion_{email}')
+                cache.delete(f'recuperacion_token_{token}')
+                
+                messages.success(request, '✅ Contraseña actualizada correctamente')
+                return redirect('login:login')
+            except Usuarios.DoesNotExist:
+                messages.error(request, 'Usuario no encontrado')
+                return redirect('login:recuperar')
+        else:
+            # Mostrar errores del formulario
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'{error}')
+    else:
+        form = NuevaPasswordForm()
+    
+    context = {
+        'form': form,
+        'email': email
+    }
+    return render(request, 'recuperar_nueva_pass.html', context)

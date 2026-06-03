@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header-title"><i class="fas fa-file-download"></i> Centro de Reportes</div>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="card" style="border: 1px solid #eee;">
+            <h3>Asistencia Sede</h3>
+            <p>Descarga el historial completo de ingresos y salidas de la sede principal.</p>
+            <a href="{% url 'gestor_sistema:exportar_csv' %}" class="menu-item" style="background: var(--primary); color: white; border-radius: 5px; justify-content: center;">
+                <i class="fas fa-file-csv"></i> Descargar CSV
+            </a>
+        </div>
+
+        <div class="card" style="border: 1px solid #eee;">
+            <h3>Asistencia Ambientes</h3>
+            <p>Reporte detallado por formación, fichas e instructores.</p>
+            <a href="{% url 'gestor_sistema:exportar_ambientes_excel' %}" 
+                style="width: 100%; padding: 12px; display: inline-block; text-align: center; background: #198754; color: white; border-radius: 5px;">
+                <i class="fas fa-file-excel"></i> Descargar Excel
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

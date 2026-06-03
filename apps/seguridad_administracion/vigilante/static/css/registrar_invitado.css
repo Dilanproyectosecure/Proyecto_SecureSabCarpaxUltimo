@@ -1,0 +1,420 @@
+/* ===== ESTILOS ESPECÍFICOS PARA REGISTRAR INVITADO ===== */
+
+/* Contenedor principal */
+.dashboard-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+/* Formulario principal */
+.dashboard-form {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    margin-bottom: 1.5rem;
+    animation: fadeIn 0.3s ease;
+}
+
+/* Tarjeta de contenido */
+.content-card {
+    background: transparent;
+}
+
+/* ===== ENCABEZADO DE SECCIÓN ===== */
+.section-header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 24px;
+}
+
+.section-header h1 {
+    color: #333;
+    margin-bottom: 0.5rem;
+    font-size: 2rem;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 0.8rem;
+}
+
+.section-header p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #6c757d;
+}
+
+.link-ver-invitados {
+    margin-top: 8px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #667eea;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    width: fit-content;
+}
+
+.link-ver-invitados:hover {
+    color: #764ba2;
+    transform: translateX(5px);
+}
+
+.link-ver-invitados i {
+    font-size: 1rem;
+}
+
+/* ===== INFO FECHA Y HORA ACTUAL ===== */
+.info-fecha-hora {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+}
+
+.fecha-hora-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.fecha-item,
+.hora-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.fecha-item i,
+.hora-item i {
+    font-size: 2rem;
+    color: white;
+}
+
+.fecha-info,
+.hora-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.fecha-info .label,
+.hora-info .label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.fecha-info .value,
+.hora-info .value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: white;
+}
+
+.separador {
+    width: 1px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* ===== ALERTAS ===== */
+.alerta {
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: fadeIn 0.3s ease;
+}
+
+.alerta-exito {
+    background: #d4edda;
+    border-left: 4px solid #28a745;
+    color: #155724;
+}
+
+.alerta-error {
+    background: #f8d7da;
+    border-left: 4px solid #dc3545;
+    color: #721c24;
+}
+
+.alerta-info {
+    background: #d1ecf1;
+    border-left: 4px solid #17a2b8;
+    color: #0c5460;
+}
+
+.alerta i {
+    font-size: 1.2rem;
+}
+
+/* ===== TARJETA DEL FORMULARIO ===== */
+.form-card {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.form-card h2 {
+    margin: 0 0 4px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.form-card .subtitle {
+    margin: 0 0 20px;
+    font-size: 0.85rem;
+    color: #6c757d;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+/* ===== GRID DEL FORMULARIO ===== */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filtros-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e1e1e1;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.3s;
+    background-color: white;
+    font-family: inherit;
+}
+
+.filtros-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.filtros-input[readonly] {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+/* Estilos para selects */
+select.filtros-input {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+}
+
+/* Estilos para textarea */
+textarea.filtros-input {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Placeholder */
+.filtros-input::placeholder {
+    color: #adb5bd;
+}
+
+/* ===== BOTONES ===== */
+.form-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+.btn-filtro {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-filtro:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-limpiar {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-limpiar:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+}
+
+/* ===== ANIMACIONES ===== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 0.75rem;
+    }
+    
+    .dashboard-form {
+        padding: 1.25rem;
+    }
+    
+    .section-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .fecha-hora-content {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .separador {
+        display: none;
+    }
+    
+    .fecha-item,
+    .hora-item {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .form-actions {
+        flex-direction: column-reverse;
+    }
+    
+    .btn-filtro,
+    .btn-limpiar {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-form {
+        padding: 1rem;
+    }
+    
+    .section-header h1 {
+        font-size: 1.3rem;
+    }
+    
+    .fecha-item i,
+    .hora-item i {
+        font-size: 1.5rem;
+    }
+    
+    .fecha-info .value,
+    .hora-info .value {
+        font-size: 1rem;
+    }
+}
+
+/* ===== ESTILOS PARA SWEETALERT2 (MODAL) ===== */
+/* Evitar que el modal cubra el menú lateral */
+.swal2-container {
+    z-index: 9999 !important;
+}
+
+.swal2-backdrop {
+    background: rgba(0, 0, 0, 0) !important; /* Backdrop completamente transparente */
+    display: none !important;
+}
+
+.swal2-popup {
+    z-index: 10000 !important;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.3) !important; /* Sombra para dar efecto de modal */
+}
+    margin: 0 !important;
+}
+
+.swal2-backdrop {
+    z-index: 99998 !important;
+}
+
+/* En pantallas pequeñas */
+@media (max-width: 768px) {
+    .swal2-container {
+        inset: 0 !important;
+    }
+    .swal2-popup {
+        width: 85% !important;
+    }
+}
+
+/* Asegurar que el backdrop no interfiera */
+.swal2-html-container {
+    max-height: 80vh !important;
+    overflow-y: auto !important;
+}

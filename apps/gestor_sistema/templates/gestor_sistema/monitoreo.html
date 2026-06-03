@@ -1,0 +1,66 @@
+{% extends 'gestor_sistema/base_gestor.html' %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <div class="card" style="text-align: center; border-top: 5px solid var(--primary);">
+        <div class="card-header-title" style="justify-content: center;">
+            <i class="fas fa-fingerprint"></i> Monitoreo en Tiempo Real
+        </div>
+        
+        <div id="contenedor-estado" style="margin: 40px 0;">
+            <i class="fas fa-id-card-alt" style="font-size: 80px; color: #d1d5db; margin-bottom: 20px;"></i>
+            <h2 id="mensaje-espera" style="color: #6b7280;">Esperando lectura de huella...</h2>
+        </div>
+
+        <div id="perfil-detectado" style="display: none; background: #f0fdf4; border: 2px solid var(--primary); padding: 30px; border-radius: 15px; animation: pulse 2s infinite;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 25px;">
+                <img id="user-img" src="https://via.placeholder.com/100" style="border-radius: 50%; border: 3px solid var(--primary);">
+                <div style="text-align: left;">
+                    <h1 id="user-name" style="margin: 0; color: var(--dark);">---</h1>
+                    <p id="user-rol" style="margin: 5px 0; color: var(--primary); font-weight: bold; text-transform: uppercase;">---</p>
+                    <p style="margin: 0; color: #6b7280;"><i class="fas fa-clock"></i> Ingreso: <span id="user-time">--:--</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.4); }
+        70% { box-shadow: 0 0 0 15px rgba(5, 150, 105, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0); }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function chequearHuella() {
+        fetch("{% url 'gestor_sistema:verificar_huella' %}")
+            .then(response => response.json())
+            .then(data => {
+                if (data.status !== 'esperando') {
+                    document.getElementById('mensaje-espera').style.display = 'none';
+                    document.getElementById('contenedor-estado').style.display = 'none';
+
+                    document.getElementById('perfil-detectado').style.display = 'block';
+                    document.getElementById('user-name').innerText = data.nombre || '---';
+                    document.getElementById('user-rol').innerText = data.rol || '---';
+                    document.getElementById('user-time').innerText = data.hora || '--:--';
+
+                    setTimeout(() => {
+                        document.getElementById('perfil-detectado').style.display = 'none';
+                        document.getElementById('contenedor-estado').style.display = 'block';
+                        document.getElementById('mensaje-espera').style.display = 'block';
+                    }, 5000);
+                }
+            })
+            .catch(() => {
+                // Si hay error de red, mantiene la UI en espera.
+            });
+    }
+
+    setInterval(chequearHuella, 2000);
+    chequearHuella();
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends 'gestor_sistema/base_gestor.html' %}
+{% load static %}
+
+{% block content %}
+<div class="header">
+    <h1>Mi Perfil</h1>
+</div>
+
+<div class="content-card" style="max-width: 700px; margin: 0 auto; background: #fff; padding: 20px 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+    <!-- Mensajes de éxito/error -->
+    {% if messages %}
+        <div class="messages" style="margin-bottom: 20px;">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Información personal en dos columnas -->
+    <div class="perfil-info">
+        <div class="info-grid" style="display: flex; gap: 40px; flex-wrap: wrap;">
+            <div class="info-column" style="flex: 1; min-width: 300px;">
+                <div class="info-item" style="background: #f5f9f5; padding: 12px 15px; border-radius: 6px; margin-bottom: 15px;">
+                    <label style="font-weight: 700; color: #0b4500; display: block; margin-bottom: 5px;">Cédula:</label>
+                    <span>{{ user.cedula }}</span>
+                </div>
+                <div class="info-item" style="background: #f5f9f5; padding: 12px 15px; border-radius: 6px; margin-bottom: 15px;">
+                    <label style="font-weight: 700; color: #0b4500; display: block; margin-bottom: 5px;">Nombre completo:</label>
+                    <span>{{ user.nombre }} {{ user.apellido }}</span>
+                </div>
+                <div class="info-item" style="background: #f5f9f5; padding: 12px 15px; border-radius: 6px; margin-bottom: 15px;">
+                    <label style="font-weight: 700; color: #0b4500; display: block; margin-bottom: 5px;">Correo electrónico:</label>
+                    <span>{{ user.correo|default:"No registrado" }}</span>
+                </div>
+            </div>
+
+            <div class="info-column" style="flex: 1; min-width: 300px;">
+                <div class="info-item" style="background: #f5f9f5; padding: 12px 15px; border-radius: 6px; margin-bottom: 15px;">
+                    <label style="font-weight: 700; color: #0b4500; display: block; margin-bottom: 5px;">Teléfono:</label>
+                    <span>{{ user.telefono|default:"No registrado" }}</span>
+                </div>
+                <div class="info-item" style="background: #f5f9f5; padding: 12px 15px; border-radius: 6px; margin-bottom: 15px;">
+                    <label style="font-weight: 700; color: #0b4500; display: block; margin-bottom: 5px;">Rol:</label>
+                    <span>{{ user.rol|default:"No asignado" }}</span>
+                </div>
+                <div class="info-item" style="background: #f5f9f5; padding: 12px 15px; border-radius: 6px; margin-bottom: 15px;">
+                    <label style="font-weight: 700; color: #0b4500; display: block; margin-bottom: 5px;">Ficha:</label>
+                    <span>{{ user.ficha|default:"No asignada" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+</div>
+
+<!-- Footer simple -->
+<footer style="text-align:center; margin-top:40px; padding:10px; color:#666;">
+    &copy; 2026 Securesabcito
+</footer>
+{% endblock %}

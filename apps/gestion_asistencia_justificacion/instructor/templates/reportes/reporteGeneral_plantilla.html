@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+
+body {
+    font-family: Arial, sans-serif;
+    font-size: 11px;
+    margin: 20px;
+    color: #2c3e50;
+}
+
+/* HEADER */
+.header {
+    text-align: center;
+    border-bottom: 3px solid #1b5e20;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.titulo {
+    font-size: 20px;
+    font-weight: bold;
+    color: #1b5e20;
+}
+
+.subtitulo {
+    font-size: 12px;
+    color: #555;
+}
+
+/* INFO */
+.info {
+    margin-top: 10px;
+    margin-bottom: 15px;
+}
+
+.info td {
+    padding: 3px 6px;
+}
+
+/* RESUMEN (tipo tarjetas) */
+.resumen {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.resumen td {
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: center;
+}
+
+.resumen .titulo-box {
+    font-size: 10px;
+    color: #777;
+}
+
+.resumen .valor {
+    font-size: 18px;
+    font-weight: bold;
+    color: #1b5e20;
+}
+
+/* TABLA */
+table.reporte {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table.reporte th {
+    background-color: #1b5e20;
+    color: white;
+    padding: 7px;
+    font-size: 11px;
+    border: 1px solid #ccc;
+}
+
+table.reporte td {
+    border: 1px solid #ccc;
+    padding: 6px;
+    text-align: center;
+}
+
+table.reporte td.nombre {
+    text-align: left;
+}
+
+/* FILAS */
+table.reporte tr:nth-child(even) {
+    background-color: #f4f6f7;
+}
+
+/* ALERTA */
+.alerta {
+    background-color: #fdecea !important;
+    color: #b71c1c;
+    font-weight: bold;
+}
+
+/* FOOTER */
+.footer {
+    margin-top: 25px;
+    font-size: 10px;
+    text-align: right;
+}
+
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="titulo">Reporte de Asistencia</div>
+</div>
+
+<div class="info">
+    <table>
+        <tr>
+            <td><strong>Programa:</strong> {{ ficha.id_programa }}</td>
+            <td><strong>Ficha:</strong> {{ ficha.numero_ficha }}</td>
+            <td><strong>Jornada:</strong> {{ jornada }}</td>
+        </tr>
+        <tr>
+            <td><strong>Desde:</strong> {{ desde }}</td>
+            <td><strong>Hasta:</strong> {{ hasta }}</td>
+        </tr>
+    </table>
+</div>
+
+<!-- 🔥 RESUMEN -->
+<table class="resumen">
+    <tr>
+        <td>
+            <div class="titulo-box">Total Asistencias</div>
+            <div class="valor">{{ totales.total_asistio }}</div>
+        </td>
+        <td>
+            <div class="titulo-box">Total Inasistencias</div>
+            <div class="valor">{{ totales.total_inasistio }}</div>
+        </td>
+        <td>
+            <div class="titulo-box">Total Retardos</div>
+            <div class="valor">{{ totales.total_retardo }}</div>
+        </td>
+    </tr>
+</table>
+
+<div>Aprendices con mas de 6 inasistencias o retardos se muestran en color rojo</div>
+
+<!-- TABLA PRINCIPAL -->
+<table class="reporte">
+    <thead>
+        <tr>
+            <th>Aprendiz</th>
+            <th>Asistió</th>
+            <th>Inasistió</th>
+            <th>Retardo</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in reporte_resumen %}
+        <tr class="{% if r.inasistio >= 6 or r.retardo >= 6 %}alerta{% endif %}">
+            <td class="nombre">
+                {{ r.id_usuario__apellido }} {{ r.id_usuario__nombre }}
+            </td>
+            <td>{{ r.asistio }}</td>
+            <td>{{ r.inasistio }}</td>
+            <td>{{ r.retardo }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="footer">
+    Generado automáticamente - {{ desde }} a {{ hasta }}
+</div>
+
+</body>
+</html>

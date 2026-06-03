@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Consultar Invitados - Vigilante{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/cons.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <form method="get" class="dashboard-form">
+            <h1>Consultar Invitados</h1>
+
+            
+
+            <!-- FILTRO DE BÚSQUEDA -->
+            <div class="filtros-form">
+                <div class="filtros-oneLine">
+                    <div class="filtros-group">
+                        <label for="nombre">Nombre</label>
+                        <input type="text" id="nombre" name="nombre" class="filtros-input"
+                               value="{{ request.GET.nombre|default:'' }}" placeholder="Buscar por nombre">
+                    </div>
+
+                    <div class="filtros-group">
+                        <label for="cedula">Cédula</label>
+                        <input type="text" id="cedula" name="cedula" class="filtros-input"
+                               value="{{ request.GET.cedula|default:'' }}" placeholder="Buscar por cédula">
+                    </div>
+
+                    <div class="filtros-group">
+                        <label for="area">Área</label>
+                        <select name="area" class="filtros-input">
+                            <option value="">Todas las áreas</option>
+                            {% for area in areas %}
+                            <option value="{{ area.id_area }}" {% if request.GET.area == area.id_area|stringformat:"s" %}selected{% endif %}>
+                                {{ area.nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filtros-group">
+                        <label for="fechaDesde">Fecha desde</label>
+                        <input type="date" id="fechaDesde" name="fechaDesde" class="filtros-input"
+                               value="{{ request.GET.fechaDesde|default:'' }}">
+                    </div>
+
+                    <div class="filtros-group">
+                        <label for="fechaHasta">Fecha hasta</label>
+                        <input type="date" id="fechaHasta" name="fechaHasta" class="filtros-input"
+                               value="{{ request.GET.fechaHasta|default:'' }}">
+                    </div>
+
+                    <div class="filtros-group boton-group">
+                        <button type="submit" class="btn-filtro">
+                            <i class="fas fa-search"></i> Buscar
+                        </button>
+                        <a href="{% url 'vigilante:consultar_invitado' %}" class="btn-limpiar">
+                            <i class="fas fa-undo-alt"></i> Limpiar
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MENSAJES DE ALERTA -->
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alerta alerta-{% if message.tags == 'success' %}exito{% else %}error{% endif %}">
+                    <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}times-circle{% endif %}"></i>
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- NO HAY DATOS -->
+            {% if not visitantes %}
+            <div class="no-data-message">
+                <i class="fas fa-inbox"></i>
+                <p><strong>No hay visitantes registrados</strong> que coincidan con el filtro.</p>
+                <a href="{% url 'vigilante:registrar_invitado' %}" class="btn-filtro" style="display: inline-block; margin-top: 15px;">
+                    <i class="fas fa-user-plus"></i> Registrar Invitado
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- TABLA DE VISITANTES -->
+            {% if visitantes %}
+            <div class="tabla-container">
+                <table class="tabla-asistencias">
+                    <thead>
+                        <tr>
+                            <th>Visitante</th>
+                            <th>Área</th>
+                            <th>Motivo</th>
+                            <th>Fecha</th>
+                            <th>Hora Entrada</th>
+                            <th>Hora Salida</th>
+                            <th>Estado</th>
+                        </thead>
+                    <tbody>
+                        {% for v in visitantes %}
+                        <tr class="fila-clickeable
+                         {% if v.id_asistencia_sede and not v.id_asistencia_sede.hora_salida %}fila-en-instalaciones{% else %}fila-fuera{% endif %}"onclick="abrirModal({{ v.id_visitante }})">
+                            <td>
+                                <strong>{{ v.nombre }} {{ v.apellido }}</strong><br>
+                                <small style="color: #666;">{{ v.cedula }}</small>
+                                {% if v.tipo_documento %}
+                                <br><small style="color: #7a7a7a;">
+                                    {% if v.tipo_documento == 'CC' %}CC - Cédula de ciudadanía
+                                    {% elif v.tipo_documento == 'TI' %}TI - Tarjeta de identidad
+                                    {% elif v.tipo_documento == 'CE' %}CE - Cédula de extranjería
+                                    {% elif v.tipo_documento == 'PA' %}PA - Pasaporte
+                                    {% elif v.tipo_documento == 'PEP' %}PEP - Permiso Especial de Permanencia
+                                    {% elif v.tipo_documento == 'PPT' %}PPT - Permiso por Protección Temporal
+                                    {% elif v.tipo_documento == 'NIT' %}NIT
+                                    {% elif v.tipo_documento == 'RC' %}RC - Registro civil
+                                    {% else %}{{ v.tipo_documento }}{% endif %}
+                                </small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if v.id_area %}
+                                <span class="badge-area">{{ v.id_area.nombre }}</span>
+                                {% else %}
+                                <span class="badge-area">-</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ v.motivo }}</td>
+                            <td>{{ v.id_asistencia_sede.fecha|date:"d/m/Y"|default:'-' }}</td>
+                            <td>{{ v.id_asistencia_sede.hora_entrada|date:"h:i A"|default:'-' }}</td>
+                            <td>
+                                {% if v.id_asistencia_sede and v.id_asistencia_sede.hora_salida %}
+                                    {{ v.id_asistencia_sede.hora_salida|date:"h:i A" }}
+                                {% else %}
+                                    ---
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if v.id_asistencia_sede and not v.id_asistencia_sede.hora_salida %}
+                                    <span class="badge badge-presente">
+                                        <i class="fas fa-check-circle"></i> En Sede
+                                    </span>
+                                {% else %}
+                                    <span class="badge badge-ausente">
+                                        <i class="fas fa-times-circle"></i> Fuera
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            <!-- PAGINACIÓN -->
+            {% if totalPages > 1 %}
+            <div class="paginacion">
+                {% for i in pageNumbers %}
+                    <a href="{% url 'vigilante:consultar_invitado' %}?page={{ i|add:1 }}&nombre={{ request.GET.nombre }}&cedula={{ request.GET.cedula }}&fechaDesde={{ request.GET.fechaDesde }}&fechaHasta={{ request.GET.fechaHasta }}"
+                       class="page-link {% if i == currentPage %}active-page{% endif %}">
+                        {{ i|add:1 }}
+                    </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+    </form>
+</div>
+
+<!-- MODAL CON 3 BOTONES -->
+<div id="modalInvitado" class="modal-overlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <button class="modal-close" onclick="cerrarModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p style="text-align: center; margin: 2px 0;">
+                Selecciona la acción que deseas realizar
+            </p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-modal btn-modal-salida" onclick="registrarSalida()">
+                <i class="fas fa-sign-out-alt"></i> Registrar Salida
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    window.csrfToken = '{{ csrf_token }}';
+</script>
+<script src="{% static 'js/consultar_invitado.js' %}"></script>
+
+{% endblock %}

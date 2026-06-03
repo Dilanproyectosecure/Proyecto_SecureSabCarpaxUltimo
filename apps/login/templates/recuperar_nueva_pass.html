@@ -1,0 +1,73 @@
+{% load static %}
+
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/recuperacion.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="recuperar-container">
+    <div class="recuperar-header">
+        <h1>Nueva contraseña</h1>
+        <p>Establece una nueva contraseña para tu cuenta <strong>{{ email }}</strong></p>
+    </div>
+    
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alerta alerta-{% if message.tags == 'success' %}exito{% elif message.tags == 'error' %}error{% else %}info{% endif %}">
+            <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-circle{% endif %}"></i>
+            {{ message }}
+        </div>
+        {% endfor %}
+    {% endif %}
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="id_password">Nueva contraseña</label>
+            {{ form.password }}
+            {% if form.password.errors %}
+                <ul class="errorlist">
+                    {% for error in form.password.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="id_password_confirm">Confirmar contraseña</label>
+            {{ form.password_confirm }}
+            {% if form.password_confirm.errors %}
+                <ul class="errorlist">
+                    {% for error in form.password_confirm.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+        
+        <button type="submit" class="btn-verificar">
+            <i class="fas fa-save"></i> Actualizar contraseña
+        </button>
+    </form>
+    
+    <div class="resend-link">
+        <a href="{% url 'login:login' %}">
+            <i class="fas fa-arrow-left"></i> Volver al inicio de sesión
+        </a>
+    </div>
+</div>
+
+<script>
+    // Validación en tiempo real de la contraseña
+    const passwordInput = document.getElementById('id_password');
+    if (passwordInput) {
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            // Puedes agregar validación visual aquí si quieres
+        });
+    }
+</script>
+{% endblock %}

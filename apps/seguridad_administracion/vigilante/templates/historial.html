@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Historial de Registros - Vigilante{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/historial.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="section-header">
+        <h1>Historial de Registros</h1>
+    </div>
+
+    <!-- FILTROS -->
+    <form method="get" class="dashboard-form">
+        <div class="filtros-container">
+            <div class="filtros-header">
+                <h3><i class="fas fa-filter"></i> Filtros de Búsqueda</h3>
+            </div>
+
+            <div class="filtros-grid">
+                <div class="filtros-group">
+                    <label for="nombre">Nombre o Apellido</label>
+                    <input type="text" id="nombre" name="nombre" class="filtros-input"
+                           value="{{ filtroNombre|default:'' }}" placeholder="Buscar por nombre...">
+                </div>
+
+                <div class="filtros-group">
+                    <label for="cedula">Cédula</label>
+                    <input type="text" id="cedula" name="cedula" class="filtros-input"
+                           value="{{ filtroCedula|default:'' }}" placeholder="Buscar por cédula...">
+                </div>
+
+                <div class="filtros-group">
+                    <label for="tipo">Tipo de Registro</label>
+                    <select id="tipo" name="tipo" class="filtros-input">
+                        <option value="">Todos</option>
+                        <option value="Visitante" {% if filtroTipo == 'Visitante' %}selected{% endif %}>Invitado</option>
+                        <option value="Manual" {% if filtroTipo == 'Manual' %}selected{% endif %}>Registro Manual</option>
+                    </select>
+                </div>
+
+                <div class="filtros-group">
+                    <label for="fechaDesde">Fecha Desde</label>
+                    <input type="date" id="fechaDesde" name="fechaDesde" class="filtros-input"
+                           value="{{ filtroFechaDesde|default:'' }}">
+                </div>
+
+                <div class="filtros-group">
+                    <label for="fechaHasta">Fecha Hasta</label>
+                    <input type="date" id="fechaHasta" name="fechaHasta" class="filtros-input"
+                           value="{{ filtroFechaHasta|default:'' }}">
+                </div>
+
+                <div class="filtros-buttons">
+                    <button type="submit" class="btn-filtro">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                    <a href="{% url 'vigilante:historial' %}" class="btn-limpiar">
+                        <i class="fas fa-undo-alt"></i> Limpiar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- TABLA UNIFICADA -->
+    {% if registros_unificados %}
+    <div class="tabla-container">
+        <table class="tabla-asistencias">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Documento</th>
+                    <th>Tipo</th>
+                    <th>Motivo</th>
+                    <th>Fecha</th>
+                    <th>Hora Entrada</th>
+                    <th>Hora Salida</th>
+                    <th>Registrado Por</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for registro in registros_unificados %}
+                <tr>
+                    <td><strong>{{ registro.nombre }}</strong></td>
+                    <td>{{ registro.apellido|default:'-' }}</td>
+                    <td>{{ registro.cedula }}</td>
+                    <td>
+                        {% if registro.tipo == 'visitante' %}
+                            <span class="badge badge-visitante">
+                                <i class="fas fa-user-tie"></i> Invitado
+                            </span>
+                        {% else %}
+                            <span class="badge badge-manual">
+                                <i class="fas fa-users"></i> Registro Manual
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>{{ registro.motivo|default:'-' }}</td>
+                    <td>{{ registro.fecha|date:"d/m/Y"|default:'-' }}</td>
+                    <td>
+                        {% if registro.tipo == 'visitante' %}
+                            {{ registro.hora_entrada|date:"h:i A"|default:'-' }}
+                        {% else %}
+                            {% if registro.tipo_movimiento == 'Ingreso' %}
+                                {{ registro.hora|date:"h:i A"|default:'-' }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if registro.tipo == 'visitante' %}
+                            {% if registro.hora_salida %}
+                                {{ registro.hora_salida|date:"h:i A" }}
+                            {% else %}
+                                ---
+                            {% endif %}
+                        {% else %}
+                            {% if registro.tipo_movimiento == 'Salida' %}
+                                {{ registro.hora|date:"h:i A"|default:'-' }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if registro.tipo == 'visitante' %}
+                            <small>Vigilante</small>
+                        {% else %}
+                            <strong>{{ registro.usuario_nombre|default:'-' }}</strong>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if registro.tipo == 'visitante' %}
+                            {% if registro.estado == 'dentro' %}
+                                <span class="badge badge-dentro">
+                                    <i class="fas fa-arrow-right"></i> Dentro
+                                </span>
+                            {% else %}
+                                <span class="badge badge-fuera">
+                                    <i class="fas fa-arrow-left"></i> Fuera
+                                </span>
+                            {% endif %}
+                        {% else %}
+                            {% if registro.tipo_movimiento == 'Ingreso' %}
+                                <span class="badge badge-ingreso">
+                                    <i class="fas fa-sign-in-alt"></i> Ingreso
+                                </span>
+                            {% else %}
+                                <span class="badge badge-salida">
+                                    <i class="fas fa-sign-out-alt"></i> Salida
+                                </span>
+                            {% endif %}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="no-data-message">
+        <i class="fas fa-inbox"></i>
+        <p><strong>No hay registros</strong> que coincidan con los filtros seleccionados.</p>
+        <a href="{% url 'vigilante:registrar_invitado' %}" class="btn-filtro" style="display: inline-block; margin-top: 15px;">
+            <i class="fas fa-user-plus"></i> Registrar Invitado
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- PAGINACIÓN -->
+    {% if totalPages > 1 %}
+    <div class="paginacion">
+        {% for i in pageNumbers %}
+        <a href="?page={{ i|add:1 }}&nombre={{ filtroNombre }}&cedula={{ filtroCedula }}&tipo={{ filtroTipo }}&fechaDesde={{ filtroFechaDesde }}&fechaHasta={{ filtroFechaHasta }}"
+           class="page-link {% if i == currentPage %}active-page{% endif %}">
+            {{ i|add:1 }}
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    function actualizarHora() {
+        const ahora = new Date();
+        const hora = ahora.getHours().toString().padStart(2, '0');
+        const minutos = ahora.getMinutes().toString().padStart(2, '0');
+        const segundos = ahora.getSeconds().toString().padStart(2, '0');
+        const horaActual = `${hora}:${minutos}:${segundos}`;
+        
+        const horaElement = document.getElementById('horaActual');
+        if (horaElement) {
+            horaElement.textContent = horaActual;
+        }
+    }
+    
+    setInterval(actualizarHora, 1000);
+    actualizarHora();
+</script>
+{% endblock %}

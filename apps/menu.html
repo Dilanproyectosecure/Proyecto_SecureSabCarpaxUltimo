@@ -1,0 +1,106 @@
+{% load static %}
+
+<div class="menu-encabezado">Bienvenido {{ user.get_rol|upper }}</div>
+
+
+
+<hr class="my-2 bg-white bg-opacity-25">
+
+<!-- OPCIONES SEGÚN ROL -->
+{% if user.get_rol == 'aprendiz' %}
+    <a href="{% url 'aprendiz:consultar_asistencia' %}" class="nav-link {% if request.resolver_match.url_name == 'consultar_asistencia' %}active{% endif %}">
+        <i class="bi bi-calendar-check me-2"></i>Consultar Asistencia
+    </a>
+    <a href="{% url 'aprendiz:radicar_justificacion' %}" class="nav-link {% if request.resolver_match.url_name == 'radicar_justificacion' %}active{% endif %}">
+        <i class="bi bi-file-text me-2"></i>Radicar Justificación
+    </a>
+    
+
+
+{% elif user.get_rol == 'instructor' %}
+    <a href="{% url 'instructor:gestionar_asistencia' %}" class="nav-link {% if request.resolver_match.url_name == 'gestionar_asistencia' %}active{% endif %}">
+        <i class="bi bi-pencil-square me-2"></i>Gestionar Asistencia
+    </a>
+    <a href="{% url 'instructor:consultar_asistenciaI' %}" class="nav-link {% if request.resolver_match.url_name == 'consultar_asistenciaI' %}active{% endif %}">
+        <i class="bi bi-calendar-week me-2"></i>Consultar Asistencia
+    </a>
+    <a href="{% url 'instructor:gestionar_justificaciones' %}" class="nav-link {% if request.resolver_match.url_name == 'gestionar_justificaciones' %}active{% endif %}">
+        <i class="bi bi-file-text me-2"></i>Gestionar Justificaciones
+    </a>    
+
+
+{% elif user.get_rol == 'coordinador' %}
+    <a href="{% url 'coordinador:inicio' %}" class="nav-link {% if request.resolver_match.url_name == 'inicio' %}active{% endif %}">
+        <i class="bi bi-house-door me-2"></i>Inicio
+    </a>
+    <a href="{% url 'coordinador:asistencia_ambiente' %}" class="nav-link {% if request.resolver_match.url_name == 'asistencia_ambiente' %}active{% endif %}">
+        <i class="bi bi-building me-2"></i>Asistencia Ambiente
+    </a>
+    <a href="{% url 'coordinador:asistencia_sede' %}" class="nav-link {% if request.resolver_match.url_name == 'asistencia_sede' %}active{% endif %}">
+        <i class="bi bi-door-open me-2"></i>Asistencia Sede
+    </a>
+    <a href="{% url 'coordinador:justificaciones' %}" class="nav-link {% if request.resolver_match.url_name == 'justificaciones' %}active{% endif %}">
+        <i class="bi bi-file-check me-2"></i>Justificaciones
+    </a>
+
+
+
+
+{% elif user.get_rol == 'vigilante' %}
+    <a href="{% url 'vigilante:iniciov' %}" class="nav-link {% if request.resolver_match.url_name == 'iniciov' %}active{% endif %}">
+        <i class="bi bi-house-door me-2"></i>
+        <span>Inicio</span>
+    </a>
+
+    <a href="{% url 'vigilante:consultar_invitado' %}" class="nav-link {% if request.resolver_match.url_name == 'consultar_invitado' %}active{% endif %}">
+        <i class="bi bi-search me-2"></i>
+        <span>Consultar invitados</span>
+    </a>
+
+    <a href="{% url 'vigilante:registrar_invitado' %}" class="nav-link {% if request.resolver_match.url_name == 'registrar_invitado' %}active{% endif %}">
+        <i class="bi bi-person-plus me-2"></i>
+        <span>Registrar invitado</span>
+    </a>
+
+    <a href="{% url 'vigilante:registro_manual' %}" class="nav-link {% if request.resolver_match.url_name == 'registro_manual' %}active{% endif %}">
+        <i class="bi bi-clipboard-data me-2"></i>
+        <span>Registro manual</span>
+    </a>
+
+    <a href="{% url 'vigilante:historial' %}" class="nav-link {% if request.resolver_match.url_name == 'historial' %}active{% endif %}">
+        <i class="bi bi-clock-history me-2"></i>
+        <span>Historial</span>
+    </a>
+
+
+{% elif user.get_rol == 'gestor' %}
+    
+    <a href="{% url 'gestor_sistema:crear_usuario' %}" class="nav-link {% if request.resolver_match.url_name == 'crear_usuario' %}active{% endif %}">
+        <i class="bi bi-person-plus me-2"></i>
+        <span>Gestionar Usuarios</span>
+    </a>
+    <a href="{% url 'gestor_sistema:gestion_huellas' %}" class="nav-link">
+        <i class="bi bi-fingerprint me-2"></i>
+        <span>Registrar Huellas</span>
+    </a>
+    </a>
+    <a href="{% url 'gestor_sistema:historial_fallos' %}" class="nav-link">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <span>Historial de Fallos</span>
+    </a>
+    <a href="{% url 'gestor_sistema:registro_actividad_view' %}" class="nav-link">
+        <i class="bi bi-journal-bookmark-fill me-2"></i>
+    <span>Registro de Actividades</span>
+    
+{% endif %}
+
+
+
+<hr class="my-2 bg-white bg-opacity-25">
+
+<!-- OPCIONES GENERALES -->
+<a href="{% url 'login:mi_perfil' %}" class="nav-link {% if request.resolver_match.url_name == 'mi_perfil' %}active{% endif %}">
+    <i class="bi bi-person-circle me-2"></i>Mi Perfil
+</a>
+
+<hr class="my-2 bg-white bg-opacity-25">

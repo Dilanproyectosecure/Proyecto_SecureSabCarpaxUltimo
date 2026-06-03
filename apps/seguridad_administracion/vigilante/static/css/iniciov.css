@@ -1,0 +1,325 @@
+/* ===== ESTILOS ESPECÍFICOS PARA DASHBOARD VIGILANTE ===== */
+
+/* Contenedor principal */
+.dashboard-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+/* FORMULARIO PRINCIPAL - MISMO ESTILO QUE CONSULTAR_ASISTENCIA */
+.dashboard-form {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    margin-bottom: 1.5rem;
+    animation: fadeIn 0.3s ease;
+}
+
+/* ===== HEADER DE BIENVENIDA ===== */
+.dash-header {
+    margin-bottom: 2rem;
+}
+
+.dash-welcome {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+}
+
+.dash-welcome-text h1 {
+    color: white;
+    margin: 0 0 0.5rem 0;
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+.dash-welcome-text p {
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+    font-size: 1rem;
+}
+
+.dash-welcome-date {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.date-day {
+    font-size: 2rem;
+    font-weight: bold;
+    color: white;
+    line-height: 1;
+}
+
+.date-month {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* ===== KPI CARDS GRID ===== */
+.dash-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.dash-kpi-card {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.dash-kpi-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    background: white;
+}
+
+.dash-kpi-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+}
+
+/* Colores específicos para cada KPI */
+.dash-kpi-card.visitantes .dash-kpi-icon {
+    background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+    color: #667eea;
+}
+
+.dash-kpi-card.dentro .dash-kpi-icon {
+    background: linear-gradient(135deg, #01fa6820 0%, #01fa6820 100%);
+    color: #01fa68;
+}
+
+.dash-kpi-card.manuales .dash-kpi-icon {
+    background: linear-gradient(135deg, #feda6320 0%, #feda6320 100%);
+    color: #feda63;
+}
+
+.dash-kpi-card.total .dash-kpi-icon {
+    background: linear-gradient(135deg, #764ba220 0%, #667eea20 100%);
+    color: #764ba2;
+}
+
+.dash-kpi-info {
+    flex: 1;
+}
+
+.dash-kpi-value {
+    display: block;
+    font-size: 2rem;
+    font-weight: bold;
+    color: #333;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+.dash-kpi-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ===== SECCIÓN ACCESOS RÁPIDOS ===== */
+.dash-quick-section {
+    margin-bottom: 1rem;
+}
+
+.dash-quick-card {
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.dash-quick-card:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.dash-quick-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 1rem 1.5rem;
+}
+
+.dash-quick-header h3 {
+    margin: 0;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dash-quick-header h3 i {
+    font-size: 1.3rem;
+}
+
+.dash-quick-body {
+    padding: 1.5rem;
+}
+
+.dash-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.dash-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    color: #495057;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.dash-action-btn i {
+    font-size: 1.2rem;
+    width: 24px;
+    color: #667eea;
+    transition: all 0.3s ease;
+}
+
+.dash-action-btn span {
+    flex: 1;
+}
+
+.dash-action-btn:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    border-color: transparent;
+}
+
+.dash-action-btn:hover i {
+    color: white;
+}
+
+/* ===== ANIMACIONES ===== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 0.75rem;
+    }
+    
+    .dashboard-form {
+        padding: 1.5rem;
+    }
+    
+    .dash-welcome {
+        flex-direction: column;
+        text-align: center;
+        padding: 1.5rem;
+    }
+    
+    .dash-welcome-text h1 {
+        font-size: 1.5rem;
+    }
+    
+    .dash-welcome-text p {
+        font-size: 0.9rem;
+    }
+    
+    .dash-kpi-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .dash-kpi-card {
+        padding: 1rem;
+    }
+    
+    .dash-kpi-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+    }
+    
+    .dash-kpi-value {
+        font-size: 1.5rem;
+    }
+    
+    .dash-kpi-label {
+        font-size: 0.75rem;
+    }
+    
+    .dash-actions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .dash-quick-header h3 {
+        font-size: 1rem;
+    }
+    
+    .dash-quick-body {
+        padding: 1rem;
+    }
+    
+    .dash-action-btn {
+        padding: 0.875rem;
+    }
+}
+
+/* ===== SOPORTE PARA PANTALLAS MUY PEQUEÑAS ===== */
+@media (max-width: 480px) {
+    .date-day {
+        font-size: 1.5rem;
+    }
+    
+    .date-month {
+        font-size: 0.8rem;
+    }
+    
+    .dash-welcome-text h1 {
+        font-size: 1.2rem;
+    }
+    
+    .dash-action-btn span {
+        font-size: 0.9rem;
+    }
+}

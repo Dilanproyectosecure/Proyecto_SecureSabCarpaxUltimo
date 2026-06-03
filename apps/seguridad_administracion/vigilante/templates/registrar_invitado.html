@@ -1,0 +1,485 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Registrar Invitado - Vigilante{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/registrar_invitado.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <form method="post" class="dashboard-form">
+        {% csrf_token %}
+        
+            <div class="section-header">
+                <h1>Registrar nuevo invitado</h1>
+                </a>
+            </div>
+
+           
+
+            <!-- Alertas -->
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alerta alerta-{% if message.tags == 'success' %}exito{% elif message.tags == 'error' %}error{% else %}info{% endif %}">
+                    <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}times-circle{% endif %}"></i>
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Tarjeta del formulario -->
+            <div class="form-card">
+                <h2>Datos del invitado</h2>
+                <p class="subtitle">Ingresa la información básica del visitante y el motivo de la visita.</p>
+
+                <div class="form-grid">
+                    <!-- ID del visitante (hidden) -->
+                    <input type="hidden" id="id_visitante" name="id_visitante" value="">
+                    
+                    <!-- Tipo de Documento -->
+                    <div class="form-group">
+                        <label for="tipo_documento">Tipo de documento *</label>
+                        <select id="tipo_documento"
+                                name="tipo_documento"
+                                class="filtros-input"
+                                value="{{ request.POST.tipo_documento|default:'' }}"
+                                required>
+                            <option value="">Seleccione</option>
+                            <option value="CC" {% if request.POST.tipo_documento == 'CC' %}selected{% endif %}>Cédula de ciudadanía</option>
+                            <option value="TI" {% if request.POST.tipo_documento == 'TI' %}selected{% endif %}>Tarjeta de identidad</option>
+                            <option value="CE" {% if request.POST.tipo_documento == 'CE' %}selected{% endif %}>Cédula de extranjería</option>
+                            <option value="PA" {% if request.POST.tipo_documento == 'PA' %}selected{% endif %}>Pasaporte</option>
+                            <option value="PEP" {% if request.POST.tipo_documento == 'PEP' %}selected{% endif %}>Permiso Especial de Permanencia (PEP)</option>
+                            <option value="PPT" {% if request.POST.tipo_documento == 'PPT' %}selected{% endif %}>Permiso por Protección Temporal (PPT)</option>
+                            <option value="NIT" {% if request.POST.tipo_documento == 'NIT' %}selected{% endif %}>NIT</option>
+                            <option value="RC" {% if request.POST.tipo_documento == 'RC' %}selected{% endif %}>Registro civil</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Documento -->
+                    <div class="form-group">
+                        <label for="cedula">Documento *</label>
+                        <input id="cedula"
+                               type="text"
+                               name="cedula"
+                               class="filtros-input"
+                               value="{{ request.POST.cedula|default:'' }}"
+                               placeholder="Ingrese el número de documento"
+                               inputmode="numeric"
+                               pattern="\d{1,10}"
+                               maxlength="10"
+                               title="Solo números, máximo 10 dígitos"
+                               required>
+                        <small id="error_cedula" style="color:#d9534f; font-size:0.9em; display:none;"></small>
+                        <div id="resultado-busqueda" style="margin-top: 10px; padding: 10px; border-radius: 4px; display: none;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div id="texto-resultado"></div>
+                                <button type="button" id="btn-editar-datos" class="btn-filtro" style="padding: 6px 12px; font-size: 0.85em;">
+                                    <i class="fas fa-edit"></i>
+                                    <span>Editar</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nombre -->
+                    <div class="form-group">
+                        <label for="nombre">Nombre *</label>
+                        <input id="nombre"
+                               type="text"
+                               name="nombre"
+                               class="filtros-input"
+                               value="{{ request.POST.nombre|default:'' }}"
+                               placeholder="Ingrese el nombre completo"
+                               minlength="3"
+                               maxlength="40"
+                               pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ ]+"
+                               title="Solo letras y espacios. Mínimo 3, máximo 40 caracteres"
+                               required>
+                        <small id="error_nombre" style="color:#d9534f; font-size:0.9em; display:none;"></small>
+                    </div>
+
+                    <!-- Apellido -->
+                    <div class="form-group">
+                        <label for="apellido">Apellido *</label>
+                        <input id="apellido"
+                               type="text"
+                               name="apellido"
+                               class="filtros-input"
+                               value="{{ request.POST.apellido|default:'' }}"
+                               placeholder="Ingrese el apellido completo"
+                               minlength="3"
+                               maxlength="40"
+                               pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ ]+"
+                               title="Solo letras y espacios. Mínimo 3, máximo 40 caracteres"
+                               required>
+                        <small id="error_apellido" style="color:#d9534f; font-size:0.9em; display:none;"></small>
+                    </div>
+
+                    <!-- Área (desde BD) -->
+                    <div class="form-group">
+                        <label for="area">Área *</label>
+                        <select id="area" name="area" class="filtros-input" required>
+                            <option value="">Seleccione un área...</option>
+                            {% for area in areas %}
+                            <option value="{{ area.id_area }}" {% if request.POST.area == area.id_area|stringformat:"s" %}selected{% endif %}>
+                                {{ area.nombre }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Motivo (campo de texto libre) -->
+                    <div class="form-group full">
+                        <label for="motivo">Motivo de la visita *</label>
+                        <input id="motivo" 
+                               type="text" 
+                               name="motivo" 
+                               class="filtros-input"
+                               value="{{ request.POST.motivo|default:'' }}" 
+                               placeholder="Ej: Reunión de trabajo, Capacitación, Entrevista, etc." 
+                               required>
+                    </div>
+
+                    <!-- Observaciones (campo opcional) -->
+                    <div class="form-group full">
+                        <label for="observaciones">Observaciones</label>
+                        <textarea id="observaciones" 
+                                  name="observaciones" 
+                                  class="filtros-input"
+                                  placeholder="Notas adicionales sobre la visita (opcional)"
+                                  rows="3">{{ request.POST.observaciones|default:''|escape }}</textarea>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="btn-limpiar" class="btn-limpiar">
+                        <i class="fas fa-eraser"></i>
+                        <span>Limpiar</span>
+                    </button>
+                    <button type="submit" class="btn-filtro">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Registrar Invitado</span>
+                    </button>
+                </div>
+            </div>
+    </form>
+</div>
+
+<script>
+    // Actualizar la hora en tiempo real
+    function actualizarHora() {
+        const ahora = new Date();
+        const hora = ahora.getHours().toString().padStart(2, '0');
+        const minutos = ahora.getMinutes().toString().padStart(2, '0');
+        const segundos = ahora.getSeconds().toString().padStart(2, '0');
+        const horaActual = `${hora}:${minutos}:${segundos}`;
+        
+        const horaElement = document.getElementById('horaActual');
+        if (horaElement) {
+            horaElement.textContent = horaActual;
+        }
+    }
+    
+    // Actualizar cada segundo
+    setInterval(actualizarHora, 1000);
+    
+    // Ejecutar inmediatamente para evitar delay
+    actualizarHora();
+</script>
+<script>
+// Validación cliente para campos: nombre, apellido y documento
+(function(){
+    const form = document.querySelector('.dashboard-form');
+    if(!form) return;
+
+    const nombre = document.getElementById('nombre');
+    const apellido = document.getElementById('apellido');
+    const tipoDocumento = document.getElementById('tipo_documento');
+    const cedula = document.getElementById('cedula');
+    const resultadoBusqueda = document.getElementById('resultado-busqueda');
+    const textResultado = document.getElementById('texto-resultado');
+    const btnEditar = document.getElementById('btn-editar-datos');
+
+    const errNombre = document.getElementById('error_nombre');
+    const errApellido = document.getElementById('error_apellido');
+    const errCedula = document.getElementById('error_cedula');
+
+    let datosEncontrados = false;
+
+    function validarNombreCampo(){
+        const val = nombre.value.trim();
+        const regex = /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{3,40}$/;
+        if(!val.length === 0) {
+            errNombre.style.display = 'none';
+            return true;
+        }
+        // Verificar si hay números o caracteres no permitidos
+        if(!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]*$/.test(val) && val.length > 0){
+            errNombre.textContent = 'Solo letras y espacios';
+            errNombre.style.display = 'block';
+            return false;
+        }
+        if(!regex.test(val)){
+            errNombre.textContent = 'Mínimo 3 caracteres\nMáximo 40 caracteres';
+            errNombre.style.display = 'block';
+            return false;
+        }
+        errNombre.style.display = 'none';
+        return true;
+    }
+
+    function validarApellidoCampo(){
+        const val = apellido.value.trim();
+        const regex = /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{3,40}$/;
+        if(!val.length === 0) {
+            errApellido.style.display = 'none';
+            return true;
+        }
+        // Verificar si hay números o caracteres no permitidos
+        if(!/^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]*$/.test(val) && val.length > 0){
+            errApellido.textContent = 'Solo letras y espacios';
+            errApellido.style.display = 'block';
+            return false;
+        }
+        if(!regex.test(val)){
+            errApellido.textContent = 'Mínimo 3 caracteres\nMáximo 40 caracteres';
+            errApellido.style.display = 'block';
+            return false;
+        }
+        errApellido.style.display = 'none';
+        return true;
+    }
+
+    function validarCedulaCampo(){
+        const val = cedula.value.trim();
+        const regex = /^\d{10}$/;
+        if(!regex.test(val)){
+            errCedula.textContent = 'Documento inválido: debe tener exactamente 10 dígitos.';
+            errCedula.style.display = 'block';
+            return false;
+        }
+        errCedula.style.display = 'none';
+        return true;
+    }
+
+    function buscarVisitante(){
+        const cedulaVal = cedula.value.trim();
+        
+        if(!cedulaVal || !validarCedulaCampo()){
+            resultadoBusqueda.style.display = 'none';
+            datosEncontrados = false;
+            return;
+        }
+
+        console.log('Buscando cédula:', cedulaVal);
+        const url = window.location.protocol + '//' + window.location.host + '/vigilante/api/buscar-visitante/?cedula=' + encodeURIComponent(cedulaVal);
+        console.log('URL:', url);
+
+        // Hacer petición AJAX
+        fetch(url)
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Datos recibidos:', data);
+                if(data.encontrado){
+                    // Mostrar resultado
+                    datosEncontrados = true;
+                    textResultado.innerHTML = `<strong style="color: #28a745;">✓ Visitante encontrado:</strong> ${data.nombre} ${data.apellido}`;
+                    resultadoBusqueda.style.backgroundColor = '#d4edda';
+                    resultadoBusqueda.style.borderLeft = '4px solid #28a745';
+                    resultadoBusqueda.style.display = 'block';
+                    
+                    // Llenar los campos
+                    nombre.value = data.nombre;
+                    apellido.value = data.apellido;
+                    if (tipoDocumento) {
+                        tipoDocumento.value = data.tipo_documento || '';
+                    }
+                    document.getElementById('id_visitante').value = data.id_visitante;
+                    
+                    // Hacer campos de edición solo lectura al principio
+                    nombre.readOnly = true;
+                    apellido.readOnly = true;
+                    btnEditar.style.display = 'block';
+                } else {
+                    // No encontrado
+                    datosEncontrados = false;
+                    textResultado.innerHTML = '<strong style="color: #856404;">ℹ Nuevo visitante:</strong> Completa los datos';
+                    resultadoBusqueda.style.backgroundColor = '#fff3cd';
+                    resultadoBusqueda.style.borderLeft = '4px solid #ffc107';
+                    resultadoBusqueda.style.display = 'block';
+                    btnEditar.style.display = 'none';
+                    
+                    // Limpiar y habilitar campos
+                    nombre.value = '';
+                    apellido.value = '';
+                    if (tipoDocumento) {
+                        tipoDocumento.value = '';
+                    }
+                    document.getElementById('id_visitante').value = '';
+                    nombre.readOnly = false;
+                    apellido.readOnly = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error en la búsqueda:', error);
+                resultadoBusqueda.style.display = 'none';
+            });
+    }
+
+    let timeoutId;
+    
+    // Evento para buscar cuando se completa la cédula
+    cedula.addEventListener('input', function(e){
+        // eliminar caracteres no numéricos para mejor UX
+        const cleaned = e.target.value.replace(/\D+/g, '');
+        if(cleaned !== e.target.value) e.target.value = cleaned;
+        
+        // Limpiar timeout anterior
+        if(timeoutId) clearTimeout(timeoutId);
+        
+        // Buscar después de 500ms de que el usuario termine de escribir
+        if(cleaned.length > 0){
+            timeoutId = setTimeout(buscarVisitante, 500);
+        } else {
+            resultadoBusqueda.style.display = 'none';
+        }
+    });
+
+
+
+    // Botón editar
+    if(btnEditar){
+        btnEditar.addEventListener('click', function(e){
+            e.preventDefault();
+            nombre.readOnly = false;
+            apellido.readOnly = false;
+            nombre.focus();
+            btnEditar.innerHTML = '<i class="fas fa-check"></i><span>Listo</span>';
+            btnEditar.style.backgroundColor = '#28a745';
+            
+            // Cambiar comportamiento del botón a "confirmar edición"
+            btnEditar.onclick = function(ev){
+                ev.preventDefault();
+                nombre.readOnly = true;
+                apellido.readOnly = true;
+                btnEditar.innerHTML = '<i class="fas fa-edit"></i><span>Editar</span>';
+                btnEditar.style.backgroundColor = '';
+                btnEditar.onclick = null;
+            };
+        });
+    }
+
+    // Validar en tiempo real
+    nombre.addEventListener('input', validarNombreCampo);
+    apellido.addEventListener('input', validarApellidoCampo);
+
+    // Auto-trimear espacios al inicio y final en nombre
+    nombre.addEventListener('blur', function(){
+        this.value = this.value.trim();
+        validarNombreCampo();
+    });
+
+    // Auto-trimear espacios al inicio y final en apellido
+    apellido.addEventListener('blur', function(){
+        this.value = this.value.trim();
+        validarApellidoCampo();
+    });
+
+    // Auto-trimear espacios al inicio y final en cédula
+    cedula.addEventListener('blur', function(){
+        this.value = this.value.trim();
+    });
+
+    form.addEventListener('submit', function(ev){
+        const okNombre = validarNombreCampo();
+        const okApellido = validarApellidoCampo();
+        const okCedula = validarCedulaCampo();
+        if(!(okNombre && okApellido && okCedula)){
+            ev.preventDefault();
+            // mostrar alerta global temporal
+            let globalAlert = document.querySelector('.client-alert');
+            if(!globalAlert){
+                globalAlert = document.createElement('div');
+                globalAlert.className = 'client-alert alerta-error';
+                globalAlert.style.margin = '12px 0';
+                globalAlert.style.padding = '10px';
+                globalAlert.style.background = '#f8d7da';
+                globalAlert.style.color = '#842029';
+                globalAlert.style.borderRadius = '4px';
+                globalAlert.textContent = 'Corrige los campos indicados antes de enviar el formulario.';
+                const container = document.querySelector('.section-header');
+                if(container) container.parentNode.insertBefore(globalAlert, container.nextSibling);
+            }
+            // desplazar hacia el primer error
+            const firstError = document.querySelector('small[style*="display:block"]');
+            if(firstError){
+                firstError.scrollIntoView({behavior:'smooth', block:'center'});
+            }
+        }
+    });
+})();
+</script>
+<style>
+/* (Removido: ajustes temporales de SweetAlert2 y clase .swal-hidden) */
+</style>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    const btnLimpiar = document.getElementById('btn-limpiar');
+    const form = document.querySelector('.dashboard-form');
+    if(!btnLimpiar || !form) return;
+
+    btnLimpiar.addEventListener('click', function(e){
+        e.preventDefault();
+        Swal.fire({
+            title: 'Confirmar borrado',
+            text: '¿Deseas borrar el formulario? Se perderán los datos ingresados.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, borrar',
+            cancelButtonText: 'Cancelar',
+            reverseButtons: true,
+            backdrop: 'rgba(0,0,0,0.45)',
+            allowOutsideClick: false
+        }).then((result) => {
+            if(result.isConfirmed){
+                // Resetear el formulario
+                form.reset();
+
+                // Ocultar resultado de búsqueda si existe
+                const resultado = document.getElementById('resultado-busqueda');
+                if(resultado) resultado.style.display = 'none';
+
+                // Limpiar id_visitante
+                const idVisitante = document.getElementById('id_visitante');
+                if(idVisitante) idVisitante.value = '';
+
+                // Ocultar errores
+                ['error_nombre','error_apellido','error_cedula'].forEach(function(id){
+                    const el = document.getElementById(id);
+                    if(el) el.style.display = 'none';
+                });
+
+                // Habilitar campos en caso de que estuvieran en readonly
+                ['nombre','apellido'].forEach(function(id){
+                    const el = document.getElementById(id);
+                    if(el) el.readOnly = false;
+                });
+
+                // Resetear select de tipo de documento
+                const tipoDoc = document.getElementById('tipo_documento');
+                if(tipoDoc) tipoDoc.value = '';
+
+                Swal.fire('Formulario borrado', 'El formulario ha sido limpiado.', 'success');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

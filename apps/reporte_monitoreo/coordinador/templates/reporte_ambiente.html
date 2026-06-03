@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+{% load i18n %}
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Asistencia en Ambiente</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 10mm;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 8pt;
+            color: #1a2332;
+            margin: 0;
+            padding: 0;
+        }
+
+        .top-bar {
+            height: 5px;
+            background: #1b6b3a;
+            margin-bottom: 8px;
+        }
+
+        .hdr-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-bottom: 2px solid #1b6b3a;
+            margin-bottom: 8px;
+        }
+
+        .hdr-table td {
+            border: none;
+            vertical-align: middle;
+        }
+
+        .sena-lbl {
+            font-size: 8pt;
+            font-weight: 900;
+            color: #1b6b3a;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        .title {
+            font-size: 15pt;
+            font-weight: 900;
+            color: #1b6b3a;
+            text-transform: uppercase;
+            text-align: center;
+            margin: 0;
+        }
+
+        .subtitle {
+            font-size: 8pt;
+            color: #4a5568;
+            text-align: center;
+            margin: 0;
+        }
+
+        .meta {
+            font-size: 7pt;
+            margin-bottom: 8px;
+            color: #4a5568;
+            text-align: right;
+            line-height: 1.6;
+        }
+
+        .box {
+            border: 1px solid #d8e4d8;
+            margin-bottom: 8px;
+        }
+
+        .box-title {
+            background: #1b6b3a;
+            color: #fff;
+            font-size: 7pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 5px 7px;
+        }
+
+        .box-body {
+            padding: 6px 7px;
+        }
+
+        .line {
+            margin-bottom: 3px;
+            font-size: 7pt;
+            color: #334155;
+        }
+
+        .line b {
+            color: #1b6b3a;
+        }
+
+        .kpi-table,
+        .reg-table,
+        .insights-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .kpi-table td {
+            border: 1px solid #d8e4d8;
+            padding: 6px;
+            width: 25%;
+            vertical-align: top;
+            background: #f6fbf8;
+        }
+
+        .kpi-label {
+            font-size: 6pt;
+            color: #1b6b3a;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .kpi-value {
+            font-size: 10pt;
+            font-weight: 700;
+            color: #1a2332;
+            margin-top: 2px;
+        }
+
+        .reg-table th {
+            background: #1b6b3a;
+            color: #fff;
+            padding: 5px 4px;
+            border: 1px solid #155a30;
+            font-size: 6.5pt;
+            text-transform: uppercase;
+            text-align: left;
+        }
+
+        .reg-table td {
+            border: 1px solid #dde8dd;
+            padding: 4px;
+            font-size: 7pt;
+            vertical-align: middle;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 9px;
+            font-size: 6pt;
+            font-weight: 700;
+        }
+
+        .b-green { background: #e2f5ea; color: #1b6b3a; border: 1px solid #a2d9b3; }
+        .b-red { background: #fdf2f2; color: #a93226; border: 1px solid #e6b0aa; }
+        .b-orange { background: #fef9e7; color: #7d6608; border: 1px solid #f9e79f; }
+
+        .insights-table td {
+            width: 33.33%;
+            border: 1px solid #d8e4d8;
+            vertical-align: top;
+            padding: 6px;
+        }
+
+        .ins-title {
+            font-size: 7pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #1b6b3a;
+            margin-bottom: 4px;
+        }
+
+        .ins-line {
+            font-size: 6.5pt;
+            color: #4a5568;
+            margin-bottom: 3px;
+            line-height: 1.3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar"></div>
+
+    <table class="hdr-table">
+        <tr>
+            <td style="width:15%;">
+                {% if logo_data %}
+                    <img src="{{ logo_data }}" alt="Logo SENA" style="width:56px;height:56px;object-fit:contain;display:block;" />
+                {% elif logo_path %}
+                    <img src="{{ logo_path }}" alt="Logo SENA" style="width:56px;height:56px;object-fit:contain;display:block;" />
+                {% endif %}
+                <div class="sena-lbl">SENA</div>
+            </td>
+            <td style="width:55%;">
+                <p class="title">Reporte de Asistencia en Ambiente</p>
+                <p class="subtitle">Coordinación Académica - SENA</p>
+            </td>
+            <td style="width:30%;">
+                <div class="meta">
+                    <strong>Fecha generación:</strong><br>
+                    {{ fecha_actual }}<br>
+                    <strong>Generado por:</strong><br>
+                    Vista coordinador
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="kpi-table" style="margin-bottom:8px;">
+        <tr>
+            <td>
+                <div class="kpi-label">Total Registros</div>
+                <div class="kpi-value">{{ total }}</div>
+            </td>
+            <td>
+                <div class="kpi-label">Asistió</div>
+                <div class="kpi-value">{{ asistio }} ({{ pct_asistio }}%)</div>
+            </td>
+            <td>
+                <div class="kpi-label">Inasistió</div>
+                <div class="kpi-value">{{ inasistio }} ({{ pct_inasistio }}%)</div>
+            </td>
+            <td>
+                <div class="kpi-label">Justificada</div>
+                <div class="kpi-value">{{ justificada }} ({{ pct_justificada }}%)</div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="box">
+        <div class="box-title">Filtros Aplicados</div>
+        <div class="box-body">
+            <div class="line"><b>Ficha:</b> {{ filtros_display.ficha }}</div>
+            <div class="line"><b>Documento/Nombre:</b> {{ filtros_display.documento }}</div>
+            <div class="line"><b>Fecha:</b> {{ filtros_display.fecha }}</div>
+            <div class="line"><b>Estado:</b> {{ filtros_display.estado }}</div>
+            <div class="line"><b>Jornada:</b> {{ filtros_display.jornada }}</div>
+            <div class="line"><b>Instructor:</b> {{ filtros_display.instructor }}</div>
+        </div>
+    </div>
+
+    <div class="box">
+        <div class="box-title">Registros de Asistencia</div>
+        <div class="box-body" style="padding:0;">
+            <table class="reg-table">
+                <thead>
+                    <tr>
+                        <th style="width:12%;">Documento</th>
+                        <th style="width:22%;">Nombre Aprendiz</th>
+                        <th style="width:20%;">Instructor</th>
+                        <th style="width:10%;">Ficha</th>
+                        <th style="width:12%;">Jornada</th>
+                        <th style="width:12%;">Fecha</th>
+                        <th style="width:12%; text-align:center;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in registros %}
+                    <tr>
+                        <td>{{ r.documento }}</td>
+                        <td>{{ r.nombre }}</td>
+                        <td>{{ r.instructor }}</td>
+                        <td>{{ r.ficha }}</td>
+                        <td>{{ r.jornada }}</td>
+                        <td>{{ r.fecha }}</td>
+                        <td style="text-align:center;">
+                            {% if r.estado == 'asistio' or r.estado == 'asistió' %}
+                                <span class="badge b-green">Asistió</span>
+                            {% elif r.estado == 'inasistio' or r.estado == 'inasistió' %}
+                                <span class="badge b-red">Inasistió</span>
+                            {% elif r.estado == 'justificada' or r.estado == 'justificado' %}
+                                <span class="badge b-orange">Justificada</span>
+                            {% else %}
+                                <span class="badge">{{ r.estado|title }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align:center; padding:9px; color:#64748b;">No hay registros para los filtros aplicados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="box">
+        <div class="box-title">Alertas por Ficha (Coordinacion)</div>
+        <div class="box-body" style="padding:0;">
+            <table class="reg-table">
+                <thead>
+                    <tr>
+                        <th style="width:14%;">Ficha</th>
+                        <th style="width:14%;">Nivel</th>
+                        <th style="width:14%;">Registros</th>
+                        <th style="width:16%;">Inasistencias</th>
+                        <th style="width:14%;">% Inasistencia</th>
+                        <th style="width:14%;">Justificadas</th>
+                        <th style="width:14%;">Sin Instructor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in alertas_ficha %}
+                    <tr>
+                        <td>{{ a.ficha }}</td>
+                        <td>
+                            {% if a.nivel == 'Alta' %}
+                                <span class="badge b-red">Alta</span>
+                            {% elif a.nivel == 'Media' %}
+                                <span class="badge b-orange">Media</span>
+                            {% else %}
+                                <span class="badge b-green">Baja</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ a.total }}</td>
+                        <td>{{ a.inasistio }}</td>
+                        <td>{{ a.pct_inasistencia }}%</td>
+                        <td>{{ a.justificada }}</td>
+                        <td>{{ a.sin_instructor }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align:center; padding:9px; color:#64748b;">Sin alertas para las fichas filtradas.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <table class="insights-table">
+        <tr>
+            <td>
+                <div class="ins-title">Análisis</div>
+                <div class="ins-line">Asistencias: {{ asistio }} registros positivos.</div>
+                <div class="ins-line">Inasistencias: {{ inasistio }} casos para seguimiento.</div>
+                <div class="ins-line">Justificadas: {{ justificada }} ausencias validadas.</div>
+            </td>
+            <td>
+                <div class="ins-title">Problemas Detectados</div>
+                <div class="ins-line">1. Casos sin justificación en las ausencias.</div>
+                <div class="ins-line">2. Reincidencia de inasistencia en algunos aprendices.</div>
+                <div class="ins-line">3. Falta de segmentación por periodos.</div>
+            </td>
+            <td>
+                <div class="ins-title">Recomendaciones</div>
+                <div class="ins-line">1. Exigir soporte para justificar ausencias.</div>
+                <div class="ins-line">2. Usar filtros por ficha, estado y fecha.</div>
+                <div class="ins-line">3. Activar alertas para reincidencias.</div>
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>

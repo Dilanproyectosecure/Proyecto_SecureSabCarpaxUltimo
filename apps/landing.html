@@ -1,0 +1,287 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureSab - Sistema de Control de Asistencia SENA</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/landing.css' %}?v=2">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-logo">
+                <span class="secure">secure</span><span class="sab">Sab</span>
+            </a>
+            <div class="nav-links">
+                <a href="#features" class="nav-link">Características</a>
+                <a href="#roles" class="nav-link">Roles</a>
+                <a href="#about" class="nav-link">Acerca de</a>
+                <a href="{% url 'login:login' %}" class="nav-btn">Iniciar Sesión</a>
+            </div>
+            <button class="mobile-menu-btn" id="mobileMenuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="#features" class="mobile-link">Características</a>
+        <a href="#roles" class="mobile-link">Roles</a>
+        <a href="#about" class="mobile-link">Acerca de</a>
+        <a href="{% url 'login:login' %}" class="nav-btn">Iniciar Sesión</a>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1 class="hero-title">
+                    Control de Asistencia <span class="highlight">Inteligente</span> para el SENA
+                </h1>
+                <p class="hero-subtitle">
+                    Gestiona la asistencia de aprendices, instructores y visitantes de manera eficiente, 
+                    segura y en tiempo real. La solución integral para centros de formación.
+                </p>
+                <div class="hero-buttons">
+                    <a href="{% url 'login:login' %}" class="btn-primary">
+                        <i class="fas fa-sign-in-alt"></i> Acceder al Sistema
+                    </a>
+                    <a href="#features" class="btn-secondary">
+                        <i class="fas fa-info-circle"></i> Conocer más
+                    </a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="hero-card">
+                    <div class="card-header">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Sistema Seguro</span>
+                    </div>
+                    <div class="card-stats">
+                        <div class="stat">
+                            <i class="fas fa-users"></i>
+                            <span class="stat-number">4</span>
+                            <span class="stat-label">Roles</span>
+                        </div>
+                        <div class="stat">
+                            <i class="fas fa-check-circle"></i>
+                            <span class="stat-number">24/7</span>
+                            <span class="stat-label">Disponible</span>
+                        </div>
+                        <div class="stat">
+                            <i class="fas fa-lock"></i>
+                            <span class="stat-number">100%</span>
+                            <span class="stat-label">Seguro</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-wave">
+            <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 120L60 105C120 90 240 60 360 45C480 30 600 30 720 37.5C840 45 960 60 1080 67.5C1200 75 1320 75 1380 75L1440 75V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="white"/>
+            </svg>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Características Principales</h2>
+                <p class="section-subtitle">Todo lo que necesitas para gestionar la asistencia de tu centro de formación</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-clipboard-check"></i>
+                    </div>
+                    <h3>Registro de Asistencia</h3>
+                    <p>Control preciso de entrada y salida de aprendices e instructores con registro en tiempo real.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <h3>Justificaciones</h3>
+                    <p>Sistema de radicación y seguimiento de justificaciones para inasistencias con soporte documental.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3>Reportes y Estadísticas</h3>
+                    <p>Visualiza métricas de asistencia por ambiente, sede y programa de formación.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <h3>Control de Visitantes</h3>
+                    <p>Registro y gestión de invitados con seguimiento de entrada y salida a las instalaciones.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <h3>Notificaciones</h3>
+                    <p>Alertas automáticas sobre novedades de asistencia y estado de justificaciones.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h3>Diseño Responsivo</h3>
+                    <p>Accede desde cualquier dispositivo: computadora, tablet o smartphone.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Roles Section -->
+    <section class="roles" id="roles">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Roles del Sistema</h2>
+                <p class="section-subtitle">Cada usuario tiene acceso a las funcionalidades según su rol</p>
+            </div>
+            <div class="roles-grid">
+                <div class="role-card aprendiz">
+                    <div class="role-icon">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <h3>Aprendiz</h3>
+                    <ul class="role-features">
+                        <li><i class="fas fa-check"></i> Consultar asistencia personal</li>
+                        <li><i class="fas fa-check"></i> Radicar justificaciones</li>
+                        <li><i class="fas fa-check"></i> Ver estado de solicitudes</li>
+                        <li><i class="fas fa-check"></i> Gestionar perfil</li>
+                    </ul>
+                </div>
+                <div class="role-card instructor">
+                    <div class="role-icon">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <h3>Instructor</h3>
+                    <ul class="role-features">
+                        <li><i class="fas fa-check"></i> Gestionar asistencia de grupos</li>
+                        <li><i class="fas fa-check"></i> Registrar novedades</li>
+                        <li><i class="fas fa-check"></i> Consultar historial</li>
+                        <li><i class="fas fa-check"></i> Exportar reportes</li>
+                    </ul>
+                </div>
+                <div class="role-card coordinador">
+                    <div class="role-icon">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <h3>Coordinador</h3>
+                    <ul class="role-features">
+                        <li><i class="fas fa-check"></i> Supervisar asistencia general</li>
+                        <li><i class="fas fa-check"></i> Revisar justificaciones</li>
+                        <li><i class="fas fa-check"></i> Gestionar novedades</li>
+                        <li><i class="fas fa-check"></i> Reportes por sede/ambiente</li>
+                    </ul>
+                </div>
+                <div class="role-card vigilante">
+                    <div class="role-icon">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <h3>Vigilante</h3>
+                    <ul class="role-features">
+                        <li><i class="fas fa-check"></i> Registrar invitados</li>
+                        <li><i class="fas fa-check"></i> Control de acceso</li>
+                        <li><i class="fas fa-check"></i> Registro manual</li>
+                        <li><i class="fas fa-check"></i> Historial de registros</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about" id="about">
+        <div class="container">
+            <div class="about-content">
+                <div class="about-text">
+                    <h2>Sobre SecureSab</h2>
+                    <p>
+                        SecureSab es un sistema integral de gestión de asistencia desarrollado específicamente 
+                        para los centros de formación del SENA. Nuestra plataforma permite un control eficiente 
+                        y seguro de la asistencia de toda la comunidad educativa.
+                    </p>
+                    <p>
+                        Con tecnología moderna y una interfaz intuitiva, facilitamos el seguimiento 
+                        de la asistencia, la gestión de justificaciones y el control de acceso 
+                        a las instalaciones.
+                    </p>
+                    <div class="about-stats">
+                        <div class="about-stat">
+                            <i class="fas fa-code"></i>
+                            <span>HTML5</span>
+                        </div>
+                        <div class="about-stat">
+                            <i class="fas fa-database"></i>
+                            <span>CSS3</span>
+                        </div>
+                        <div class="about-stat">
+                            <i class="fas fa-paint-brush"></i>
+                            <span>JavaScript</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-image">
+                    <div class="sena-badge">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span>SENA</span>
+                        <small>Servicio Nacional de Aprendizaje</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2>¿Listo para comenzar?</h2>
+                <p>Accede al sistema con tus credenciales institucionales</p>
+                <a href="{% url 'login:login' %}" class="btn-cta">
+                    <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="secure">secure</span><span class="sab">Sab</span>
+                    <p>Sistema de Control de Asistencia</p>
+                </div>
+                <div class="footer-links">
+                    <a href="#features">Características</a>
+                    <a href="#roles">Roles</a>
+                    <a href="#about">Acerca de</a>
+                </div>
+                <div class="footer-social">
+                    <a href="#"><i class="fab fa-github"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 SecureSab - Todos los derechos reservados</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'js/landing.js' %}"></script>
+</body>
+</html>

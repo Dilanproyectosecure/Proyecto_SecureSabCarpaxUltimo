@@ -1,0 +1,201 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/gestionar_asistencia.css' %}">
+    <link rel="stylesheet" href="{% static 'css/actualizar_aprendiz.css' %}">
+{% endblock %}
+
+{% block title %}Gestionar Asistencia{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <!-- Cabecera con información de la ficha -->
+    <div class="ficha-header-info">
+        <h1>Gestionar Asistencia - Ficha {{ ficha.numero_ficha }}</h1>
+        <div class="ficha-badges">
+            <span class="badge-jornada">
+                <i class="bi bi-clock"></i> {{ ficha.id_jornada.nombre_jornada }}
+            </span>
+            <span class="badge-aprendices">
+                <i class="bi bi-people"></i> {{ total_aprendices }} Aprendices
+            </span>
+            <span class="badge-competencia">
+                <i class="bi bi-book"></i> {{ competencia.nombre_competencia }}
+            </span>
+        </div>
+    </div>
+
+    <!-- ========== CONTENEDOR DE ALERTAS ========== -->
+    <div id="alertas-container"></div>
+
+    <!-- Selector de fecha -->
+    <div class="fecha-selector" data-ficha-id="{{ ficha.id_ficha }}">
+        <div class="fecha-input-group">
+            <label for="fecha">Fecha:</label>
+            <span class="fecha-texto">{{ fecha_seleccionada }}</span>
+            <!-- <input type="date" id="fecha" name="fecha" class="fecha-input" value="{{ fecha_seleccionada }}">  -->
+        </div>
+        <!--<div class="botones-group">
+            <button type="button" class="btn-actualizar" onclick="actualizarAsistencia()">
+                <i class="bi bi-arrow-clockwise"></i> Actualizar
+            </button> 
+        </div> -->
+    </div>
+
+    <!-- Formulario de asistencia -->
+    <form method="post" action="?ficha={{ ficha.id_ficha }}&fecha={{ fecha_seleccionada }}">
+        {% csrf_token %}
+        
+        <div class="tabla-container">
+            <table class="tabla-aprendices">
+                <thead>
+                    <tr>
+                        <th>Estado</th>
+                        <th>Documento</th>
+                        <th>Nombre Completo</th>
+                        <th>Correo</th>
+                        <th>Teléfono</th>
+                        <th>Asistencia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for aprendiz in aprendices %}
+                <tr id="fila-{{ aprendiz.id_usuario }}" class="{% if not aprendiz.tiene_asistencia_sede %}fila-sin-asistencia-sede{% endif %}">
+                    <td class="col-numero">
+                        <!-- Icono de 3 inasistencias consecutivas -->
+                        {% if aprendiz.tiene_3_consecutivas %}
+                        <span class="icono-alerta icono-3" 
+                            data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}"
+                            data-tipo="3"
+                            data-total="{{ aprendiz.total_inasistencias }}"
+                            onclick="mostrarAlerta(this)">
+                            ⚠️
+                        </span>
+                        {% endif %}
+                        <!-- Icono de 5 inasistencias totales -->
+                        {% if aprendiz.tiene_5_inasistencias %}
+                        <span class="icono-alerta icono-5" 
+                            data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}"
+                            data-tipo="5"
+                            data-total="{{ aprendiz.total_inasistencias }}"
+                            onclick="mostrarAlerta(this)">
+                            🚨
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>{{ aprendiz.cedula }}</td>
+                    <td>{{ aprendiz.nombre }} {{ aprendiz.apellido }}</td>
+                    <td>
+                        <a href='#' onclick='abrirModal("{{ aprendiz.id_usuario }}", "{{ aprendiz.correo|default:"-" }}", "correo")' class="editar-link">
+                            {{ aprendiz.correo|default:"-" }}
+                        </a>
+                    </td>
+                    <td>
+                        <a href='#' onclick='abrirModal("{{ aprendiz.id_usuario }}", "{{ aprendiz.telefono|default:"-" }}", "telefono")' class="editar-link">
+                            {{ aprendiz.telefono|default:"-" }}
+                        </a>
+                    </td>
+                    <td>
+    <select name="asistencia_{{ aprendiz.id_usuario }}" class="asistencia-select">
+        {% if not aprendiz.tiene_asistencia_sede %}
+            <!-- Si no tiene asistencia sede, solo puede seleccionar Inasistio -->
+            <option value="Inasistio" selected>Inasistio</option>
+        {% else %}
+            <!-- Si tiene asistencia sede, todas las opciones normales -->
+            <option value="">Seleccionar</option>
+            <option value="Asistio" {% if aprendiz.asistencia == 'Asistio' %}selected{% endif %}>Asistio</option>
+            <option value="Inasistio" {% if aprendiz.asistencia == 'Inasistio' %}selected{% endif %}>Inasistio</option>
+            <option value="Retardo" {% if aprendiz.asistencia == 'Retardo' %}selected{% endif %}>Retardo</option>
+        {% endif %}
+    </select>
+</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center">No hay aprendices en esta ficha</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Botón de registrar -->
+        <div class="form-actions">
+            <button type="submit" class="btn-registrar">
+                <i class="bi bi-check-circle"></i> Registrar Asistencia
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- INCLUIR EL MODAL -->
+{% include 'actualizar_aprendiz.html' %}
+
+<script>
+let alertaActual = null;
+
+function mostrarAlerta(elemento) {
+    const nombre = elemento.getAttribute('data-nombre');
+    const tipo = elemento.getAttribute('data-tipo');
+    const total = elemento.getAttribute('data-total');
+    
+    let html = '';
+    
+    if (tipo === '3') {
+        html = `
+            <div class="alert alert-warning alert-3-inasistencias" role="alert" id="alerta-temporal">
+                <strong>⚠️ ¡Atención!</strong> El aprendiz ${nombre} presenta 3 inasistencias sin justificar en el sistema. 
+                solicite que justifique dichas inasistencias, se encuentra próximo a una cancelación de matrícula.
+                <button type="button" class="btn-cerrar-alerta" onclick="cerrarAlerta()">×</button>
+            </div>
+        `;
+    } else if (tipo === '5') {
+        html = `
+            <div class="alert alert-danger alert-5-inasistencias" role="alert" id="alerta-temporal">
+                <strong>🚨 ¡Atención!</strong> El aprendiz ${nombre} ha acumulado ${total} días de inasistencia sin justificar en el trimestre. 
+                Esto excede el límite permitido (5 faltas), proceda con la cancelación de matrícula según normativa SENA.
+                <button type="button" class="btn-cerrar-alerta" onclick="cerrarAlerta()">×</button>
+            </div>
+        `;
+    }
+    
+    // Eliminar alerta anterior si existe
+    if (alertaActual) {
+        alertaActual.remove();
+    }
+    
+    // Insertar nueva alerta
+    const container = document.getElementById('alertas-container');
+    container.innerHTML = html;
+    alertaActual = document.getElementById('alerta-temporal');
+    
+    // SCROLL SUAVE HACIA ARRIBA
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+    
+const alertContainer = document.getElementById('alertas-container');
+    if (alertContainer) {
+        alertContainer.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+        });
+    
+}
+}
+
+function cerrarAlerta() {
+    if (alertaActual) {
+        alertaActual.remove();
+        alertaActual = null;
+    }
+}
+</script>
+
+<script src="{% static 'js/gestionar_asistencia.js' %}"></script>
+<script src="{% static 'js/actualizar_aprendiz.js' %}"></script>
+
+{% endblock %}

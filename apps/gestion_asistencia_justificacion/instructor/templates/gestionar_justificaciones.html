@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/gestionar_justificaciones.css' %}">
+{% endblock %}
+
+{% block title %}Gestionar Justificaciones{% endblock %}
+
+{% block content %}
+
+<div id="alertas-container"></div>
+
+<div class="content-card">
+    <h1>Gestionar Justificaciones</h1>
+
+
+    <!-- Filtros de búsqueda -->
+    <div class="filtros-container">
+        <div class="filtro-group">
+            <label for="ficha">Ficha:</label>
+            <select id="ficha" class="filtro-select">
+                <option value="">Todas las fichas</option>
+                {% for ficha in fichas %}
+                <option value="{{ ficha.id_ficha }}" {% if ficha.id_ficha == ficha_seleccionada %}selected{% endif %}>
+                    {{ ficha.numero_ficha }} - {{ ficha.id_programa.nombre_programa|truncatechars:30 }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filtro-group">
+            <label for="jornada">Jornada:</label>
+            <select id="jornada" class="filtro-select">
+                <option value="">Todas las jornadas</option>
+                {% for jornada in jornadas %}
+                <option value="{{ jornada.id_jornada }}" {% if jornada.id_jornada == jornada_seleccionada %}selected{% endif %}>
+                    {{ jornada.nombre_jornada }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filtro-group">
+            <label for="estado">Estado:</label>
+            <select id="estado" class="filtro-select">
+                <option value="">Todos</option>
+                <option value="Pendiente" {% if estado == 'Pendiente' %}selected{% endif %}>Pendiente</option>
+                <option value="Aprobado" {% if estado == 'Aprobado' %}selected{% endif %}>Aprobado</option>
+                <option value="Rechazado" {% if estado == 'Rechazado' %}selected{% endif %}>Rechazado</option>
+            </select>
+        </div>
+
+        <div class="filtro-group">
+            <label for="fecha_desde">Fecha desde:</label>
+            <input type="date" id="fecha_desde" class="filtro-input" value="{{ fecha_desde }}">
+        </div>
+
+        <div class="filtro-group">
+            <label for="fecha_hasta">Fecha hasta:</label>
+            <input type="date" id="fecha_hasta" class="filtro-input" value="{{ fecha_hasta }}">
+        </div>
+
+        <div class="filtro-group">
+            <label for="aprendiz">Aprendiz:</label>
+            <input type="text" id="aprendiz" class="filtro-input" placeholder="Nombre o documento" value="{{ aprendiz_busqueda|default:'' }}">
+        </div>
+
+        <div class="filtro-group botones">
+            <button class="btn-filtrar" onclick="aplicarFiltros()">
+                <i class="bi bi-search"></i> Filtrar
+            </button>
+            <button class="btn-limpiar" onclick="limpiarFiltros()">
+                <i class="bi bi-eraser"></i> Limpiar
+            </button>
+        </div>
+    </div>
+
+    <div id="alertas-container"></div>
+    <!-- Tabla de justificaciones -->
+    <div class="tabla-container">
+        
+        <table class="tabla-justificaciones">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Aprendiz</th>
+                    <th>Ficha</th>
+                    <th>Jornada</th>
+                    <th>Competencia</th>
+                    <th>Motivo</th>
+                    <th>Soporte</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+    {% for justificacion in justificaciones %}
+    <tr>
+        <td>{{ justificacion.fecha|date:"d/m/Y" }}</td>
+        <td>
+            <strong>
+                {{ justificacion.id_asistencia_ambiente.id_usuario.nombre }} 
+                {{ justificacion.id_asistencia_ambiente.id_usuario.apellido }}
+            </strong>
+            <br>
+            <small>{{ justificacion.id_asistencia_ambiente.id_usuario.cedula }}</small>
+        </td>
+        <td>{{ justificacion.id_asistencia_ambiente.id_usuario.id_ficha.numero_ficha|default:"-" }}</td>
+        <td>{{ justificacion.id_asistencia_ambiente.id_usuario.id_ficha.id_jornada.nombre_jornada|default:"-" }}</td>
+        <td>{{ justificacion.id_asistencia_ambiente.id_competencia.nombre_competencia }}</td>
+        <td>
+            <span class="motivo-tooltip" title="{{ justificacion.motivo }}">
+                {{ justificacion.motivo|truncatechars:20 }}
+            </span>
+        </td>
+        <td>
+            {% if justificacion.soporte %}
+                <a href="/media/{{ justificacion.soporte }}" target="_blank" class="btn-ver-soporte"
+                    onclick="marcarSoporteVisto('{{ justificacion.id_justificacion }}')">
+                <i class="bi bi-file-earmark-pdf"></i> Ver
+            </a>
+            {% else %}
+            <span class="sin-soporte">-</span>
+            {% endif %}
+        </td>
+        <td>
+            <span class="badge-{{ justificacion.estado|lower }}">
+                {{ justificacion.estado }}
+            </span>
+        </td>
+        <td>
+            {% if justificacion.estado == 'Pendiente' %}
+            <button class="btn-aprobar" onclick="aprobarDirecto('{{ justificacion.id_justificacion }}')">
+                <i class="bi bi-check-circle"></i>
+            </button>
+            <button class="btn-rechazar" onclick="abrirModalRechazar('{{ justificacion.id_justificacion }}')">
+                <i class="bi bi-x-circle"></i>
+            </button>
+            {% else %}
+            <span class="text-muted">-</span>
+            {% endif %}
+        </td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="9" class="text-center">No hay justificaciones registradas</td>
+    </tr>
+    {% endfor %}
+</tbody>
+        </table>
+    </div>
+
+    <!-- Paginación -->
+    {% if justificaciones.has_other_pages %}
+    <div class="paginacion">
+        {% if justificaciones.has_previous %}
+        <a href="#" onclick="cambiarPagina('{{ justificaciones.previous_page_number }}')" class="page-link">
+            <i class="bi bi-chevron-left"></i>
+        </a>
+        {% endif %}
+
+        {% for i in justificaciones.paginator.page_range %}
+            {% if justificaciones.number == i %}
+            <span class="page-link active">{{ i }}</span>
+            {% else %}
+            <a href="#" onclick="cambiarPagina('{{ i }}')" class="page-link">{{ i }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if justificaciones.has_next %}
+        <a href="#" onclick="cambiarPagina('{{ justificaciones.next_page_number }}')" class="page-link">
+            <i class="bi bi-chevron-right"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal para aprobar/rechazar -->
+<div id="modalJustificacion" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitulo">Aprobar/Rechazar Justificación</h2>
+            <span class="close" onclick="cerrarModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="formJustificacion" method="post" action="{% url 'instructor:procesar_justificacion' %}" onsubmit="return validarObservaciones();">
+    {% csrf_token %}
+    <input type="hidden" name="justificacion_id" id="justificacion_id">
+    <input type="hidden" name="accion" id="accion" value="rechazar">
+    
+    <div class="form-group">
+        <label for="observaciones">Observaciones (obligatorio):</label>
+        <textarea name="observaciones" id="observaciones" class="form-control" rows="4" required></textarea>
+    </div>
+    
+    <div class="modal-actions">
+        <button type="submit" class="btn-rechazar">
+            <i class="bi bi-send"></i> Rechazar
+        </button>
+        <button type="button" class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+    </div>
+</form>
+        </div>
+    </div>
+</div>
+
+
+<script src="{% static 'js/gestionar_justificaciones.js' %}"></script>
+
+<script>
+function aprobarDirecto(id) {
+    if (confirm('¿Aprobar esta justificación?')) {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/instructor/procesar-justificacion/';
+        
+        var csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = 'csrfmiddlewaretoken';
+        csrf.value = '{{ csrf_token }}';
+        form.appendChild(csrf);
+        
+        var inputId = document.createElement('input');
+        inputId.type = 'hidden';
+        inputId.name = 'justificacion_id';
+        inputId.value = id;
+        form.appendChild(inputId);
+        
+        var inputAccion = document.createElement('input');
+        inputAccion.type = 'hidden';
+        inputAccion.name = 'accion';
+        inputAccion.value = 'aprobar';
+        form.appendChild(inputAccion);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+
+
+{% endblock %}

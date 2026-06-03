@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="card" style="margin-bottom: 20px; padding: 15px 25px;">
+    <h2 style="color: var(--dark); margin: 0; display: flex; align-items: center;">
+        <i class="fas fa-users-cog" style="margin-right: 15px; color: var(--primary);"></i>
+        Gestión de Usuarios
+    </h2>
+</div>
+
+<div style="display: flex; gap: 20px; margin-bottom: 25px;">
+    <div class="card" style="flex: 2;">
+        <div class="card-header-title">
+            <i class="fas fa-user-plus"></i> Crear Nuevo Usuario
+        </div>
+        <form method="POST" action="{% url 'gestor_sistema:panel_admin' %}" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+            {% csrf_token %}
+            <div><label>Cédula</label><input type="text" name="cedula" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"></div>
+            <div><label>Nombre</label><input type="text" name="nombre" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"></div>
+            <div><label>Apellido</label><input type="text" name="apellido" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"></div>
+            <div><label>Correo</label><input type="email" name="correo" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"></div>
+            <div>
+                <label>Rol</label>
+                <select name="role_id" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="" disabled selected>Seleccione un rol</option>
+                    {% for role in roles %}
+                        <option value="{{ role.id }}">{{ role.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="grid-column: 1 / -1; text-align: right; margin-top: 10px;">
+                <button type="submit" style="background-color: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+    <div class="card" style="flex: 1; background-color: #f9fafb; border: 1px dashed #d1d5db;">
+        <div class="card-header-title"><i class="fas fa-file-csv"></i> Creación Masiva</div>
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="file" name="archivo_csv" accept=".csv" required style="margin-bottom: 10px; width: 100%;">
+            <button type="submit" style="background-color: #4b5563; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; width: 100%;">
+                <i class="fas fa-upload"></i> Importar CSV
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="card" style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+    <div class="card-header-title" style="margin-bottom: 20px;"><i class="fas fa-table"></i> Usuarios en el Sistema</div>
+    <table id="tablaUsuarios" class="display" style="width:100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background: #f3f4f6;">
+                <th>ID</th>
+                <th>Cédula</th>
+                <th>Nombre Completo</th>
+                <th>Correo</th>
+                <th>Rol</th>
+                <th>Huella</th>
+                <th style="text-align: center;">Acción</th>
+            </tr>
+            <tr class="filters-row">
+                <td></td>
+                <td><input type="text" class="filter-input" placeholder="Buscar Cédula..."></td>
+                <td><input type="text" class="filter-input" placeholder="Buscar Nombre..."></td>
+                <td></td>
+                <td>
+                    <select class="filter-input">
+                        <option value="">Todos</option>
+                        {% for role in roles %}<option value="{{ role.name }}">{{ role.name }}</option>{% endfor %}
+                    </select>
+                </td>
+                <td></td>
+                <td></td>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in usuarios %}
+            <tr>
+                <td>{{ u.id_usuario }}</td>
+                <td>{{ u.cedula }}</td>
+                <td>{{ u.nombre }} {{ u.apellido }}</td>
+                <td>{{ u.correo }}</td>
+                <td><span class="badge" style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 4px;">{{ u.nombre_rol|default:"Sin Rol" }}</span></td>
+                <td style="text-align: center;" id="status-{{ u.id_usuario }}">
+                    {% if u.huella_registrada %}<i class="fas fa-check-circle" style="color: #059669;"></i>{% else %}<i class="fas fa-times-circle" style="color: #ef4444;"></i>{% endif %}
+                </td>
+                <td style="text-align: center; display: flex; gap: 5px; justify-content: center;">
+                    <button type="button" onclick="abrirModalEditar('{{ u.id_usuario }}', '{{ u.cedula }}', '{{ u.nombre }}', '{{ u.apellido }}', '{{ u.correo }}')" style="background: #3b82f6; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer;"><i class="fas fa-edit"></i></button>
+                    <button type="button" onclick="registrarHuella('{{ u.id_usuario }}')" style="background: #1f2937; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer;"><i class="fas fa-fingerprint"></i></button>
+                    {% if u.estado == 'Activo' %}
+                        <a href="{% url 'gestor_sistema:desactivar_usuario' u.id_usuario %}" style="background: #ef4444; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none;"><i class="fas fa-user-slash"></i></a>
+                    {% else %}
+                        <a href="{% url 'gestor_sistema:activar_usuario' u.id_usuario %}" style="background: #10b981; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none;"><i class="fas fa-user-check"></i></a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div id="modalEditarUsuario" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color: rgba(0,0,0,0.5);">
+    <div class="card" style="background-color:white; margin:10% auto; padding:20px; width:40%; border-radius:10px;">
+        <div class="card-header-title"><i class="fas fa-edit"></i> Editar Usuario</div>
+        <form id="formEditar" method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="id_usuario" id="edit_id_usuario">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+                <div><label>Cédula</label><input type="text" name="cedula" id="edit_cedula" style="width:100%; padding:8px;"></div>
+                <div><label>Nombre</label><input type="text" name="nombre" id="edit_nombre" style="width:100%; padding:8px;"></div>
+                <div><label>Apellido</label><input type="text" name="apellido" id="edit_apellido" style="width:100%; padding:8px;"></div>
+                <div><label>Correo</label><input type="email" name="correo" id="edit_correo" style="width:100%; padding:8px;"></div>
+            </div>
+            <div style="margin-top:20px; text-align:right;">
+                <button type="button" onclick="cerrarModal()" style="background:#6b7280; color:white; border:none; padding:8px 15px; border-radius:5px;">Cancelar</button>
+                <button type="submit" style="background:var(--primary); color:white; border:none; padding:8px 15px; border-radius:5px;">Actualizar Cambios</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .filter-input { width: 100%; padding: 5px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+    .filters-row td { padding: 8px 12px; background: #f9fafb; }
+    #tablaUsuarios td { padding: 12px; border-bottom: 1px solid #eee; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+<script>
+// FUNCIONES DE MODAL
+function abrirModalEditar(id, cedula, nombre, apellido, correo) {
+    document.getElementById('edit_id_usuario').value = id;
+    document.getElementById('edit_cedula').value = cedula;
+    document.getElementById('edit_nombre').value = nombre;
+    document.getElementById('edit_apellido').value = apellido;
+    document.getElementById('edit_correo').value = correo;
+    
+    // CORRECCIÓN CLAVE: Seteamos la URL dinámicamente incluyendo el ID
+    document.getElementById('formEditar').action = `/gestor_sistema/usuarios/editar/${id}/`;
+    document.getElementById('modalEditarUsuario').style.display = 'block';
+}
+
+function cerrarModal() { document.getElementById('modalEditarUsuario').style.display = 'none'; }
+
+$(document).ready(function() {
+    var table = $('#tablaUsuarios').DataTable({
+        "orderCellsTop": true,
+        "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" },
+        "columnDefs": [{ "orderable": false, "targets": [5, 6] }]
+    });
+
+    $('#tablaUsuarios thead .filter-input').on('keyup change', function() {
+        var colIndex = $(this).closest('td').index();
+        if (table.column(colIndex).search() !== this.value) {
+            table.column(colIndex).search(this.value).draw();
+        }
+    });
+});
+
+function registrarHuella(idUsuario) {
+    const statusCell = document.getElementById(`status-${idUsuario}`);
+    const originalContent = statusCell.innerHTML;
+    statusCell.innerHTML = '<i class="fas fa-spinner fa-spin" style="color: orange;"></i>';
+
+    fetch(`/gestor_sistema/registrar-huella/${idUsuario}/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRFToken(), 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) { alert("❌ " + data.error); statusCell.innerHTML = originalContent; }
+        else { alert("✅ " + data.mensaje); statusCell.innerHTML = '<i class="fas fa-check-circle" style="color: #059669;"></i>'; }
+    })
+    .catch(error => { alert("❌ Error de conexión"); statusCell.innerHTML = originalContent; });
+}
+
+function getCSRFToken() {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === ('csrftoken=')) {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

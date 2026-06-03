@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Registro Manual de Ingreso/Salida{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/registro_manual.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <form method="post" class="dashboard-form">
+        {% csrf_token %}
+        
+            <div class="section-header">
+                <h1>Registro Manual de Ingreso/Salida</h1>
+            </div>
+
+            <!-- Fecha y hora actual -->
+            <div class="info-fecha-hora">
+                <div class="fecha-hora-content">
+                    <div class="fecha-item">
+                        <i class="fas fa-calendar-day"></i>
+                        <div class="fecha-info">
+                            <span class="label">Fecha actual</span>
+                            <strong class="value">{{ fechaHoy }}</strong>
+                        </div>
+                    </div>
+                    <div class="separador"></div>
+                    <div class="hora-item">
+                        <i class="fas fa-clock"></i>
+                        <div class="hora-info">
+                            <span class="label">Hora actual</span>
+                            <strong class="value" id="horaActual">{{ horaAhora }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MENSAJES DE ALERTA -->
+            {% if success %}
+            <div class="alerta alerta-exito">
+                <i class="fas fa-check-circle"></i>
+                <span>{{ success }}</span>
+            </div>
+            {% endif %}
+
+            {% if error %}
+            <div class="alerta alerta-error">
+                <i class="fas fa-times-circle"></i>
+                <span>{{ error }}</span>
+            </div>
+            {% endif %}
+
+            <!-- TARJETA DEL FORMULARIO -->
+            <div class="form-card">
+                <div class="form-grid">
+                    <!-- Cédula/Documento -->
+                    <div class="form-group">
+                        <label for="documento">
+                            Cédula/Documento
+                        </label>
+                        <input 
+                            type="text"
+                            id="documento"
+                            name="documento"
+                            class="filtros-input"
+                            value="{{ form.documento.value|default:'' }}"
+                            placeholder="Ej: 1000123456"
+                            inputmode="numeric"
+                            maxlength="10"
+                            pattern="\d{10}"
+                            required
+                            autofocus>
+                        <small id="error_documento" style="color:#d9534f; font-size:0.9em; display:none;"></small>
+                        {% if form.documento.errors %}
+                        <div class="error-campo">
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Tipo de Movimiento -->
+                    <div class="form-group">
+                        <label for="tipoMovimiento">
+                            Tipo de Movimiento
+                        </label>
+                        <select 
+                            id="tipoMovimiento"
+                            name="tipoMovimiento"
+                            class="filtros-input"
+                            required>
+                            <option value="">Selecciona...</option>
+                            <option value="Ingreso" {% if form.tipoMovimiento.value == 'Ingreso' %}selected{% endif %}>
+                                Ingreso
+                            </option>
+                            <option value="Salida" {% if form.tipoMovimiento.value == 'Salida' %}selected{% endif %}>
+                                Salida
+                            </option>
+                        </select>
+                        {% if form.tipoMovimiento.errors %}
+                        <div class="error-campo">
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Motivo (Opcional) - Ocupa toda la fila -->
+                    <div class="form-group full">
+                    <label for="motivo">
+                        Motivo
+                    </label>
+                    <input 
+                        type="text"
+                        id="motivo"
+                        name="motivo"
+                        class="filtros-input"
+                        value="{{ form.motivo.value|default:'' }}"
+                        placeholder="Dejar en blanco para registrar como 'Fallo Lectura Huella'">
+                    <small style="color: #6c757d; display: block; margin-top: 5px;">
+                        <i class="fas fa-info-circle"></i> Si deja este campo vacío, se registrará automáticamente como "Fallo Lectura Huella"
+                    </small>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" id="btnLimpiar_manual" class="btn-limpiar">
+                        <i class="fas fa-eraser"></i>
+                        <span>Limpiar</span>
+                    </button>
+                    <button type="button" id="btnRegistrar" class="btn-filtro">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Registrar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- SEPARADOR -->
+            <div class="separator-line"></div>
+
+            <!-- HISTORIAL DE REGISTROS -->
+            <!-- HISTORIAL DE REGISTROS -->
+<div class="form-card">
+    <h2><i class="fas fa-history"></i> Últimos Registros Manuales</h2>
+
+    {% if registrosList %}
+    <div class="tabla-container">
+        <table class="tabla-asistencias">
+            <thead>
+                <tr>
+                    <th>Documento</th>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Motivo</th>
+                </thead>
+            <tbody>
+                {% for r in registrosList %}
+                <tr>
+                    <td>
+                        <strong>{{ r.cedula|default:r.documento }}</strong>
+                    </td>
+                    <td>{{ r.nombres|default:'-' }}</td>
+                    <td>
+                        {% if r.tipo_movimiento == 'Ingreso' %}
+                            <span class="badge badge-ingreso">
+                                <i class="fas fa-arrow-right-to-line"></i> Ingreso
+                            </span>
+                        {% else %}
+                            <span class="badge badge-salida">
+                                <i class="fas fa-arrow-right-from-line"></i> Salida
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>{{ r.fecha|date:"d/m/Y" }}</td>
+                    <td>
+                        {% if r.tipo_movimiento == 'Ingreso' and r.asistencia %}
+                            {{ r.asistencia.hora_entrada|date:"h:i A" }}
+                        {% elif r.tipo_movimiento == 'Salida' and r.asistencia %}
+                            {{ r.asistencia.hora_salida|date:"h:i A" }}
+                        {% else %}
+                            {{ r.hora|date:"h:i A" }}
+                        {% endif %}
+                    </td>
+                    <td>{{ r.motivo|default:'-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="no-data-message">
+        <i class="fas fa-inbox"></i>
+        <p>No hay registros manuales aún</p>
+    </div>
+    {% endif %}
+</div>
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // Actualizar hora en tiempo real
+    function actualizarHora() {
+        const ahora = new Date();
+        const hora = ahora.getHours().toString().padStart(2, '0');
+        const minutos = ahora.getMinutes().toString().padStart(2, '0');
+        const segundos = ahora.getSeconds().toString().padStart(2, '0');
+        const horaActual = `${hora}:${minutos}:${segundos}`;
+        
+        const horaElement = document.getElementById('horaActual');
+        if (horaElement) {
+            horaElement.textContent = horaActual;
+            
+            // También actualizar el campo readonly si existe
+            const horaInput = document.getElementById('hora');
+            if (horaInput) {
+                horaInput.value = horaActual;
+            }
+        }
+    }
+    
+    // Actualizar cada segundo
+    setInterval(actualizarHora, 1000);
+    actualizarHora();
+
+    // Validación del campo documento
+    const documento = document.getElementById('documento');
+    const errDocumento = document.getElementById('error_documento');
+
+    if(documento) {
+        // Permitir solo números
+        documento.addEventListener('input', function(e) {
+            const cleaned = e.target.value.replace(/\D+/g, '');
+            if(cleaned !== e.target.value) e.target.value = cleaned;
+            validarDocumento();
+        });
+
+        // Validar al perder el foco
+        documento.addEventListener('blur', function() {
+            validarDocumento();
+        });
+    }
+
+    function validarDocumento() {
+        const val = documento.value.trim();
+        if(val.length !== 10) {
+            errDocumento.textContent = 'Documento inválido: debe tener exactamente 10 dígitos.';
+            errDocumento.style.display = 'block';
+            return false;
+        }
+        errDocumento.style.display = 'none';
+        return true;
+    }
+
+    // Botón limpiar con confirmación
+    const btnLimpiar = document.getElementById('btnLimpiar_manual');
+    const btnRegistrar = document.getElementById('btnRegistrar');
+    const form = document.querySelector('.dashboard-form');
+
+    if(btnLimpiar && form) {
+        btnLimpiar.addEventListener('click', function(e){
+            e.preventDefault();
+            Swal.fire({
+                title: 'Confirmar borrado',
+                text: '¿Deseas borrar el formulario? Se perderán los datos ingresados.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, borrar',
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true,
+                backdrop: 'rgba(0,0,0,0.45)',
+                allowOutsideClick: false
+            }).then((result) => {
+                if(result.isConfirmed){
+                    form.reset();
+                    Swal.fire('Formulario borrado', 'El formulario ha sido limpiado.', 'success');
+                }
+            });
+        });
+    }
+
+    // Botón registrar con validación
+    if(btnRegistrar && form) {
+        btnRegistrar.addEventListener('click', function(e){
+            e.preventDefault();
+            
+            // Validar documento primero
+            if(!validarDocumento()) {
+                Swal.fire('Error', 'Documento inválido: debe tener exactamente 10 dígitos.', 'error');
+                return;
+            }
+
+            const doc = documento.value.trim();
+            const tipoMovimiento = document.getElementById('tipoMovimiento').value;
+
+            // Si es ingreso, validar que no exista una entrada sin salida
+            if(tipoMovimiento === 'Ingreso') {
+                // Buscar en la tabla si existe una entrada sin salida
+                const filas = document.querySelectorAll('table tbody tr');
+                let ingresoSinSalida = false;
+
+                filas.forEach(fila => {
+                    const celdaDocumento = fila.querySelector('td:first-child')?.textContent.trim();
+                    const celdaTipo = fila.querySelector('td:nth-child(3)')?.textContent.trim();
+                    
+                    if(celdaDocumento === doc && celdaTipo === 'Ingreso') {
+                        ingresoSinSalida = true;
+                    }
+                });
+
+                if(ingresoSinSalida) {
+                    Swal.fire({
+                        title: 'Atención',
+                        text: 'Esta persona ya está registrada como ingreso en la sede. Debe registrar la salida primero.',
+                        icon: 'warning',
+                        confirmButtonText: 'Entendido',
+                        backdrop: 'rgba(0,0,0,0.45)',
+                        allowOutsideClick: false
+                    });
+                    return;
+                }
+            }
+
+            // Si todo está bien, enviar el formulario
+            form.submit();
+        });
+    }
+</script>
+{% endblock %}

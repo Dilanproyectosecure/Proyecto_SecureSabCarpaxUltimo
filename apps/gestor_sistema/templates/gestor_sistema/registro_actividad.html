@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/registro_actividad.css' %}">
+{% endblock %}
+
+{% block title %}Registro de Actividades{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Registro de Actividades</h1>
+    </div>
+    
+    <form method="get" class="filtros-form">
+        <div class="filtros-grid">
+            <div class="filtros-group">
+                <label><i class="bi bi-search"></i> Buscar:</label>
+                <input type="text" name="buscar" class="filtros-input" placeholder="Usuario, actividad..." value="{{ filtros.buscar }}">
+            </div>
+            
+            <div class="filtros-group">
+                <label><i class="bi bi-tag"></i> Tipo Acción:</label>
+                <select name="tipo_accion" class="filtros-selec">
+    <option value="">Todos</option>
+    <option value="CREATE" {% if filtros.tipo_accion == 'CREATE' %}selected{% endif %}>Creación</option>
+    <option value="DELETE" {% if filtros.tipo_accion == 'DELETE' %}selected{% endif %}>Eliminación</option>
+    <option value="LOGIN" {% if filtros.tipo_accion == 'LOGIN' %}selected{% endif %}>Inicio sesión</option>
+    <option value="LOGOUT" {% if filtros.tipo_accion == 'LOGOUT' %}selected{% endif %}>Cierre sesión</option>
+    <option value="LOGIN_FAILED" {% if filtros.tipo_accion == 'LOGIN_FAILED' %}selected{% endif %}>Intento fallido</option>
+    <option value="ACTIVAR" {% if filtros.tipo_accion == 'ACTIVAR' %}selected{% endif %}>Activación</option>
+    <option value="DESACTIVAR" {% if filtros.tipo_accion == 'DESACTIVAR' %}selected{% endif %}>Desactivación</option>
+    <option value="CARGA_MASIVA" {% if filtros.tipo_accion == 'CARGA_MASIVA' %}selected{% endif %}>Carga masiva</option>
+    <option value="HUELLA_REGISTRO" {% if filtros.tipo_accion == 'HUELLA_REGISTRO' %}selected{% endif %}>Registro huella</option>
+    <option value="HUELLA_SEDE_ENTRADA" {% if filtros.tipo_accion == 'HUELLA_SEDE_ENTRADA' %}selected{% endif %}>Entrada en sede por huella</option>
+    <option value="HUELLA_SEDE_SALIDA" {% if filtros.tipo_accion == 'HUELLA_SEDE_SALIDA' %}selected{% endif %}>Salida de sede por huella</option>
+    <option value="HUELLA_ELIMINAR" {% if filtros.tipo_accion == 'HUELLA_ELIMINAR' %}selected{% endif %}>Eliminar huella</option>
+</select>
+            </div>
+            
+            <div class="filtros-group">
+                <label><i class="bi bi-calendar"></i> Desde:</label>
+                <input type="date" name="fecha_desde" class="filtros-input" value="{{ filtros.fecha_desde }}">
+            </div>
+            
+            <div class="filtros-group">
+                <label><i class="bi bi-calendar"></i> Hasta:</label>
+                <input type="date" name="fecha_hasta" class="filtros-input" value="{{ filtros.fecha_hasta }}">
+            </div>
+        </div>
+        
+        <div class="filtros-botones">
+            <button type="submit" class="btn-filtro">
+                <i class="bi bi-funnel-fill"></i> Filtrar
+            </button>
+            <button type="button" class="btn-limpiar" onclick="window.location.href='{{ request.path }}'">
+                <i class="bi bi-eraser-fill"></i> Limpiar
+            </button>
+        </div>
+    </form>
+    
+    <div class="tabla-container">
+        <table class="tabla-asistencias">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Usuario</th>
+                    <th>Tipo</th>
+                    <th>Actividad</th>
+                    <th>Descripción</th>
+                    <th>IP</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for actividad in actividades %}
+                <tr>
+                    <td>{{ actividad.fecha|date:"d/m/Y" }}</td>
+                    <td>{{ actividad.hora|time:"H:i:s" }}</td>
+                    <td>
+                        {% if actividad.id_usuario %}
+                            {{ actividad.id_usuario.nombre }} {{ actividad.id_usuario.apellido }}
+                        {% else %}
+                            <span class="text-muted">Sistema</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if actividad.tipo_accion == 'CREATE' %}
+                            <span class="badge badge-create">Creación</span>
+                        {% elif actividad.tipo_accion == 'HUELLA_REGISTRO' %}
+                            <span class="badge badge-huella-registro">Registro Huella</span>
+                        {% elif actividad.tipo_accion == 'HUELLA_SEDE_ENTRADA' %}
+                            <span class="badge">Entrada en sede</span>
+                        {% elif actividad.tipo_accion == 'HUELLA_SEDE_SALIDA' %}
+                            <span class="badge">Salida de sede</span>
+                        {% elif actividad.tipo_accion == 'HUELLA_ELIMINAR' %}
+                            <span class="badge badge-huella-eliminar">Eliminar Huella</span>
+                        {% elif actividad.tipo_accion == 'CARGA_MASIVA' %}
+                            <span class="badge badge-carga-masiva">Carga Masiva</span>
+                        {% elif actividad.tipo_accion == 'LOGIN_FAILED' %}
+                            <span class="badge badge-login-failed">Intento Fallido</span>
+                        {% elif actividad.tipo_accion == 'UPDATE' %}
+                            <span class="badge badge-update">Actualización</span>
+                        {% elif actividad.tipo_accion == 'DELETE' %}
+                            <span class="badge badge-delete">Eliminación</span>
+                        {% elif actividad.tipo_accion == 'LOGIN' %}
+                            <span class="badge badge-login">Login</span>
+                        {% elif actividad.tipo_accion == 'LOGOUT' %}
+                            <span class="badge badge-logout">Logout</span>
+                        {% elif actividad.tipo_accion == 'ACTIVAR' %}
+                            <span class="badge badge-activar">Activación</span>
+                        {% elif actividad.tipo_accion == 'DESACTIVAR' %}
+                            <span class="badge badge-desactivar">Desactivación</span>
+                        {% else %}
+                            <span class="badge">{{ actividad.tipo_accion }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ actividad.actividad }}</td>
+                    <td>{{ actividad.descripcion|default:"-"|truncatechars:50 }}</td>
+                    <td>{{ actividad.ip_address|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center">
+                        <i class="bi bi-inbox"></i> No hay actividades registradas
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

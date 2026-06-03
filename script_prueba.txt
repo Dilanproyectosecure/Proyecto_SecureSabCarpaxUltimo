@@ -1,0 +1,13 @@
+-- Ver los IDs de los aprendices (por si acaso)
+SELECT id_usuario, nombre, apellido, cedula FROM usuarios WHERE id_ficha = 1;
+
+-- Insertar registro de asistencia sede para Jose Luis Gomez (id_usuario=23)
+INSERT INTO asistencia_sede (id_usuario, fecha, hora_entrada, hora_salida, estado_asistencia, id_instructor)
+VALUES (23, CURDATE(), '08:00:00', '12:00:00', NULL, NULL);
+
+-- Insertar registro de asistencia sede para Juan Felipe Reinoso (id_usuario=1)
+INSERT INTO asistencia_sede (id_usuario, fecha, hora_entrada, hora_salida, estado_asistencia, id_instructor)
+VALUES (1, CURDATE(), '08:30:00', '12:30:00', NULL, NULL);
+
+-- Verificar que se insertaron
+SELECT * FROM asistencia_sede WHERE fecha = CURDATE();

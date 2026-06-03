@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SecureSab{% endblock %}</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    {% block extra_css %}{% endblock %}  <!-- ← BLOQUE PARA CSS ESPECÍFICO -->
+
+    <style>
+    /* ESTILO DIRECTO PARA GESTOR */
+    body.rol-gestor .sidebar,
+    body.rol-gestor .main-container {
+        background: #1a1a1a !important;
+    }
+    body.rol-gestor .top-bar {
+        background: #1a1a1a !important;
+        box-shadow: 0 0.5px 50px rgba(255, 255, 255, 0.088) !important;
+    position: relative;
+    z-index: 100;;
+    }
+    body.rol-gestor .user-info {
+        background: #2a2a2a !important;
+    }
+</style>
+</head>
+<body class="rol-{{ user.get_rol }}">
+    <header class="top-bar">
+    <div class="top-bar-container">
+        <button class="menu-icono" id="menuIcono">
+            <i class="bi bi-list"></i>
+        </button>
+        <span class="app-title">SecureSab</span>
+    </div>
+    
+    <div class="user-info" id="userMenuTrigger">
+        <span class="user-name">{{ user.nombre }} {{ user.apellido }}</span>
+        <div class="user-avatar">
+            {{ user.nombre|first|upper }}{{ user.apellido|first|upper }}
+        </div>
+        
+        <!-- Dropdown DENTRO de user-info -->
+        <div class="user-dropdown" id="userDropdown">
+            <a href="{% url 'login:logout' %}" class="dropdown-item logout">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Cerrar Sesión</span>
+            </a>
+        </div>
+    </div>
+</header>
+
+    
+
+    <div class="main-container">
+        <!-- Menú lateral -->
+        <nav class="sidebar" id="menuOpen">
+            {% include 'menu.html' %}
+        </nav>
+
+        <!-- Contenido principal -->
+        <main class="content">
+            {% if messages %}
+                <div class="messages">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'js/menu.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

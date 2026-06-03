@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/consultar_asistencia.css' %}">
+{% endblock %}
+
+{% block title %}Consultar Asistencia{% endblock %}
+
+{% block content %}
+    <div class="content-card">
+        <h1>Consultar Asistencia</h1>
+    <!-- Contenido específico para aprendices -->
+
+    <!-- ALERTA POR 3 INASISTENCIAS CONSECUTIVAS -->
+        {% if tiene_3_inasistencias %}
+        <div class="alert alert-warning alert-3-inasistencias" role="alert">
+            <strong>⚠️ ¡Atención!</strong> Aprendiz presenta 3 inasistencias consecutivas sin justificar en el sistema. 
+            Por favor justifique dichas inasistencias, se encuentra próximo a una cancelación de matrícula.
+        </div>
+        {% endif %}
+
+    <!-- ALERTA POR 5 INASISTENCIAS NO CONSECUTIVAS -->
+        {% if tiene_5_inasistencias %}
+        <div class="alert alert-danger alert-5-inasistencias" role="alert">
+            <strong>⚠️  ¡Atención!</strong> Aprendiz ha acumulado {{ total_dias_inasistencia }} días de inasistencia sin justificar en el trimestre. 
+            Esto excede el límite permitido (5 faltas), esta en riesgo de cancelación de matrícula según normativa SENA.
+        </div>
+        {% endif %}
+
+    <!--FORMULARIO DE FILTROS-->
+    <form method="get" class="filtros-form">
+        <div class="filtros-oneLine">
+            <div class="filtros-group">
+                <label for="competencia">Competencia:</label>
+                <select name="competencia" id="competencia" class="filtros-selec">
+                    <option value="">Todas las competencias</option>
+                    {% for competencia in competencias %}
+                        <option value="{{ competencia.id_competencia }}" 
+                        {% if request.GET.competencia|stringformat:"s" == competencia.id_competencia|stringformat:"s" %}selected{% endif %}>
+                            {{ competencia.nombre_competencia }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+             <div class="filtros-group">
+                <label for="estado">Estado:</label>
+                <select name="estado" id="estado" class="filtros-selec">
+                    <option value="">Todos</option>
+                    <option value="Asistió" {% if request.GET.estado == "Asistió" %}selected{% endif %}>Asistió</option>
+                    <option value="Inasistió" {% if request.GET.estado == "Inasistió" %}selected{% endif %}>Inasistió</option>
+                    <option value="Retardo" {% if request.GET.estado == "Retardo" %}selected{% endif %}>Retardo</option>
+                    <option value="Justificada" {% if request.GET.estado == "Justificada" %}selected{% endif %}>Justificada</option>
+                </select>
+            </div>
+
+            <div class="filtros-group">
+                <label for="fecha">Fecha:</label>
+                <input type="date" name="fecha" id="fecha" class="filtros-input" value="{{ request.GET.fecha }}">
+            </div>
+
+            <div class="filtros-group boton-group">
+                <button type="submit" class="btn-filtro">Filtrar</button>
+            </div>
+
+            <div class="filtros-group boton-group">
+            <button type="button" class="btn-filtro" onclick="window.location.href='{{ request.path }}'">
+                Limpiar
+            </button>
+            </div>
+        </div>
+    </form>
+
+    <!--TABLA DE ASISTENCIA-->
+    <div class="tabla-container">
+        <table class="tabla-asistencias">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Competencia</th>
+                    <th>Instructor</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for asistencia in asistencias %}
+                <tr>
+                    <td>{{ asistencia.fecha|date:"d/m/Y" }}</td>
+                    <td>{{ asistencia.id_competencia.nombre_competencia }}</td>
+                    <td>{{ asistencia.id_instructor.nombre }} {{ asistencia.id_instructor.apellido }}</td>
+                    <td>
+    {% if asistencia.tiene_justificacion_aprobada %}
+        <span class="badge badge-justificada">Justificada</span>
+    {% elif asistencia.estado_asistencia == 'Asistio' %}
+        <span class="badge badge-asistio">Asistió</span>
+    {% elif asistencia.estado_asistencia == 'Retardo' %}
+        <span class="badge badge-retardo">Retardo</span>
+    {% elif asistencia.estado_asistencia == 'Inasistio' %}
+        <span class="badge badge-inasistio">Inasistió</span>
+    {% else %}
+        <span class="badge">{{ asistencia.estado_asistencia }}</span>
+    {% endif %}
+</td>
+                </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center">No hay asistencias registradas.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

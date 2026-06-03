@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header-title">
+        <i class="fas fa-chalkboard-teacher"></i> Asistencia por Ambientes de Formación
+    </div>
+
+    <table id="tablaAmbiente" class="display" style="width:100%">
+          <thead>
+    <tr>
+        <th>Documento</th>
+        <th>Nombre Completo</th>
+        <th>Fecha</th>
+        <th>Estado</th>
+        <th>ID Instructor</th>
+        <th>Ficha</th>
+    </tr>
+</thead>
+<tbody>
+    {% for registro in asistencias %}
+    <tr>
+        <td>{{ registro.usuario.cedula }}</td>
+        <td>{{ registro.usuario.nombre }} {{ registro.usuario.apellido }}</td>
+        <td>{{ registro.fecha }}</td>
+        <td>{{ registro.estado_asistencia }}</td>
+        <td>{{ registro.id_instructor|default:"N/A" }}</td>
+        <td>{{ registro.ficha|default:"N/A" }}</td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="6" style="text-align: center;">No se encontraron registros de ambiente.</td>
+    </tr>
+    {% endfor %}
+    
+</tbody> 
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('#tablaAmbiente').DataTable({
+            "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" }
+        });
+    });
+</script>
+{% endblock %}

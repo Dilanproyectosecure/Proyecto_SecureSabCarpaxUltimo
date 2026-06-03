@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/fichas_instructor.css' %}">
+{% endblock %}
+
+{% block title %}Mis Fichas - Instructor{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <h1>Mis Fichas de Formación</h1>
+    
+    <!-- GRID DE FICHAS -->
+    <div class="fichas-grid">
+        {% for ficha in fichas %}
+        <a href="/instructor/fichas/gestionar-asistencia/?ficha={{ ficha.id_ficha }}" class="ficha-card-link">
+            <div class="ficha-card">
+                <div class="ficha-header">
+                    <span class="ficha-numero">Ficha: {{ ficha.numero_ficha }}</span>
+                    <span class="ficha-estado {% if ficha.estado == 'Activo' %}activo{% else %}inactivo{% endif %}">
+                        {{ ficha.estado }}
+                    </span>
+                </div>
+                
+                <div class="ficha-stats">
+                    <div class="stat-item">
+                        <i class="bi bi-people"></i>
+                        <div class="stat-info">
+                            <span class="stat-label">Aprendices</span>
+                            <span class="stat-value">{{ ficha.total_aprendices }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <i class="bi bi-clock"></i>
+                        <div class="stat-info">
+                            <span class="stat-label">Jornada</span>
+                            <span class="stat-value">{{ ficha.id_jornada.nombre_jornada }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-item">
+                        <i class="bi bi-book"></i>
+                        <div class="stat-info">
+                            <span class="stat-label">Competencias</span>
+                            <span class="stat-value">{{ ficha.total_competencias }}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="ficha-footer">
+                    <span class="btn-ver-mas">
+                        Ver aprendices <i class="bi bi-arrow-right"></i>
+                    </span>
+                </div>
+            </div>
+        </a>
+        {% empty %}
+        <div class="no-fichas">
+            <i class="bi bi-folder-x"></i>
+            <p>No tienes fichas asignadas</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

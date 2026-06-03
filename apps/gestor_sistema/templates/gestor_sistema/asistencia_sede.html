@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header-title">
+        <i class="fas fa-building"></i> Control de Asistencia - Sede Principal
+    </div>
+    
+    <table id="tablaSede" class="display" style="width:100%">
+        <thead>
+            <tr>
+                <th>ID Usuario</th>
+                <th>Documento</th>
+                <th>Nombre Completo</th>
+                
+                <th>Hora Ingreso</th>
+                <th>Hora Salida</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for registro in asistencias %}
+            <tr>
+                <td>{{ registro.usuario.id_usuario }}</td>
+                <td>{{ registro.usuario.cedula }}</td>
+                <td>{{ registro.usuario.nombre }} {{ registro.usuario.apellido }}</td>
+                
+                <td>{{ registro.hora_entrada }}</td>
+                <td>{{ registro.hora_salida|default:"--" }}</td>
+                <td>
+                    {% if registro.hora_salida %}
+                        <span style="color: #6b7280;">Finalizado</span>
+                    {% else %}
+                        <span style="color: #059669; font-weight: bold;">En Sede</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        $('#tablaSede').DataTable({
+            "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" },
+            "order": [[ 3, "desc" ]] // Ordenar por fecha reciente
+        });
+    });
+</script>
+{% endblock %}

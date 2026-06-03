@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/radicar_justificacion.css' %}">
+{% endblock %}
+
+{% block title %}Radicar Justificación{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <h1>Radicar Justificación</h1>
+    
+    
+    <form method="post" enctype="multipart/form-data" class="justificacion-form">
+        {% csrf_token %}
+
+    <!-- DATOS DEL APRENDIZ (SOLO CÉDULA) -->
+    <div class="fila-datos">
+        <div class="aprendiz-info">
+            <div class="info-item">
+                <label>Documento:</label>
+                <span>{{ user.cedula }}</span>
+            </div>
+        </div>
+
+    <!-- SELECCIÓN DE MOTIVO -->
+        <div class="form-group">
+            <label for="motivo">Motivo de la justificación:</label>
+            <select name="motivo" id="motivo" class="form-control" required>
+                <option value="">Seleccione un motivo</option>
+                <option value="enfermedad">Enfermedad</option>
+                <option value="calamidad">Calamidad doméstica</option>
+                <option value="cita_medica">Cita médica</option>
+                <option value="cita_odontologica">Cita odontológica</option>
+                <option value="tramites_personales">Trámites personales</option>
+                <option value="transporte">Problemas de transporte</option>
+            </select>
+        </div>
+    </div>
+        
+        <!-- SELECCIÓN DE INASISTENCIAS -->
+        <div class="form-group">
+    <label>Seleccione la(s) inasistencia(s) a justificar:</label>
+    <div class="tabla-container">
+        <table class="tabla-inasistencias">
+            <thead>
+                <tr>
+                    <th>Seleccionar</th>
+                    <th>Fecha</th>
+                    <th>Competencia</th>
+                    <th>Instructor</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inasistencia in inasistencias %}
+                <tr class="{% if inasistencia.dias_pasados > 3 %}expirada{% endif %}">
+                    <td class="checkbox-cell">
+                        <input type="checkbox" 
+                               name="inasistencias" 
+                               value="{{ inasistencia.id_asistencia_ambiente }}"
+                               id="inasistencia_{{ inasistencia.id_asistencia_ambiente }}"
+                               {% if inasistencia.dias_pasados > 3 or inasistencia.estado_justificacion == 'Pendiente' or inasistencia.estado_justificacion == 'Aprobado' %}disabled{% endif %}>
+                    </td>
+                    <td>{{ inasistencia.fecha|date:"d/m/Y" }}</td>
+                    <td>{{ inasistencia.id_competencia.nombre_competencia }}</td>
+                    <td>{{ inasistencia.id_instructor.nombre }} {{ inasistencia.id_instructor.apellido }}</td>
+                    <td>
+                        {% if inasistencia.estado_justificacion == 'Pendiente' %}
+                            <span class="badge-en-revision">En revisión</span>
+                                            
+                        {% elif inasistencia.estado_justificacion == 'Aprobado' %}
+                            <span class="badge-aprobada">Justificada</span>
+                                            
+                        {% elif inasistencia.estado_justificacion == 'Rechazado' %}
+                            <span class="badge-rechazada">Rechazada</span>
+                                            
+                        {% elif inasistencia.dias_pasados > 3 %}
+                            <span class="badge-expirada">Expirada</span>
+                                            
+                        {% else %}
+                            <span class="badge-pendiente">Pendiente</span>
+                        {% endif %}
+                    </td>
+                </tr>
+
+                {% if inasistencia.estado_justificacion == 'Rechazado' and inasistencia.observacion_justificacion %}
+                    <tr class="fila-observacion">
+                        <td colspan="5">
+                            <div class="observacion-box">
+                                <strong>Observación del instructor: </strong>
+                                <span>{{ inasistencia.observacion_justificacion }}</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="sin-datos">No hay inasistencias registradas.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+        <!-- ARCHIVO SOPORTE -->
+        <div class="form-group">
+            <label for="soporte">Soporte (PDF):</label>
+            <input type="file" name="soporte" id="soporte" class="form-control" accept=".pdf,.jpg,.jpeg,.png" required>
+            <small class="form-text text-muted">Solo se permite archivos en formato PDF (máx. 5MB)</small>
+        </div>
+
+        <!-- BOTÓN DE ENVÍO -->
+        <div class="form-group boton-group">
+            <button type="submit" class="btn-filtro">Enviar Justificación</button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

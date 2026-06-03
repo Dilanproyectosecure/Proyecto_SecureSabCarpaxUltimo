@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/consultar_asistenciaI.css' %}">
+{% endblock %}
+
+{% block title %}Consultar Asistencias{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <h1>Consultar Asistencias</h1>
+
+    <!-- Información de la ficha seleccionada -->
+
+    <button class="btn-reporte" onclick="abrirModalReporte()">
+        <i class="bi bi-file-earmark-pdf"></i> Reporte general
+    </button>
+
+    <div class="filtros-container">
+
+    <!-- Filtros de búsqueda -->
+        <div class="filtro-group ficha-selector">
+            <label for="ficha">Seleccionar Ficha</label>
+            <select id="ficha" class="filtro-select" onchange="cambiarFicha()">
+                <option value="">-- Seleccione una ficha --</option>
+                {% for ficha in fichas %}
+                <option value="{{ ficha.id_ficha }}"
+                    {% if ficha.id_ficha == ficha_seleccionada %}selected{% endif %}>
+                    {{ ficha.numero_ficha }} - {{ ficha.id_programa.nombre_programa }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        
+        <!-- NUEVO: Filtro por aprendiz -->
+        <div class="filtro-group">
+            <label for="aprendiz">Buscar Aprendiz:</label>
+            <input type="text" id="aprendiz" class="filtro-input" placeholder="Nombre o documento" value="{{ aprendiz_busqueda|default:'' }}">
+        </div>
+
+        <div class="filtro-group">
+            <label for="competencia">Competencia:</label>
+            <select id="competencia" class="filtro-select">
+                <option value="">Todas las competencias</option>
+                {% for comp in competencias %}
+                <option value="{{ comp.id_competencia }}" {% if comp.id_competencia == competencia_seleccionada %}selected{% endif %}>
+                    {{ comp.nombre_competencia }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="filtro-group">
+            <label for="fecha_desde">Fecha desde:</label>
+            <input type="date" id="fecha_desde" class="filtro-input" value="{{ fecha_desde }}">
+        </div>
+
+        <div class="filtro-group">
+            <label for="fecha_hasta">Fecha hasta:</label>
+            <input type="date" id="fecha_hasta" class="filtro-input" value="{{ fecha_hasta }}">
+        </div>
+
+        <div class="filtro-group">
+            <label for="estado">Estado:</label>
+            <select id="estado" class="filtro-select">
+                <option value="">Todos</option>
+                <option value="asistio" {% if estado == 'asistio' %}selected{% endif %}>Asistió</option>
+                <option value="inasistio" {% if estado == 'inasistio' %}selected{% endif %}>Inasistió</option>
+                <option value="retardo" {% if estado == 'retardo' %}selected{% endif %}>Retardo</option>
+            </select>
+        </div>
+
+        <div class="filtro-group botones">
+            <button class="btn-filtrar" onclick="aplicarFiltros()">
+                <i class="bi bi-search"></i> Filtrar
+            </button>
+            <button class="btn-limpiar" onclick="limpiarFiltros()">
+                <i class="bi bi-eraser"></i> Limpiar
+            </button>
+            
+        </div>
+    </div>
+
+    {% if aprendiz_busqueda %}
+    <div class="resumen-cards">
+        <div class="resumen-card asistio">
+            <span class="resumen-label">Asistencias</span>
+            <span class="resumen-valor">{{ total_asistio }}</span>
+        </div>
+        <div class="resumen-card inasistio">
+            <span class="resumen-label">Inasistiencias</span>
+            <span class="resumen-valor">{{ total_inasistio }}</span>
+        </div>
+        <div class="resumen-card retardo">
+            <span class="resumen-label">Retardos</span>
+            <span class="resumen-valor">{{ total_retardo }}</span>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tabla de asistencias -->
+    <div class="tabla-container">
+        <table class="tabla-asistencias">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Aprendiz</th>
+                    <th>Documento</th>
+                    <th>Competencia</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for asistencia in asistencias %}
+                <tr>
+                    <td>{{ asistencia.fecha|date:"d/m/Y" }}</td>
+                    <td>
+                        <strong>{{ asistencia.id_usuario.nombre }} {{ asistencia.id_usuario.apellido }}</strong>
+                    </td>
+                    <td>{{ asistencia.id_usuario.cedula }}</td>
+                    <td>{{ asistencia.id_competencia.nombre_competencia }}</td>
+                    <td>
+                        <span class="badge-{{ asistencia.estado_asistencia }}">
+                            {{ asistencia.estado_asistencia|capfirst }}
+                        </span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center">No hay asistencias registradas para esta ficha</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+
+    <!-- MODAL REPORTE -->
+<div id="modalReporte" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+        <h3>Generar reporte general</h3>
+
+        <div class="modal-group">
+            <label>Fecha desde</label>
+            <input type="date" id="reporte_desde">
+        </div>
+
+        <div class="modal-group">
+            <label>Fecha hasta</label>
+            <input type="date" id="reporte_hasta">
+        </div>
+
+        <div class="modal-buttons">
+            <button onclick="generarReporte()">Generar</button>
+            <button onclick="cerrarModalReporte()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+    <!-- Paginación -->
+    {% if asistencias.has_other_pages %}
+    <div class="paginacion">
+        {% if asistencias.has_previous %}
+        <a href="#" onclick="cambiarPagina('{{ asistencias.previous_page_number }}')" class="page-link">
+            <i class="bi bi-chevron-left"></i>
+        </a>
+        {% endif %}
+
+        {% for i in asistencias.paginator.page_range %}
+            {% if asistencias.number == i %}
+            <span class="page-link active">{{ i }}</span>
+            {% else %}
+            <a href="#" onclick="cambiarPagina('{{ i }}')" class="page-link">{{ i }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if asistencias.has_next %}
+        <a href="#" onclick="cambiarPagina('{{ asistencias.next_page_number }}')" class="page-link">
+            <i class="bi bi-chevron-right"></i>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<script src="{% static 'js/consultar_asistenciaI.js' %}"></script>
+<script>
+// Funciones auxiliares
+function cambiarFicha() {
+    const ficha = document.getElementById('ficha').value;
+    if (ficha) {
+        window.location.href = '?ficha=' + ficha;
+    }
+}
+
+function aplicarFiltros() {
+    const ficha = document.getElementById('ficha').value;
+    const aprendiz = document.getElementById('aprendiz').value;
+    const competencia = document.getElementById('competencia').value;
+    const fechaDesde = document.getElementById('fecha_desde').value;
+    const fechaHasta = document.getElementById('fecha_hasta').value;
+    const estado = document.getElementById('estado').value;
+    
+    if (!ficha) {
+        alert('Debe seleccionar una ficha');
+        return;
+    }
+    
+    let url = window.location.pathname + '?';
+    let params = ['ficha=' + ficha];
+    
+    if (aprendiz) params.push('aprendiz=' + encodeURIComponent(aprendiz));
+    if (competencia) params.push('competencia=' + competencia);
+    if (fechaDesde) params.push('fecha_desde=' + fechaDesde);
+    if (fechaHasta) params.push('fecha_hasta=' + fechaHasta);
+    if (estado) params.push('estado=' + estado);
+    
+    window.location.href = url + params.join('&');
+}
+
+function limpiarFiltros() {
+    const ficha = document.getElementById('ficha').value;
+    if (ficha) {
+        window.location.href = '?ficha=' + ficha;
+    }
+}
+
+function cambiarPagina(numero) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', numero);
+    window.location.href = url.toString();
+}
+</script>
+{% endblock %}

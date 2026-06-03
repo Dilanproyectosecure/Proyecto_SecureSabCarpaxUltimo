@@ -1,0 +1,182 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/historial_fallos.css' %}">
+{% endblock %}
+
+{% block title %}Historial de Fallos{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="header-actions">
+        <h1>Historial de Fallos</h1>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-exclamation-octagon"></i></div>
+            <div class="stat-info">
+                <h3>{{ total_fallos }}</h3>
+                <p>Total fallos</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-fingerprint"></i></div>
+            <div class="stat-info">
+                <h3>{{ fallos_huella }}</h3>
+                <p>Huella no coincide</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-person-x"></i></div>
+            <div class="stat-info">
+                <h3>{{ fallos_sin_huella }}</h3>
+                <p>Sin huella registrada</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-question-circle"></i></div>
+            <div class="stat-info">
+                <h3>{{ fallos_no_existe }}</h3>
+                <p>Usuario no existe</p>
+            </div>
+        </div>
+    </div>
+
+    <form method="get" class="filtros-form">
+        <div class="filtros-grid">
+            <div class="filtros-group">
+                <label><i class="bi bi-search"></i> Buscar:</label>
+                <input type="text" name="buscar" class="filtros-input" placeholder="Cédula o nombre" value="{{ filtros.buscar }}">
+            </div>
+            
+            <div class="filtros-group">
+                <label><i class="bi bi-tag"></i> Tipo de fallo:</label>
+                <select name="tipo_fallo" class="filtros-selec">
+                    <option value="">Todos</option>
+                    <option value="HUELLA_FALLIDA" {% if filtros.tipo_fallo == 'HUELLA_FALLIDA' %}selected{% endif %}>Huella no coincide</option>
+                    <option value="SIN_HUELLA" {% if filtros.tipo_fallo == 'SIN_HUELLA' %}selected{% endif %}>Sin huella registrada</option>
+                    <option value="LECTOR_ERROR" {% if filtros.tipo_fallo == 'LECTOR_ERROR' %}selected{% endif %}>Error en lector</option>
+                    <option value="TIMEOUT" {% if filtros.tipo_fallo == 'TIMEOUT' %}selected{% endif %}>Tiempo excedido</option>
+                    <option value="USUARIO_NO_EXISTE" {% if filtros.tipo_fallo == 'USUARIO_NO_EXISTE' %}selected{% endif %}>Usuario no existe</option>
+                </select>
+            </div>
+            
+            <div class="filtros-group">
+                <label><i class="bi bi-calendar"></i> Desde:</label>
+                <input type="date" name="fecha_desde" class="filtros-input" value="{{ filtros.fecha_desde }}">
+            </div>
+            
+            <div class="filtros-group">
+                <label><i class="bi bi-calendar"></i> Hasta:</label>
+                <input type="date" name="fecha_hasta" class="filtros-input" value="{{ filtros.fecha_hasta }}">
+            </div>
+        </div>
+        
+        <div class="filtros-botones">
+            <button type="submit" class="btn-filtro">
+                <i class="bi bi-funnel-fill"></i> Filtrar
+            </button>
+            <button type="button" class="btn-limpiar" onclick="window.location.href='{{ request.path }}'">
+                <i class="bi bi-eraser-fill"></i> Limpiar
+            </button>
+        </div>
+    </form>
+
+    <div class="tabla-container">
+        <table class="tabla-fallos">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Usuario</th>
+                    <th>Cédula intentada</th>
+                    <th>Tipo de fallo</th>
+                    <th>Detalles</th>
+                    <th>IP</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fallo in fallos %}
+                <tr>
+                    <td data-label="Fecha">{{ fallo.fecha|date:"d/m/Y" }}</td>
+                    <td data-label="Hora">{{ fallo.hora|time:"H:i:s" }}</td>
+                    <td data-label="Usuario">
+                        {% if fallo.usuario %}
+                            <strong>{{ fallo.usuario.nombre }} {{ fallo.usuario.apellido }}</strong>
+                            <br>
+                            <small class="text-muted">{{ fallo.usuario.cedula }}</small>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Cédula intentada">{{ fallo.cedula_intentada|default:"—" }}</td>
+                    <td data-label="Tipo de fallo">
+                        {% if fallo.tipo_fallo == 'HUELLA_FALLIDA' %}
+                            <span class="badge badge-huella-fallida">
+                                <i class="bi bi-fingerprint"></i> Huella no coincide
+                            </span>
+                        {% elif fallo.tipo_fallo == 'SIN_HUELLA' %}
+                            <span class="badge badge-sin-huella">
+                                <i class="bi bi-person-x"></i> Sin huella
+                            </span>
+                        {% elif fallo.tipo_fallo == 'LECTOR_ERROR' %}
+                            <span class="badge badge-lector-error">
+                                <i class="bi bi-device-hdd"></i> Error lector
+                            </span>
+                        {% elif fallo.tipo_fallo == 'TIMEOUT' %}
+                            <span class="badge badge-timeout">
+                                <i class="bi bi-hourglass"></i> Tiempo excedido
+                            </span>
+                        {% elif fallo.tipo_fallo == 'USUARIO_NO_EXISTE' %}
+                            <span class="badge badge-no-existe">
+                                <i class="bi bi-person-dash"></i> Usuario no existe
+                            </span>
+                        {% else %}
+                            <span class="badge">{{ fallo.tipo_fallo }}</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Detalles">{{ fallo.detalles|default:"—"|truncatechars:50 }}</td>
+                    <td data-label="IP">{{ fallo.ip_address|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center">
+                        <i class="bi bi-inbox"></i> No hay registros de fallos
+                        <br>
+                        <small class="text-muted">Los intentos fallidos de autenticación aparecerán aquí</small>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if fallos.has_other_pages %}
+    <div class="paginacion">
+        {% if fallos.has_previous %}
+            <a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">
+                <i class="bi bi-chevron-bar-left"></i>
+            </a>
+            <a href="?page={{ fallos.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        {% endif %}
+
+        <span class="page-current">
+            Página {{ fallos.number }} de {{ fallos.paginator.num_pages }}
+        </span>
+
+        {% if fallos.has_next %}
+            <a href="?page={{ fallos.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+            <a href="?page={{ fallos.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">
+                <i class="bi bi-chevron-bar-right"></i>
+            </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/gestionar_usuario.css' %}">
+{% endblock %}
+
+{% block title %}Gestionar Usuarios{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Gestión de Usuarios</h1>
+    <div class="d-flex gap-2">
+        <button class="btn btn-success" id="btnCargaMasiva" data-bs-toggle="modal" data-bs-target="#modalCargaMasiva">
+            <i class="bi bi-file-earmark-spreadsheet"></i> Carga Masiva CSV
+        </button>
+        <button class="btn btn-primary" id="btnMostrarFormulario">
+            <i class="bi bi-person-plus"></i> Crear Usuario
+        </button>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCargaMasiva" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-file-earmark-spreadsheet"></i> Carga Masiva de Usuarios</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'gestor_sistema:carga_masiva' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> El archivo CSV debe tener las siguientes columnas:
+                        <ul class="mt-2 mb-0">
+                            <li><strong>cedula</strong> - Número de identificación</li>
+                            <li><strong>nombre</strong> - Nombre del usuario</li>
+                            <li><strong>apellido</strong> - Apellido del usuario</li>
+                            <li><strong>correo</strong> - Correo electrónico</li>
+                            <li><strong>rol</strong> - aprendiz, instructor, vigilante, coordinador</li>
+                            <li><strong>ficha</strong> (opcional) - Número de ficha (solo para aprendices)</li>
+                        </ul>
+                    </div>
+                    <div class="mb-3">
+                        <label>Seleccionar archivo CSV:</label>
+                        <input type="file" name="archivo_csv" class="form-control" accept=".csv" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Contraseña por defecto:</label>
+                        <input type="text" name="password_default" class="form-control" value="123" placeholder="123">
+                        <small class="text-muted">La contraseña se asignará a todos los usuarios creados</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-cloud-upload"></i> Cargar Usuarios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+    
+    <div id="formularioCrear" class="formulario-crear" style="display: none;">
+        <div class="formulario-header">
+            <h3><i class="bi bi-person-plus-fill"></i> Crear Nuevo Usuario</h3>
+            <button type="button" class="btn-cerrar" id="btnCerrarFormulario">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <form method="post" action="{% url 'gestor_sistema:crear_usuario_view' %}">
+            {% csrf_token %}
+            <div class="row">
+                <div class="col-md-4">
+                    <label>Cédula:</label>
+                    <input type="text" name="cedula" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label>Nombre:</label>
+                    <input type="text" name="nombre" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label>Apellido:</label>
+                    <input type="text" name="apellido" class="form-control" required>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-4">
+                    <label>Email:</label>
+                    <input type="email" name="correo" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label>Teléfono:</label>
+                    <input type="text" name="telefono" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label>Contraseña:</label>
+                    <input type="password" name="password" class="form-control" placeholder="(dejar vacío para 123)">
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-4">
+                    <label>Rol:</label>
+                    <select name="rol" class="form-control" id="selectRol" required>
+                        <option value="">Seleccione...</option>
+                        {% for rol in roles %}
+                            <option value="{{ rol.id }}">{{ rol.name|capfirst }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4" id="divFicha" style="display:none;">
+                    <label>Ficha (solo aprendices):</label>
+                    <select name="ficha" class="form-control">
+                        <option value="">Seleccione...</option>
+                        {% for ficha in fichas %}
+                            <option value="{{ ficha.id_ficha }}">{{ ficha.numero_ficha }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="formulario-botones mt-3">
+                <button type="submit" class="btn-guardar">
+                    <i class="bi bi-check-lg"></i> Guardar Usuario
+                </button>
+                <button type="button" class="btn-cancelar" id="btnCancelarFormulario">
+                    <i class="bi bi-x-lg"></i> Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <form method="get" class="filtros-form">
+        <div class="filtros-grid">
+            <div class="filtros-group">
+                <label><i class="bi bi-search"></i> Buscar:</label>
+                <input type="text" name="buscar" class="filtros-input" placeholder="Cédula, nombre, email..." value="{{ filtros.buscar }}">
+            </div>
+            
+            <div class="filtros-group">
+                <label><i class="bi bi-tag"></i> Rol:</label>
+                <select name="filtro_rol" class="filtros-selec">
+                    <option value="">Todos los roles</option>
+                    {% for rol in roles %}
+                        <option value="{{ rol.name }}" {% if filtros.rol == rol.name %}selected{% endif %}>{{ rol.name|capfirst }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filtros-group">
+                <label><i class="bi bi-toggle-on"></i> Estado:</label>
+                <select name="estado" class="filtros-selec">
+                    <option value="">Todos</option>
+                    <option value="Activo" {% if filtros.estado == 'Activo' %}selected{% endif %}>Activo</option>
+                    <option value="Inactivo" {% if filtros.estado == 'Inactivo' %}selected{% endif %}>Inactivo</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="filtros-botones">
+            <button type="submit" class="btn-filtro">
+                <i class="bi bi-funnel-fill"></i> Filtrar
+            </button>
+            <button type="button" class="btn-limpiar" onclick="window.location.href='{{ request.path }}'">
+                <i class="bi bi-eraser-fill"></i> Limpiar
+            </button>
+        </div>
+    </form>
+    
+    <div class="tabla-container">
+        <table class="tabla-asistencias">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Cédula</th>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>Email</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for usuario in usuarios %}
+                <tr>
+                    <td>{{ usuario.id_usuario }}</td>
+                    <td>{{ usuario.cedula }}</td>
+                    <td>{{ usuario.nombre|default:"-" }}</td>
+                    <td>{{ usuario.apellido|default:"-" }}</td>
+                    <td>{{ usuario.correo|default:"-" }}</td>
+                    <td>{{ usuario.nombre_rol|default:"Sin rol"|capfirst }}</td>
+                    <td>
+                        {% if usuario.estado == 'Activo' %}
+                            <span class="badge badge-asistio">Activo</span>
+                        {% else %}
+                            <span class="badge badge-inasistio">Inactivo</span>
+                        {% endif %}
+                    </td>
+                    <td class="acciones">
+                        <button class="btn-icon btn-editar" onclick="editarUsuario('{{ usuario.id_usuario }}')" title="Editar">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+                        
+                        {% if usuario.estado == 'Activo' %}
+                        <form method="post" action="{% url 'gestor_sistema:cambiar_estado_usuario_view' usuario.id_usuario %}" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="desactivar">
+                            <button type="submit" class="btn-icon btn-desactivar" title="Desactivar">
+                                <i class="bi bi-toggle-off"></i>
+                            </button>
+                        </form>
+                        {% else %}
+                        <form method="post" action="{% url 'gestor_sistema:cambiar_estado_usuario_view' usuario.id_usuario %}" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="accion" value="activar">
+                            <button type="submit" class="btn-icon btn-activar" title="Activar">
+                                <i class="bi bi-toggle-on"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                        
+                        <form method="post" action="{% url 'gestor_sistema:eliminar_usuario_view' usuario.id_usuario %}" style="display:inline;" onsubmit="return confirm('¿Eliminar permanentemente a {{ usuario.nombre }} {{ usuario.apellido }}?')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-icon btn-eliminar" title="Eliminar">
+                                <i class="bi bi-trash3-fill"></i>
+                            </button>
+                        </form>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center">No hay usuarios registrados</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="{% static 'js/gestionar_usuario.js' %}"></script>
+{% endblock %}

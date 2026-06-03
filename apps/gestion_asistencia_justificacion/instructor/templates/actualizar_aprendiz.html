@@ -1,0 +1,28 @@
+<!-- actualizar_aprendiz.html - SOLO EL MODAL, SIN EXTENDS -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitulo">Editar Datos</h2>
+            <span class="close" onclick="cerrarModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="editForm" method="post" action="{% url 'instructor:actualizar_aprendiz' %}">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" id="modal_user_id">
+                <input type="hidden" name="ficha_id" value="{{ ficha.id_ficha }}">
+                <input type="hidden" name="fecha" value="{{ fecha_seleccionada }}">
+                <input type="hidden" name="campo" id="modal_campo">
+                
+                <div class="form-group">
+                    <label for="modal_valor" id="modal_label">Valor a editar:</label>
+                    <input type="text" name="valor" id="modal_valor" class="form-control" required>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="submit" class="btn-guardar">Guardar Cambios</button>
+                    <button type="button" class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - SecureSab</title>
+<link rel = "stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6F" crossorigin="anonymous"> 
+
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+</head>
+
+<body>
+    <div class = "login-container">
+
+        <div class="login-header">
+            <p class="logo">
+                <span class="title-secure-login">
+                <span class="secure">secure</span><span class="sab">Sab</span>
+            </span>
+            </p>
+        </div>
+        {% if error %}
+        <div class="alert-error">
+            <p>{{error}}</p>
+        </div>
+        {% endif %}
+
+        <!-- Formulario de inicio de sesión -->
+        <form method="post" action="{% url 'login:login' %}" class="login-form">
+            {% csrf_token %} <!-- Token de seguridad para evitar ataques CSRF -->
+
+            <div class="input-group">
+                <label for="cedula">Cédula:</label>
+                <input type="text" id="cedula" name="cedula" required autofocus placeholder="Cédula">
+            </div>
+
+            <div class="input-group">
+                <label for="password">Contraseña:</label>
+                <div style="position:relative;">
+                    <input type="password" id="password" name="password" required placeholder="Contraseña" style="padding-right:44px; width:100%; box-sizing:border-box;">
+                    <button type="button" id="togglePassword" aria-label="Mostrar contraseña" title="Mostrar contraseña" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); border:none; background:transparent; padding:0; cursor:pointer;">
+                        <svg id="iconEye" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2f6b2f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path>
+                            <circle id="eyePupil" cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-login">Iniciar Sesión</button>
+
+            <div class="forgot-password">
+                <a href="{% url 'login:recuperar' %}">
+                    <i class="fas fa-key"></i> ¿Olvidaste tu contraseña?
+                </a>
+            </div>
+        </form>
+    </div>
+</body>
+<script>
+// Alternar visibilidad de la contraseña
+;(function(){
+    const pwd = document.getElementById('password');
+    const toggle = document.getElementById('togglePassword');
+    const iconEye = document.getElementById('iconEye');
+    const eyePupil = document.getElementById('eyePupil');
+    if(!pwd || !toggle) return;
+    toggle.addEventListener('click', function(){
+        const type = pwd.getAttribute('type') === 'password' ? 'text' : 'password';
+        pwd.setAttribute('type', type);
+        if(type === 'text'){
+            iconEye.setAttribute('stroke', '#0b5');
+            eyePupil.setAttribute('fill', '#0b5');
+            toggle.setAttribute('title','Ocultar contraseña');
+            toggle.setAttribute('aria-label','Ocultar contraseña');
+        } else {
+            iconEye.setAttribute('stroke', '#2f6b2f');
+            eyePupil.setAttribute('fill', '#2f6b2f');
+            toggle.setAttribute('title','Mostrar contraseña');
+            toggle.setAttribute('aria-label','Mostrar contraseña');
+        }
+    });
+})();
+</script>
+</html>

@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/asistencia_sede.css' %}?v=20260421">
+{% endblock %}
+
+{% block title %}Asistencia Sede - Coordinador{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <form method="get" class="dashboard-form">
+            <div class="section-header">
+                <h1> Asistencia en Sede</h1>
+                <p class="text-muted">Total de registros: {{ asistencias.paginator.count }}</p>
+            </div>
+
+            <!-- Card de Filtros -->
+            <div class="filtros-container">
+                <div class="filtros-header">
+                    <h3><i class="fas fa-filter"></i> Filtros de Búsqueda</h3>
+                </div>
+
+                <!-- Fila de filtros en grid -->
+                <div class="filtros-grid">
+                    <!-- Filtro por Ficha -->
+                    <div class="filtros-group">
+                        <label for="asistenciaSedeFicha">
+                            <i class="fas fa-folder"></i> Filtrar por Ficha:
+                        </label>
+                        <select name="ficha" id="asistenciaSedeFicha" class="filtros-input">
+                            <option value="all">Todas las Fichas</option>
+                            {% for ficha in fichas %}
+                            <option value="{{ ficha.id_ficha }}" 
+                                {% if filtros.ficha == ficha.id_ficha|stringformat:"s" %}selected{% endif %}>
+                                {{ ficha.numero_ficha }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Filtro por Documento/Nombre -->
+                    <div class="filtros-group">
+                        <label for="asistenciaSedeDocumento">
+                            <i class="fas fa-search"></i> Documento/Nombre:
+                        </label>
+                        <input type="text" 
+                               name="documento" 
+                               id="asistenciaSedeDocumento" 
+                               class="filtros-input"
+                               value="{{ filtros.documento }}" 
+                               placeholder="Buscar por documento o nombre">
+                    </div>
+                    
+                    <!-- Filtro por Fecha -->
+                    <div class="filtros-group">
+                        <label for="fechaFiltro">
+                            <i class="fas fa-calendar-alt"></i> Fecha:
+                        </label>
+                        <input type="date" 
+                               name="fecha" 
+                               id="fechaFiltro" 
+                               class="filtros-input"
+                               value="{{ filtros.fecha }}">
+                    </div>
+
+                    <!-- Filtro por Hora Entrada -->
+                    <div class="filtros-group">
+                        <label for="horaEntrada">
+                            <i class="fas fa-sign-in-alt"></i> Hora Entrada:
+                        </label>
+                        <input type="time" 
+                               name="hora_entrada" 
+                               id="horaEntrada" 
+                               class="filtros-input"
+                               value="{{ filtros.hora_entrada }}">
+                    </div>
+                    
+                    <!-- Filtro por Hora Salida -->
+                    <div class="filtros-group">
+                        <label for="horaSalida">
+                            <i class="fas fa-sign-out-alt"></i> Hora Salida:
+                        </label>
+                        <input type="time" 
+                               name="hora_salida" 
+                               id="horaSalida" 
+                               class="filtros-input"
+                               value="{{ filtros.hora_salida }}">
+                    </div>
+                </div>
+
+                <!-- Botones de acción debajo de los filtros -->
+                <div class="filtros-buttons">
+                    <a href="{% url 'coordinador:asistencia_sede' %}" class="btn-limpiar">
+                        <i class="fas fa-times"></i> Limpiar
+                    </a>
+                    <button type="submit" class="btn-filtro">
+                        <i class="fas fa-filter"></i> Aplicar filtros
+                    </button>
+                    <button type="button" id="exportSedeBtn" class="btn-filtro" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                        <i class="fas fa-file-csv"></i> Exportar CSV
+                    </button>
+                    <button type="button" id="exportSedePdfBtn" class="btn-filtro" style="background: linear-gradient(135deg, #e53e3e, #c53030);">
+                        <i class="fas fa-file-pdf"></i> Exportar PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- Card de Tabla -->
+            <div class="table-container">
+                <div class="table-scroll">
+                    <table class="tabla-asistencias">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-id-card"></i> Documento</th>
+                                <th><i class="fas fa-user"></i> Nombre Aprendiz</th>
+                                <th><i class="fas fa-folder-open"></i> Ficha</th>
+                                <th><i class="fas fa-calendar"></i> Fecha</th>
+                                <th><i class="fas fa-sign-in-alt"></i> Hora Entrada</th>
+                                <th><i class="fas fa-sign-out-alt"></i> Hora Salida</th>
+                            </tr>
+                            </thead>
+                        <tbody id="asistenciaSedeTabla">
+                            {% for asistencia in asistencias %}
+                            <tr>
+                                <td><strong>{{ asistencia.id_usuario.cedula }}</strong></td>
+                                <td>
+                                    <div class="aprendiz-name">
+                                        <div class="aprendiz-avatar">
+                                            {{ asistencia.id_usuario.nombre|first|upper }}{{ asistencia.id_usuario.apellido|first|upper }}
+                                        </div>
+                                        <div class="aprendiz-info">
+                                            <span>{{ asistencia.id_usuario.nombre }} {{ asistencia.id_usuario.apellido }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge-area">
+                                        {{ asistencia.id_usuario.id_ficha.numero_ficha|default:"N/D" }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="date-cell">
+                                        <i class="fas fa-calendar-day"></i> {{ asistencia.fecha|date:"Y-m-d" }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if asistencia.hora_entrada %}
+                                    <span class="estado-badge badge-entrada">
+                                        <i class="fas fa-arrow-right"></i> {{ asistencia.hora_entrada|time:"H:i" }}
+                                    </span>
+                                    {% else %}
+                                    <span class="estado-badge badge-pendiente">
+                                        <i class="fas fa-clock"></i> --:--
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if asistencia.hora_salida %}
+                                    <span class="estado-badge badge-salida">
+                                        <i class="fas fa-arrow-left"></i> {{ asistencia.hora_salida|time:"H:i" }}
+                                    </span>
+                                    {% else %}
+                                    <span class="estado-badge badge-pendiente">
+                                        <i class="fas fa-clock"></i> --:--
+                                    </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="no-data-message">
+                                    <i class="fas fa-folder-open"></i>
+                                    <p>No hay asistencias registradas</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Paginación -->
+            {% if asistencias.has_other_pages %}
+            <div class="paginacion">
+                <div class="paginacion-info">
+                    Mostrando {{ asistencias.start_index }} - {{ asistencias.end_index }} de {{ asistencias.paginator.count }} registros
+                </div>
+                <div class="paginacion-buttons">
+                    {% if asistencias.has_previous %}
+                        <a href="?page=1{% if filtros.ficha %}&ficha={{ filtros.ficha }}{% endif %}{% if filtros.documento %}&documento={{ filtros.documento }}{% endif %}{% if filtros.fecha %}&fecha={{ filtros.fecha }}{% endif %}{% if filtros.hora_entrada %}&hora_entrada={{ filtros.hora_entrada }}{% endif %}{% if filtros.hora_salida %}&hora_salida={{ filtros.hora_salida }}{% endif %}" class="page-link">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                        <a href="?page={{ asistencias.previous_page_number }}{% if filtros.ficha %}&ficha={{ filtros.ficha }}{% endif %}{% if filtros.documento %}&documento={{ filtros.documento }}{% endif %}{% if filtros.fecha %}&fecha={{ filtros.fecha }}{% endif %}{% if filtros.hora_entrada %}&hora_entrada={{ filtros.hora_entrada }}{% endif %}{% if filtros.hora_salida %}&hora_salida={{ filtros.hora_salida }}{% endif %}" class="page-link">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    {% endif %}
+                    
+                    <span class="page-current">
+                        Página {{ asistencias.number }} de {{ asistencias.paginator.num_pages }}
+                    </span>
+                    
+                    {% if asistencias.has_next %}
+                        <a href="?page={{ asistencias.next_page_number }}{% if filtros.ficha %}&ficha={{ filtros.ficha }}{% endif %}{% if filtros.documento %}&documento={{ filtros.documento }}{% endif %}{% if filtros.fecha %}&fecha={{ filtros.fecha }}{% endif %}{% if filtros.hora_entrada %}&hora_entrada={{ filtros.hora_entrada }}{% endif %}{% if filtros.hora_salida %}&hora_salida={{ filtros.hora_salida }}{% endif %}" class="page-link">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                        <a href="?page={{ asistencias.paginator.num_pages }}{% if filtros.ficha %}&ficha={{ filtros.ficha }}{% endif %}{% if filtros.documento %}&documento={{ filtros.documento }}{% endif %}{% if filtros.fecha %}&fecha={{ filtros.fecha }}{% endif %}{% if filtros.hora_entrada %}&hora_entrada={{ filtros.hora_entrada }}{% endif %}{% if filtros.hora_salida %}&hora_salida={{ filtros.hora_salida }}{% endif %}" class="page-link">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+    </form>
+</div>
+
+<script></script>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // Exportar CSV
+        document.getElementById('exportSedeBtn').addEventListener('click', function() {
+            let url = "{% url 'coordinador:exportar_asistencia_sede_csv' %}?" + window.location.search.substring(1);
+        });
+
+        // Exportar PDF
+        document.getElementById('exportSedePdfBtn').addEventListener('click', function() {
+            let url = "{% url 'coordinador:exportar_asistencia_sede_pdf' %}?" + window.location.search.substring(1);
+            window.location.href = url;
+        });
+    </script>
+{% endblock %}

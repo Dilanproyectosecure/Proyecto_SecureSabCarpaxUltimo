@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header-title">
+        <i class="fas fa-chart-line"></i> Resumen General
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px;">
+        
+        <div class="card" style="background-color: #f0fdf4; border-left: 5px solid var(--primary); padding: 20px; box-shadow: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-size: 0.9rem; color: #6b7280;">Usuarios Registrados</div>
+                    <div style="font-size: 2rem; font-weight: bold; color: var(--dark);">{{ total_usuarios }}</div>
+                </div>
+                <i class="fas fa-users" style="font-size: 2.5rem; color: var(--primary-light);"></i>
+            </div>
+        </div>
+
+        <div class="card" style="background-color: #ecfdf5; border-left: 5px solid #10b981; padding: 20px; box-shadow: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-size: 0.9rem; color: #6b7280;">Usuarios Activos</div>
+                    <div style="font-size: 2rem; font-weight: bold; color: var(--dark);">{{ usuarios_activos }}</div>
+                </div>
+                <i class="fas fa-user-check" style="font-size: 2.5rem; color: #34d399;"></i>
+            </div>
+        </div>
+
+        <div class="card" style="background-color: #fefce8; border-left: 5px solid #eab308; padding: 20px; box-shadow: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-size: 0.9rem; color: #6b7280;">Ingresos Sede (Hoy)</div>
+                    <div style="font-size: 2rem; font-weight: bold; color: var(--dark);">{{ ingresos_hoy }}</div>
+                </div>
+                <i class="fas fa-building" style="font-size: 2.5rem; color: #facc15;"></i>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header-title">
+        <i class="fas fa-rocket"></i> Accesos Rápidos
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+        <a href="{% url 'gestor_sistema:panel_admin' %}" class="card" style="flex: 1; text-align: center; text-decoration: none; color: inherit; padding: 20px; transition: 0.2s; border: 1px solid #e5e7eb; box-shadow: none;">
+            <i class="fas fa-user-plus" style="font-size: 2rem; color: var(--primary);"></i>
+            <div style="margin-top: 10px;">Nuevo Usuario</div>
+        </a>
+        <a href="{% url 'gestor_sistema:reportes' %}" class="card" style="flex: 1; text-align: center; text-decoration: none; color: inherit; padding: 20px; transition: 0.2s; border: 1px solid #e5e7eb; box-shadow: none;">
+            <i class="fas fa-file-export" style="font-size: 2rem; color: var(--primary);"></i>
+            <div style="margin-top: 10px;">Exportar Reportes</div>
+        </a>
+    </div>
+</div>
+
+{% endblock %}

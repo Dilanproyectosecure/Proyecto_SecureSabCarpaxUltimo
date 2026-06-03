@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/mi_perfil.css' %}">
+{% endblock %}
+
+{% block title %}Mi Perfil{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <h1>Mi Perfil</h1>
+    
+    <!-- Mensajes de éxito/error -->
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    
+    <!-- Información personal -->
+    <div class="perfil-info">
+        <div class="info-grid">
+            <div class="info-item">
+                <label>Cédula:</label>
+                <span>{{ user.cedula }}</span>
+            </div>
+            
+            <div class="info-item">
+                <label>Nombre completo:</label>
+                <span>{{ user.nombre }} {{ user.apellido }}</span>
+            </div>
+            
+            <div class="info-item">
+                <label>Correo electrónico:</label>
+                <span>{{ user.correo|default:"No registrado" }}</span>
+            </div>
+            
+            <div class="info-item">
+                <label>Teléfono:</label>
+                <span>{{ user.telefono|default:"No registrado" }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
