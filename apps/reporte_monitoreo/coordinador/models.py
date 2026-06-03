@@ -37,19 +37,18 @@ class Programa(models.Model):
     id_programa = models.AutoField(primary_key=True)
     nombre_programa = models.CharField(max_length=255, blank=True, null=True)
     tipo_programa = models.CharField(max_length=255, blank=True, null=True)
+
     id_coordinacion = models.ForeignKey(
-    Coordinacion,
-    on_delete=models.CASCADE,
-    null=True,
-    blank=True
-)
+        Coordinacion,
+        db_column='id_coordinacion',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
 
     class Meta:
         db_table = 'programa'
         managed = False
-
-    def __str__(self):
-        return self.nombre_programa
 
 
 class Ficha(models.Model):
