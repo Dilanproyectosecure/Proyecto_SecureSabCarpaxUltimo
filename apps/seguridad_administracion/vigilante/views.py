@@ -167,12 +167,19 @@ def registrar_invitado(request):
             messages.error(request, error)
             return render(request, 'registrar_invitado.html', {'areas': areas})
         
-        # Verificar invitado activo
-        if not id_visitante:
-            invitado_activo = obtener_visitante_activo_por_cedula(cedula)
-            if invitado_activo:
-                messages.error(request, f'No se puede registrar de nuevo a {invitado_activo.nombre} porque no tiene salida registrada')
-                return render(request, 'registrar_invitado.html', {'areas': areas})
+        # Verificar invitado activo (sin salida registrada)
+        invitado_activo = obtener_visitante_activo_por_cedula(cedula)
+        if invitado_activo:
+            messages.error(
+                request,
+                f'No se puede registrar la entrada de {invitado_activo.nombre} {invitado_activo.apellido} '
+                f'porque ya está dentro de las instalaciones y no tiene salida registrada.'
+            )
+            return render(request, 'registrar_invitado.html', {
+                'areas': areas,
+                'fechaHoy': date.today(),
+                'horaAhora': datetime.now().strftime('%H:%M:%S'),
+            })
         
         # Formatear nombres
         nombre = formatear_nombre(nombre)
@@ -307,12 +314,16 @@ def buscar_visitante_por_cedula(request):
     visitante = obtener_visitante_reciente_por_cedula(cedula)
     
     if visitante:
+        en_sede = bool(
+            visitante.id_asistencia_sede and not visitante.id_asistencia_sede.hora_salida
+        )
         return JsonResponse({
             'encontrado': True,
             'nombre': visitante.nombre,
             'apellido': visitante.apellido,
             'tipo_documento': visitante.tipo_documento,
             'id_visitante': visitante.id_visitante,
+            'en_sede': en_sede,
         })
     
     return JsonResponse({'encontrado': False})

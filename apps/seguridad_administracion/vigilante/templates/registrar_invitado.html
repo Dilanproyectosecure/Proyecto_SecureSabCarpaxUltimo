@@ -159,7 +159,7 @@
                         <i class="fas fa-eraser"></i>
                         <span>Limpiar</span>
                     </button>
-                    <button type="submit" class="btn-filtro">
+                    <button type="submit" id="btn-registrar" class="btn-filtro">
                         <i class="fas fa-user-plus"></i>
                         <span>Registrar Invitado</span>
                     </button>
@@ -289,12 +289,6 @@
                 if(data.encontrado){
                     // Mostrar resultado
                     datosEncontrados = true;
-                    textResultado.innerHTML = `<strong style="color: #28a745;">✓ Visitante encontrado:</strong> ${data.nombre} ${data.apellido}`;
-                    resultadoBusqueda.style.backgroundColor = '#d4edda';
-                    resultadoBusqueda.style.borderLeft = '4px solid #28a745';
-                    resultadoBusqueda.style.display = 'block';
-                    
-                    // Llenar los campos
                     nombre.value = data.nombre;
                     apellido.value = data.apellido;
                     if (tipoDocumento) {
@@ -306,6 +300,29 @@
                     nombre.readOnly = true;
                     apellido.readOnly = true;
                     btnEditar.style.display = 'block';
+
+                    const btnRegistrar = document.getElementById('btn-registrar');
+                    if (data.en_sede) {
+                        textResultado.innerHTML = `<strong style="color: #721c24;">✗ Visitante ya está en sede:</strong> ${data.nombre} ${data.apellido}. Debe registrar su salida antes de poder ingresar de nuevo.`;
+                        resultadoBusqueda.style.backgroundColor = '#f8d7da';
+                        resultadoBusqueda.style.borderLeft = '4px solid #dc3545';
+                        resultadoBusqueda.style.display = 'block';
+                        if (btnRegistrar) {
+                            btnRegistrar.disabled = true;
+                            btnRegistrar.style.opacity = '0.5';
+                            btnRegistrar.style.cursor = 'not-allowed';
+                        }
+                    } else {
+                        textResultado.innerHTML = `<strong style="color: #28a745;">✓ Visitante encontrado:</strong> ${data.nombre} ${data.apellido}`;
+                        resultadoBusqueda.style.backgroundColor = '#d4edda';
+                        resultadoBusqueda.style.borderLeft = '4px solid #28a745';
+                        resultadoBusqueda.style.display = 'block';
+                        if (btnRegistrar) {
+                            btnRegistrar.disabled = false;
+                            btnRegistrar.style.opacity = '';
+                            btnRegistrar.style.cursor = '';
+                        }
+                    }
                 } else {
                     // No encontrado
                     datosEncontrados = false;
@@ -475,6 +492,14 @@ document.addEventListener('DOMContentLoaded', function(){
                 // Resetear select de tipo de documento
                 const tipoDoc = document.getElementById('tipo_documento');
                 if(tipoDoc) tipoDoc.value = '';
+
+                // Rehabilitar botón registrar
+                const btnRegistrar = document.getElementById('btn-registrar');
+                if(btnRegistrar){
+                    btnRegistrar.disabled = false;
+                    btnRegistrar.style.opacity = '';
+                    btnRegistrar.style.cursor = '';
+                }
 
                 Swal.fire('Formulario borrado', 'El formulario ha sido limpiado.', 'success');
             }
