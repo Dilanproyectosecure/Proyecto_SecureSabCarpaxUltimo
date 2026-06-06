@@ -8,7 +8,7 @@
     
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px;">
         
-        <div class="card" style="background-color: #f0fdf4; border-left: 5px solid var(--primary); padding: 20px; box-shadow: none;">
+        <div class="card" style="background-color: #f0fdf4; border-left: 5px solid #178202; padding: 20px; box-shadow: none;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
                     <div style="font-size: 0.9rem; color: #6b7280;">Usuarios Registrados</div>
@@ -47,11 +47,11 @@
     </div>
     <div style="display: flex; flex-wrap: wrap; gap: 15px;">
         <a href="{% url 'gestor_sistema:panel_admin' %}" class="card" style="flex: 1; text-align: center; text-decoration: none; color: inherit; padding: 20px; transition: 0.2s; border: 1px solid #e5e7eb; box-shadow: none;">
-            <i class="fas fa-user-plus" style="font-size: 2rem; color: var(--primary);"></i>
+            <i class="fas fa-user-plus" style="font-size: 2rem; color: #178202;"></i>
             <div style="margin-top: 10px;">Nuevo Usuario</div>
         </a>
         <a href="{% url 'gestor_sistema:reportes' %}" class="card" style="flex: 1; text-align: center; text-decoration: none; color: inherit; padding: 20px; transition: 0.2s; border: 1px solid #e5e7eb; box-shadow: none;">
-            <i class="fas fa-file-export" style="font-size: 2rem; color: var(--primary);"></i>
+            <i class="fas fa-file-export" style="font-size: 2rem; color: #178202;"></i>
             <div style="margin-top: 10px;">Exportar Reportes</div>
         </a>
     </div>

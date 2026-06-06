@@ -15,23 +15,6 @@
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     {% block extra_css %}{% endblock %}  <!-- ← BLOQUE PARA CSS ESPECÍFICO -->
-
-    <style>
-    /* ESTILO DIRECTO PARA GESTOR */
-    body.rol-gestor .sidebar,
-    body.rol-gestor .main-container {
-        background: #1a1a1a !important;
-    }
-    body.rol-gestor .top-bar {
-        background: #1a1a1a !important;
-        box-shadow: 0 0.5px 50px rgba(255, 255, 255, 0.088) !important;
-    position: relative;
-    z-index: 100;;
-    }
-    body.rol-gestor .user-info {
-        background: #2a2a2a !important;
-    }
-</style>
 </head>
 <body class="rol-{{ user.get_rol }}">
     <header class="top-bar">

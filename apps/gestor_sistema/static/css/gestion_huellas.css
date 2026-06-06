@@ -1,0 +1,317 @@
+/* ===== ESTILOS ESPECÍFICOS PARA GESTIÓN DE HUELLAS ===== */
+
+/* ===== TARJETA PRINCIPAL ===== */
+.content-card {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    margin-bottom: 1.5rem;
+    animation: fadeIn 0.3s ease;
+}
+
+.content-card h1 {
+    color: #333;
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 0.8rem;
+}
+
+/* ===== FORMULARIO DE FILTROS ===== */
+.filtros-form {
+    margin-bottom: 1.5rem;
+    background: #f8f9fa;
+    padding: 1.25rem;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+}
+
+.filtros-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.filtros-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filtros-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.filtros-input,
+.filtros-selec {
+    width: 100%;
+    padding: 0.6rem 0.9rem;
+    border: 2px solid #e1e1e1;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+    background-color: white;
+    color: #495057;
+}
+
+.filtros-selec {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+}
+
+.filtros-input:focus,
+.filtros-selec:focus {
+    outline: none;
+    border-color: #178202;
+    box-shadow: 0 0 0 3px rgba(23, 130, 2, 0.1);
+}
+
+.filtros-botones {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
+
+.btn-filtro {
+    background: linear-gradient(135deg, #178202 0%, #0d6e00 100%);
+    color: white;
+    border: none;
+    padding: 0.6rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-filtro:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(23, 130, 2, 0.4);
+    color: white;
+}
+
+.btn-limpiar {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 0.6rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-limpiar:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+    color: white;
+}
+
+/* ===== TABLA ===== */
+.tabla-container {
+    overflow-x: auto;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-top: 1.5rem;
+    border: 1px solid #e9ecef;
+}
+
+.tabla-asistencias {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+    font-size: 0.9rem;
+}
+
+.tabla-asistencias thead tr {
+    background: linear-gradient(135deg, #178202 0%, #0d6e00 100%);
+}
+
+.tabla-asistencias th {
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: white;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.tabla-asistencias td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+    color: #495057;
+    vertical-align: middle;
+}
+
+.tabla-asistencias tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.tabla-asistencias tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.tabla-asistencias td.acciones {
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* ===== BADGES ===== */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.7rem;
+    border-radius: 50px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    min-width: 95px;
+    justify-content: center;
+}
+
+.badge-exitoso {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.badge-pendiente {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* ===== BOTONES DE ACCIÓN EN TABLA ===== */
+.btn-icon {
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+    margin: 0 2px;
+}
+
+.btn-registrar {
+    background: linear-gradient(135deg, #178202 0%, #4ba279 100%);
+    color: white;
+}
+
+.btn-registrar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(23, 130, 2, 0.4);
+    color: white;
+}
+
+.btn-eliminar-huella {
+    background: linear-gradient(135deg, #dc3545 0%, #a71d2a 100%);
+    color: white;
+}
+
+.btn-eliminar-huella:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(220, 53, 69, 0.4);
+    color: white;
+}
+
+/* ===== MENSAJE SIN DATOS ===== */
+.text-center {
+    text-align: center;
+    padding: 3rem !important;
+    color: #999;
+    font-style: italic;
+}
+
+/* ===== ANIMACIONES ===== */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .content-card {
+        padding: 1.25rem;
+    }
+
+    .content-card h1 {
+        font-size: 1.5rem;
+    }
+
+    .filtros-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .filtros-botones {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .btn-filtro,
+    .btn-limpiar {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .tabla-asistencias th,
+    .tabla-asistencias td {
+        padding: 0.6rem;
+        font-size: 0.8rem;
+    }
+
+    .badge {
+        min-width: 80px;
+        font-size: 0.65rem;
+        padding: 0.2rem 0.5rem;
+    }
+
+    .btn-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .content-card {
+        padding: 1rem;
+    }
+
+    .content-card h1 {
+        font-size: 1.3rem;
+    }
+}
