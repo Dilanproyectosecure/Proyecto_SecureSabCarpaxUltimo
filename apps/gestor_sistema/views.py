@@ -1,5 +1,6 @@
 import csv
 import json
+import re
 import pandas as pd
 
 from datetime import date
@@ -80,6 +81,19 @@ def panel_admin(request):
         telefono = request.POST.get('telefono')
         role_id = request.POST.get('role_id') or request.POST.get('rol')
         password = request.POST.get('password', '123')
+
+        _name_re = re.compile(r'^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$')
+        _errores = []
+        if not (cedula and cedula.isdigit() and len(cedula) == 10):
+            _errores.append("La cédula debe tener exactamente 10 dígitos numéricos.")
+        if not (nombre and 3 <= len(nombre) <= 40 and _name_re.match(nombre)):
+            _errores.append("El nombre debe tener entre 3 y 40 letras.")
+        if not (apellido and 3 <= len(apellido) <= 40 and _name_re.match(apellido)):
+            _errores.append("El apellido debe tener entre 3 y 40 letras.")
+        if _errores:
+            for _e in _errores:
+                messages.error(request, _e)
+            return redirect('gestor_sistema:panel_admin')
 
         try:
             usuario = Usuarios.objects.create_user(

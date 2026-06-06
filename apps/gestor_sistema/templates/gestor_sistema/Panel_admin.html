@@ -134,15 +134,28 @@
                     <div class="form-grid-app">
                         <div class="form-group-app">
                             <label>Cédula <span class="required">*</span></label>
-                            <input type="text" name="cedula" required>
+                            <input type="text" name="cedula" required
+                                   inputmode="numeric"
+                                   pattern="[0-9]{10}"
+                                   maxlength="10"
+                                   minlength="10"
+                                   title="La cédula debe tener exactamente 10 dígitos numéricos">
                         </div>
                         <div class="form-group-app">
                             <label>Nombre <span class="required">*</span></label>
-                            <input type="text" name="nombre" required>
+                            <input type="text" name="nombre" required
+                                   pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{3,40}"
+                                   maxlength="40"
+                                   minlength="3"
+                                   title="Solo letras, entre 3 y 40 caracteres">
                         </div>
                         <div class="form-group-app">
                             <label>Apellido <span class="required">*</span></label>
-                            <input type="text" name="apellido" required>
+                            <input type="text" name="apellido" required
+                                   pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]{3,40}"
+                                   maxlength="40"
+                                   minlength="3"
+                                   title="Solo letras, entre 3 y 40 caracteres">
                         </div>
                         <div class="form-group-app">
                             <label>Correo <span class="required">*</span></label>
@@ -286,6 +299,25 @@ function abrirModalEditar(id, cedula, nombre, apellido, correo) {
 document.getElementById('modalEditarUsuario').addEventListener('hidden.bs.modal', function () {
     document.getElementById('formEditar').reset();
 });
+
+// ===== VALIDACIONES EN TIEMPO REAL (modal Crear Usuario) =====
+// Cédula: solo dígitos, máximo 10
+(function () {
+    var cedulaInput = document.querySelector('#modalCrearUsuario input[name="cedula"]');
+    if (cedulaInput) {
+        cedulaInput.addEventListener('input', function () {
+            this.value = this.value.replace(/\D/g, '').slice(0, 10);
+        });
+    }
+    // Nombre y Apellido: solo letras y espacios, máximo 40
+    ['nombre', 'apellido'].forEach(function (name) {
+        var el = document.querySelector('#modalCrearUsuario input[name="' + name + '"]');
+        if (!el) return;
+        el.addEventListener('input', function () {
+            this.value = this.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, '').slice(0, 40);
+        });
+    });
+})();
 
 $(document).ready(function() {
     var table = $('#tablaUsuarios').DataTable({
