@@ -544,7 +544,8 @@ def gestion_huellas(request):
         SELECT u.*, r.name as nombre_rol,
         CASE WHEN EXISTS (
             SELECT 1 FROM huella h WHERE h.id_usuario = u.id_usuario
-        ) THEN 1 ELSE 0 END AS tiene_huella
+        ) THEN 1 ELSE 0 END AS tiene_huella,
+        (SELECT MAX(h.fecha_registro) FROM huella h WHERE h.id_usuario = u.id_usuario) AS fecha_huella
         FROM usuarios u
         LEFT JOIN role_user ru ON u.id_usuario = ru.id_usuario
         LEFT JOIN roles r ON ru.role_id = r.id

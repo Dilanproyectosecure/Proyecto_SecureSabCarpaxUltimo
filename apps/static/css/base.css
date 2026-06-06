@@ -402,25 +402,3 @@ body {
         font-size: 1.2rem;
     }
 }
-/* ===== ESTILO SOLO PARA GESTOR (NEGRO) - VERSIÓN FUERTE ===== */
-body[class*="rol-gestor"] .sidebar,
-body.rol-gestor .sidebar {
-    background: #1a1a1a !important;
-    background-color: #1a1a1a !important;
-}
-
-body[class*="rol-gestor"] .top-bar,
-body.rol-gestor .top-bar {
-    background: #1a1a1a !important;
-    background-image: none !important;
-}
-
-body[class*="rol-gestor"] .main-container,
-body.rol-gestor .main-container {
-    background: #1a1a1a !important;
-}
-
-body[class*="rol-gestor"] .user-info,
-body.rol-gestor .user-info {
-    background: #2a2a2a !important;
-}

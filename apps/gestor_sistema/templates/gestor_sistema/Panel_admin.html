@@ -1,132 +1,264 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block content %}
-<div class="card" style="margin-bottom: 20px; padding: 15px 25px;">
-    <h2 style="color: var(--dark); margin: 0; display: flex; align-items: center;">
-        <i class="fas fa-users-cog" style="margin-right: 15px; color: var(--primary);"></i>
-        Gestión de Usuarios
-    </h2>
-</div>
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/panel_admin.css' %}">
+{% endblock %}
 
-<div style="display: flex; gap: 20px; margin-bottom: 25px;">
-    <div class="card" style="flex: 2;">
-        <div class="card-header-title">
-            <i class="fas fa-user-plus"></i> Crear Nuevo Usuario
+{% block content %}
+<div class="dashboard-container">
+
+    <!-- ENCABEZADO DE LA PÁGINA -->
+    <div class="section-header">
+        <div>
+            <h1><i class="fas fa-users-cog"></i> Gestión de Usuarios</h1>
+            <p>Administra los usuarios del sistema SecureSab</p>
         </div>
-        <form method="POST" action="{% url 'gestor_sistema:panel_admin' %}" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
-            {% csrf_token %}
-            <div><label>Cédula</label><input type="text" name="cedula" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"></div>
-            <div><label>Nombre</label><input type="text" name="nombre" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"></div>
-            <div><label>Apellido</label><input type="text" name="apellido" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"></div>
-            <div><label>Correo</label><input type="email" name="correo" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;"></div>
-            <div>
-                <label>Rol</label>
-                <select name="role_id" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
-                    <option value="" disabled selected>Seleccione un rol</option>
-                    {% for role in roles %}
-                        <option value="{{ role.id }}">{{ role.name }}</option>
-                    {% endfor %}
-                </select>
+        <div class="header-buttons">
+            <button type="button" class="btn-primary-app" data-bs-toggle="modal" data-bs-target="#modalCrearUsuario">
+                <i class="fas fa-user-plus"></i> Crear Usuario
+            </button>
+            <button type="button" class="btn-secondary-app" data-bs-toggle="modal" data-bs-target="#modalCargaMasiva">
+                <i class="fas fa-file-csv"></i> Carga Masiva
+            </button>
+        </div>
+    </div>
+
+    <!-- TABLA DE USUARIOS -->
+    <div class="tabla-card">
+        <div class="tabla-header">
+            <h3><i class="fas fa-table"></i> Usuarios en el Sistema</h3>
+        </div>
+
+        <form id="filtrosPanelForm" class="filtros-form" onsubmit="return false;">
+            <div class="filtros-grid">
+                <div class="filtros-group">
+                    <label><i class="bi bi-credit-card-2-front"></i> Buscar Cédula:</label>
+                    <input type="text" id="filtroCedula" class="filtros-input" placeholder="Ej: 1000856944">
+                </div>
+                <div class="filtros-group">
+                    <label><i class="bi bi-person"></i> Buscar Nombre:</label>
+                    <input type="text" id="filtroNombre" class="filtros-input" placeholder="Ej: Juan">
+                </div>
+                <div class="filtros-group">
+                    <label><i class="bi bi-tag"></i> Rol:</label>
+                    <select id="filtroRol" class="filtros-selec">
+                        <option value="">Todos los roles</option>
+                        {% for role in roles %}
+                            <option value="{{ role.name }}">{{ role.name|capfirst }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
-            <div style="grid-column: 1 / -1; text-align: right; margin-top: 10px;">
-                <button type="submit" style="background-color: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold;">
-                    <i class="fas fa-save"></i> Guardar
+            <div class="filtros-botones">
+                <button type="button" class="btn-filtro" id="btnFiltrarPanel">
+                    <i class="bi bi-funnel-fill"></i> Filtrar
+                </button>
+                <button type="button" class="btn-limpiar" id="btnLimpiarPanel">
+                    <i class="bi bi-eraser-fill"></i> Limpiar
                 </button>
             </div>
         </form>
+
+        <div class="tabla-container">
+            <table id="tablaUsuarios" class="tabla-usuarios display">
+                <thead>
+                    <tr>
+                    <th>ID</th>
+                    <th>Cédula</th>
+                    <th>Nombre Completo</th>
+                    <th>Correo</th>
+                    <th>Rol</th>
+                    <th>Huella</th>
+                    <th style="text-align: center;">Acción</th>
+                </tr>
+            </thead>
+                <tbody>
+                    {% for u in usuarios %}
+                    <tr>
+                        <td data-label="ID" class="col-id">{{ u.id_usuario }}</td>
+                        <td data-label="Cédula">{{ u.cedula }}</td>
+                        <td data-label="Nombre Completo">{{ u.nombre }} {{ u.apellido }}</td>
+                        <td data-label="Correo">{{ u.correo }}</td>
+                        <td data-label="Rol">
+                            {% with rol=u.nombre_rol|default:"sin rol" %}
+                                <span class="role-badge role-{{ rol }}">{{ u.nombre_rol|default:"Sin Rol" }}</span>
+                            {% endwith %}
+                        </td>
+                        <td data-label="Huella" class="status-huella" id="status-{{ u.id_usuario }}">
+                            {% if u.huella_registrada %}
+                                <i class="fas fa-check-circle registrada"></i>
+                            {% else %}
+                                <i class="fas fa-times-circle no-registrada"></i>
+                            {% endif %}
+                        </td>
+                        <td data-label="Acción" class="col-acciones">
+                            <button type="button" class="btn-action btn-action-edit" onclick="abrirModalEditar('{{ u.id_usuario }}', '{{ u.cedula }}', '{{ u.nombre }}', '{{ u.apellido }}', '{{ u.correo }}')" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" class="btn-action btn-action-fingerprint" onclick="registrarHuella('{{ u.id_usuario }}')" title="Registrar huella">
+                                <i class="fas fa-fingerprint"></i>
+                            </button>
+                            {% if u.estado == 'Activo' %}
+                                <a href="{% url 'gestor_sistema:desactivar_usuario' u.id_usuario %}" class="btn-action btn-action-deactivate" title="Desactivar">
+                                    <i class="fas fa-user-slash"></i>
+                                </a>
+                            {% else %}
+                                <a href="{% url 'gestor_sistema:activar_usuario' u.id_usuario %}" class="btn-action btn-action-activate" title="Activar">
+                                    <i class="fas fa-user-check"></i>
+                                </a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-    <div class="card" style="flex: 1; background-color: #f9fafb; border: 1px dashed #d1d5db;">
-        <div class="card-header-title"><i class="fas fa-file-csv"></i> Creación Masiva</div>
-        <form method="POST" enctype="multipart/form-data">
-            {% csrf_token %}
-            <input type="file" name="archivo_csv" accept=".csv" required style="margin-bottom: 10px; width: 100%;">
-            <button type="submit" style="background-color: #4b5563; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; width: 100%;">
-                <i class="fas fa-upload"></i> Importar CSV
-            </button>
-        </form>
-    </div>
+
 </div>
 
-<div class="card" style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <div class="card-header-title" style="margin-bottom: 20px;"><i class="fas fa-table"></i> Usuarios en el Sistema</div>
-    <table id="tablaUsuarios" class="display" style="width:100%; border-collapse: collapse;">
-        <thead>
-            <tr style="background: #f3f4f6;">
-                <th>ID</th>
-                <th>Cédula</th>
-                <th>Nombre Completo</th>
-                <th>Correo</th>
-                <th>Rol</th>
-                <th>Huella</th>
-                <th style="text-align: center;">Acción</th>
-            </tr>
-            <tr class="filters-row">
-                <td></td>
-                <td><input type="text" class="filter-input" placeholder="Buscar Cédula..."></td>
-                <td><input type="text" class="filter-input" placeholder="Buscar Nombre..."></td>
-                <td></td>
-                <td>
-                    <select class="filter-input">
-                        <option value="">Todos</option>
-                        {% for role in roles %}<option value="{{ role.name }}">{{ role.name }}</option>{% endfor %}
-                    </select>
-                </td>
-                <td></td>
-                <td></td>
-            </tr>
-        </thead>
-        <tbody>
-            {% for u in usuarios %}
-            <tr>
-                <td>{{ u.id_usuario }}</td>
-                <td>{{ u.cedula }}</td>
-                <td>{{ u.nombre }} {{ u.apellido }}</td>
-                <td>{{ u.correo }}</td>
-                <td><span class="badge" style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 4px;">{{ u.nombre_rol|default:"Sin Rol" }}</span></td>
-                <td style="text-align: center;" id="status-{{ u.id_usuario }}">
-                    {% if u.huella_registrada %}<i class="fas fa-check-circle" style="color: #059669;"></i>{% else %}<i class="fas fa-times-circle" style="color: #ef4444;"></i>{% endif %}
-                </td>
-                <td style="text-align: center; display: flex; gap: 5px; justify-content: center;">
-                    <button type="button" onclick="abrirModalEditar('{{ u.id_usuario }}', '{{ u.cedula }}', '{{ u.nombre }}', '{{ u.apellido }}', '{{ u.correo }}')" style="background: #3b82f6; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer;"><i class="fas fa-edit"></i></button>
-                    <button type="button" onclick="registrarHuella('{{ u.id_usuario }}')" style="background: #1f2937; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer;"><i class="fas fa-fingerprint"></i></button>
-                    {% if u.estado == 'Activo' %}
-                        <a href="{% url 'gestor_sistema:desactivar_usuario' u.id_usuario %}" style="background: #ef4444; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none;"><i class="fas fa-user-slash"></i></a>
-                    {% else %}
-                        <a href="{% url 'gestor_sistema:activar_usuario' u.id_usuario %}" style="background: #10b981; color: white; padding: 6px 10px; border-radius: 4px; text-decoration: none;"><i class="fas fa-user-check"></i></a>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<div id="modalEditarUsuario" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background-color: rgba(0,0,0,0.5);">
-    <div class="card" style="background-color:white; margin:10% auto; padding:20px; width:40%; border-radius:10px;">
-        <div class="card-header-title"><i class="fas fa-edit"></i> Editar Usuario</div>
-        <form id="formEditar" method="POST">
-            {% csrf_token %}
-            <input type="hidden" name="id_usuario" id="edit_id_usuario">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-                <div><label>Cédula</label><input type="text" name="cedula" id="edit_cedula" style="width:100%; padding:8px;"></div>
-                <div><label>Nombre</label><input type="text" name="nombre" id="edit_nombre" style="width:100%; padding:8px;"></div>
-                <div><label>Apellido</label><input type="text" name="apellido" id="edit_apellido" style="width:100%; padding:8px;"></div>
-                <div><label>Correo</label><input type="email" name="correo" id="edit_correo" style="width:100%; padding:8px;"></div>
+<!-- MODAL: CREAR NUEVO USUARIO -->
+<div class="modal fade" id="modalCrearUsuario" tabindex="-1" aria-labelledby="modalCrearUsuarioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content modal-content-app">
+            <div class="modal-header-app">
+                <h5 id="modalCrearUsuarioLabel"><i class="fas fa-user-plus"></i> Crear Nuevo Usuario</h5>
+                <button type="button" class="btn-close-app" data-bs-dismiss="modal" aria-label="Cerrar">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-            <div style="margin-top:20px; text-align:right;">
-                <button type="button" onclick="cerrarModal()" style="background:#6b7280; color:white; border:none; padding:8px 15px; border-radius:5px;">Cancelar</button>
-                <button type="submit" style="background:var(--primary); color:white; border:none; padding:8px 15px; border-radius:5px;">Actualizar Cambios</button>
-            </div>
-        </form>
+            <form method="POST" action="{% url 'gestor_sistema:panel_admin' %}">
+                {% csrf_token %}
+                <div class="modal-body-app">
+                    <div class="form-grid-app">
+                        <div class="form-group-app">
+                            <label>Cédula <span class="required">*</span></label>
+                            <input type="text" name="cedula" required>
+                        </div>
+                        <div class="form-group-app">
+                            <label>Nombre <span class="required">*</span></label>
+                            <input type="text" name="nombre" required>
+                        </div>
+                        <div class="form-group-app">
+                            <label>Apellido <span class="required">*</span></label>
+                            <input type="text" name="apellido" required>
+                        </div>
+                        <div class="form-group-app">
+                            <label>Correo <span class="required">*</span></label>
+                            <input type="email" name="correo" required>
+                        </div>
+                        <div class="form-group-app full">
+                            <label>Rol <span class="required">*</span></label>
+                            <select name="role_id" id="selectRolCrear" required>
+                                <option value="" disabled selected>Seleccione un rol</option>
+                                {% for role in roles %}
+                                    <option value="{{ role.id }}" data-rol-name="{{ role.name }}">{{ role.name|capfirst }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer-app">
+                    <button type="button" class="btn-cancel-app" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn-save-app">
+                        <i class="fas fa-save"></i> Guardar Usuario
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
-<style>
-    .filter-input { width: 100%; padding: 5px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
-    .filters-row td { padding: 8px 12px; background: #f9fafb; }
-    #tablaUsuarios td { padding: 12px; border-bottom: 1px solid #eee; }
-</style>
+<!-- MODAL: CARGA MASIVA CSV -->
+<div class="modal fade" id="modalCargaMasiva" tabindex="-1" aria-labelledby="modalCargaMasivaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-app">
+            <div class="modal-header-app">
+                <h5 id="modalCargaMasivaLabel"><i class="fas fa-file-csv"></i> Carga Masiva de Usuarios</h5>
+                <button type="button" class="btn-close-app" data-bs-dismiss="modal" aria-label="Cerrar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form method="POST" enctype="multipart/form-data" action="{% url 'gestor_sistema:panel_admin' %}">
+                {% csrf_token %}
+                <div class="modal-body-app">
+                    <div class="csv-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>El archivo CSV debe tener las siguientes columnas:</strong>
+                        <ul>
+                            <li><strong>cedula</strong> — Número de identificación</li>
+                            <li><strong>nombre</strong> — Nombre del usuario</li>
+                            <li><strong>apellido</strong> — Apellido del usuario</li>
+                            <li><strong>correo</strong> — Correo electrónico</li>
+                            <li><strong>rol</strong> — aprendiz, instructor, vigilante, coordinador</li>
+                        </ul>
+                    </div>
+                    <div class="form-group-app">
+                        <label>Seleccionar archivo CSV <span class="required">*</span></label>
+                        <input type="file" name="archivo_csv" class="csv-file-input" accept=".csv" required>
+                    </div>
+                </div>
+                <div class="modal-footer-app">
+                    <button type="button" class="btn-cancel-app" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn-save-app">
+                        <i class="fas fa-cloud-upload-alt"></i> Importar CSV
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: EDITAR USUARIO -->
+<div class="modal fade" id="modalEditarUsuario" tabindex="-1" aria-labelledby="modalEditarUsuarioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-app">
+            <div class="modal-header-app">
+                <h5 id="modalEditarUsuarioLabel"><i class="fas fa-edit"></i> Editar Usuario</h5>
+                <button type="button" class="btn-close-app" data-bs-dismiss="modal" aria-label="Cerrar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="formEditar" method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="id_usuario" id="edit_id_usuario">
+                <div class="modal-body-app">
+                    <div class="form-grid-app">
+                        <div class="form-group-app">
+                            <label>Cédula</label>
+                            <input type="text" name="cedula" id="edit_cedula" required>
+                        </div>
+                        <div class="form-group-app">
+                            <label>Nombre</label>
+                            <input type="text" name="nombre" id="edit_nombre" required>
+                        </div>
+                        <div class="form-group-app">
+                            <label>Apellido</label>
+                            <input type="text" name="apellido" id="edit_apellido" required>
+                        </div>
+                        <div class="form-group-app">
+                            <label>Correo</label>
+                            <input type="email" name="correo" id="edit_correo" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer-app">
+                    <button type="button" class="btn-cancel-app" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                    <button type="submit" class="btn-save-app">
+                        <i class="fas fa-save"></i> Actualizar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -135,20 +267,25 @@
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
 <script>
-// FUNCIONES DE MODAL
+// FUNCIONES DE MODAL (Bootstrap)
 function abrirModalEditar(id, cedula, nombre, apellido, correo) {
     document.getElementById('edit_id_usuario').value = id;
     document.getElementById('edit_cedula').value = cedula;
     document.getElementById('edit_nombre').value = nombre;
     document.getElementById('edit_apellido').value = apellido;
     document.getElementById('edit_correo').value = correo;
-    
-    // CORRECCIÓN CLAVE: Seteamos la URL dinámicamente incluyendo el ID
+
+    // Seteamos la URL dinámicamente incluyendo el ID
     document.getElementById('formEditar').action = `/gestor_sistema/usuarios/editar/${id}/`;
-    document.getElementById('modalEditarUsuario').style.display = 'block';
+
+    var modal = new bootstrap.Modal(document.getElementById('modalEditarUsuario'));
+    modal.show();
 }
 
-function cerrarModal() { document.getElementById('modalEditarUsuario').style.display = 'none'; }
+// Cierra el modal de edición cuando termina el éxito
+document.getElementById('modalEditarUsuario').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('formEditar').reset();
+});
 
 $(document).ready(function() {
     var table = $('#tablaUsuarios').DataTable({
@@ -157,10 +294,21 @@ $(document).ready(function() {
         "columnDefs": [{ "orderable": false, "targets": [5, 6] }]
     });
 
-    $('#tablaUsuarios thead .filter-input').on('keyup change', function() {
-        var colIndex = $(this).closest('td').index();
-        if (table.column(colIndex).search() !== this.value) {
-            table.column(colIndex).search(this.value).draw();
+    $('#btnFiltrarPanel').on('click', function() {
+        table.column(1).search($('#filtroCedula').val().trim()).draw();
+        table.column(2).search($('#filtroNombre').val().trim()).draw();
+        table.column(4).search($('#filtroRol').val().trim()).draw();
+    });
+
+    $('#btnLimpiarPanel').on('click', function() {
+        $('#filtrosPanelForm')[0].reset();
+        table.columns().search('').draw();
+    });
+
+    $('#filtroCedula, #filtroNombre').on('keyup', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            $('#btnFiltrarPanel').click();
         }
     });
 });
@@ -176,17 +324,25 @@ function registrarHuella(idUsuario) {
     })
     .then(response => response.json())
     .then(data => {
-        if (data.error) { alert("❌ " + data.error); statusCell.innerHTML = originalContent; }
-        else { alert("✅ " + data.mensaje); statusCell.innerHTML = '<i class="fas fa-check-circle" style="color: #059669;"></i>'; }
+        if (data.error) {
+            alert("❌ " + data.error);
+            statusCell.innerHTML = originalContent;
+        } else {
+            alert("✅ " + data.mensaje);
+            statusCell.innerHTML = '<i class="fas fa-check-circle registrada"></i>';
+        }
     })
-    .catch(error => { alert("❌ Error de conexión"); statusCell.innerHTML = originalContent; });
+    .catch(error => {
+        alert("❌ Error de conexión");
+        statusCell.innerHTML = originalContent;
+    });
 }
 
 function getCSRFToken() {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
         const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
+        for (let i = 0; cookies[i]; i++) {
             const cookie = cookies[i].trim();
             if (cookie.substring(0, 10) === ('csrftoken=')) {
                 cookieValue = decodeURIComponent(cookie.substring(10));

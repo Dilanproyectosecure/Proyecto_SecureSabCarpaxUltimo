@@ -9,17 +9,20 @@
 
 {% block content %}
 <div class="content-card">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>Gestión de Usuarios</h1>
-    <div class="d-flex gap-2">
-        <button class="btn btn-success" id="btnCargaMasiva" data-bs-toggle="modal" data-bs-target="#modalCargaMasiva">
-            <i class="bi bi-file-earmark-spreadsheet"></i> Carga Masiva CSV
-        </button>
-        <button class="btn btn-primary" id="btnMostrarFormulario">
-            <i class="bi bi-person-plus"></i> Crear Usuario
-        </button>
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1><i class="bi bi-people-fill"></i> Gestión de Usuarios</h1>
+            <p>Administra los usuarios del sistema: crea, edita y gestiona sus roles.</p>
+        </div>
+        <div class="page-header-actions">
+            <button class="btn btn-success" id="btnCargaMasiva" data-bs-toggle="modal" data-bs-target="#modalCargaMasiva">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Carga Masiva CSV
+            </button>
+            <button class="btn btn-primary" id="btnMostrarFormulario">
+                <i class="bi bi-person-plus"></i> Crear Usuario
+            </button>
+        </div>
     </div>
-</div>
 
 <div class="modal fade" id="modalCargaMasiva" tabindex="-1">
     <div class="modal-dialog">
@@ -185,20 +188,24 @@
             <tbody>
                 {% for usuario in usuarios %}
                 <tr>
-                    <td>{{ usuario.id_usuario }}</td>
-                    <td>{{ usuario.cedula }}</td>
-                    <td>{{ usuario.nombre|default:"-" }}</td>
-                    <td>{{ usuario.apellido|default:"-" }}</td>
-                    <td>{{ usuario.correo|default:"-" }}</td>
-                    <td>{{ usuario.nombre_rol|default:"Sin rol"|capfirst }}</td>
-                    <td>
+                    <td data-label="ID" class="col-id">{{ usuario.id_usuario }}</td>
+                    <td data-label="Cédula" class="col-cedula">{{ usuario.cedula }}</td>
+                    <td data-label="Nombre">{{ usuario.nombre|default:"-" }}</td>
+                    <td data-label="Apellido">{{ usuario.apellido|default:"-" }}</td>
+                    <td data-label="Email">{{ usuario.correo|default:"-" }}</td>
+                    <td data-label="Rol">
+                        {% with usuario.nombre_rol|default:"sin_rol" as rol_usuario %}
+                            <span class="role-badge role-{{ rol_usuario|lower }}">{{ usuario.nombre_rol|default:"Sin rol"|capfirst }}</span>
+                        {% endwith %}
+                    </td>
+                    <td data-label="Estado">
                         {% if usuario.estado == 'Activo' %}
                             <span class="badge badge-asistio">Activo</span>
                         {% else %}
                             <span class="badge badge-inasistio">Inactivo</span>
                         {% endif %}
                     </td>
-                    <td class="acciones">
+                    <td data-label="Acciones" class="acciones col-acciones">
                         <button class="btn-icon btn-editar" onclick="editarUsuario('{{ usuario.id_usuario }}')" title="Editar">
                             <i class="bi bi-pencil-square"></i>
                         </button>
