@@ -82,22 +82,43 @@ class Huella(models.Model):
         return f"Huella - {self.usuario.nombre} ({self.fecha_registro})"
 
 
+
 class registro_actividad(models.Model):
     id_registro_actividad = models.AutoField(primary_key=True)
+
     id_usuario = models.ForeignKey(
         Usuarios,
         on_delete=models.CASCADE,
-        db_column='id_usuario',
+        db_column='usuario_id',
         null=True,
         blank=True
     )
+
     actividad = models.CharField(max_length=255)
+
     fecha = models.DateField(auto_now_add=True)
-    hora = models.TimeField(null=True, blank=True)
+
+    hora = models.TimeField(
+        null=True,
+        blank=True
+    )
+
     tipo_accion = models.CharField(max_length=50)
-    descripcion = models.TextField(blank=True, null=True)
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
-    user_agent = models.TextField(blank=True, null=True)
+
+    descripcion = models.TextField(
+        blank=True,
+        null=True
+    )
+
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True
+    )
+
+    user_agent = models.TextField(
+        blank=True,
+        null=True
+    )
 
     class Meta:
         db_table = 'registro_actividad'
@@ -105,8 +126,7 @@ class registro_actividad(models.Model):
         ordering = ['-fecha', '-hora']
 
     def __str__(self):
-        return f"{self.fecha} {self.hora} - {self.id_usuario} - {self.tipo_accion}"
-
+        return f"{self.actividad}"
 
 class HistorialFallos(models.Model):
     TIPO_FALLOS = [

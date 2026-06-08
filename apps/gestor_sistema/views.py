@@ -9,6 +9,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.db import connections
+from django.db.models import Q
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -39,7 +40,7 @@ from .services import (
     actualizar_usuario as actualizar_usuario_service,
 )
 from .usuario_huella_services import eliminar_huella as eliminar_huella_service, registrar_huella as registrar_huella_service
-
+from .models import registro_actividad
 
 @login_required
 def panel_admin(request):
@@ -603,9 +604,13 @@ def eliminar_huella_usuario_view(request, id_usuario):
     return redirect('gestor_sistema:gestion_huellas')
 
 
+
 @login_required
 def registro_actividad_view(request):
-    actividades = registro_actividad.objects.select_related('id_usuario').all().order_by('-fecha', '-hora')
+
+    actividades = registro_actividad.objects.select_related(
+        'id_usuario'
+    ).all()
 
     buscar = request.GET.get('buscar', '')
     tipo_accion = request.GET.get('tipo_accion', '')
@@ -614,36 +619,70 @@ def registro_actividad_view(request):
 
     if buscar:
         actividades = actividades.filter(
-            actividad__icontains=buscar
-        ) | actividades.filter(
-            descripcion__icontains=buscar
-        ) | actividades.filter(
-            id_usuario__nombre__icontains=buscar
-        ) | actividades.filter(
-            id_usuario__apellido__icontains=buscar
+            Q(actividad__icontains=buscar) |
+            Q(descripcion__icontains=buscar) |
+            Q(id_usuario__nombre__icontains=buscar) |
+            Q(id_usuario__apellido__icontains=buscar)
         )
 
     if tipo_accion:
-        actividades = actividades.filter(tipo_accion=tipo_accion)
+        actividades = actividades.filter(
+            tipo_accion=tipo_accion
+        )
 
     if fecha_desde:
-        actividades = actividades.filter(fecha__gte=fecha_desde)
+        actividades = actividades.filter(
+            fecha__gte=fecha_desde
+        )
 
     if fecha_hasta:
-        actividades = actividades.filter(fecha__lte=fecha_hasta)
+        actividades = actividades.filter(
+            fecha__lte=fecha_hasta
+        )
+
+    actividades = actividades.order_by(
+        '-fecha',
+        '-hora'
+    )
+
+    total_actividades = registro_actividad.objects.count()
+
+    total_login = registro_actividad.objects.filter(
+        tipo_accion='LOGIN'
+    ).count()
+
+    total_huellas = registro_actividad.objects.filter(
+        tipo_accion='HUELLA'
+    ).count()
+
+    total_usuarios = registro_actividad.objects.filter(
+        tipo_accion='USUARIO'
+    ).count()
 
     context = {
+
         'actividades': actividades,
+
+        'total_actividades': total_actividades,
+        'total_login': total_login,
+        'total_huellas': total_huellas,
+        'total_usuarios': total_usuarios,
+
         'filtros': {
             'buscar': buscar,
             'tipo_accion': tipo_accion,
             'fecha_desde': fecha_desde,
-            'fecha_hasta': fecha_hasta,
+            'fecha_hasta': fecha_hasta
         }
     }
-    return render(request, 'gestor_sistema/registro_actividad.html', context)
 
-
+    return render(
+        request,
+        'gestor_sistema/registro_actividad.html',
+        context
+    )
+    
+    
 @login_required
 def historial_fallos(request):
     fallos = HistorialFallos.objects.select_related('usuario').all()
