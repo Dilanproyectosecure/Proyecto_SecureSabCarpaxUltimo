@@ -221,8 +221,8 @@
 .tabla-asistencias {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.75rem;
-    table-layout: fixed;
+    font-size: 0.9rem;
+    min-width: 900px;
 }
 
 .tabla-asistencias thead tr {
@@ -230,19 +230,18 @@
 }
 
 .tabla-asistencias th {
-    padding: 0.5rem 0.3rem;
+    padding: 0.75rem;
     text-align: left;
     font-weight: 600;
     color: white;
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     text-transform: uppercase;
-    letter-spacing: 0.3px;
-    word-break: break-word;
-    overflow-wrap: break-word;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
 }
 
 .tabla-asistencias td {
-    padding: 0.5rem 0.3rem;
+    padding: 0.75rem;
     border-bottom: 1px solid #e9ecef;
     color: #495057;
     vertical-align: middle;
@@ -268,16 +267,15 @@
     transform: translateX(4px);
 }
 
-/* Estilos para filas según estado */
+/* Estilos para filas según estado (borde lateral de color) */
 .fila-en-instalaciones {
-    background-color: #fff9e6;
-    border-left: 0px solid #f59e0b;
+    background-color: #fffbeb;
+    border-left: 4px solid #f59e0b;
 }
 
 .fila-fuera {
-    background-color: #fef2f2;
-    border-left: 0px solid #9f9f9f;
-    opacity: 0.85;
+    background-color: #f9fafb;
+    border-left: 4px solid #9ca3af;
 }
 
 .fila-fuera:hover {
@@ -685,4 +683,14 @@
     .tabla-asistencias th {
         color: black;
     }
+}
+
+/* Estado: cursor pointer solo en celdas clickeables (En Sede) */
+.celda-estado-clickeable {
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.celda-estado-clickeable:hover {
+    background: rgba(245, 158, 11, 0.1);
 }

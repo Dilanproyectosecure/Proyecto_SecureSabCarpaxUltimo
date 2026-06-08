@@ -402,6 +402,7 @@
     width: 100%;
     border-collapse: collapse;
     min-width: 900px;
+    font-size: 0.9rem;
 }
 
 .tabla-asistencias thead tr {
@@ -409,18 +410,18 @@
 }
 
 .tabla-asistencias th {
-    padding: 1rem;
+    padding: 0.75rem;
     text-align: left;
     font-weight: 600;
     color: white;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     white-space: nowrap;
 }
 
 .tabla-asistencias td {
-    padding: 0.9rem 1rem;
+    padding: 0.75rem;
     border-bottom: 1px solid #e9ecef;
     color: #495057;
     vertical-align: middle;

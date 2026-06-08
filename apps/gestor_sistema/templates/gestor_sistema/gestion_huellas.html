@@ -8,108 +8,113 @@
 {% block title %}Gestión de Huellas{% endblock %}
 
 {% block content %}
-<div class="content-card">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h1>Registrar Huellas</h1>
-    </div>
-    
-    <form method="get" class="filtros-form">
-        <div class="filtros-grid">
-            <div class="filtros-group">
-                <label><i class="bi bi-search"></i> Buscar:</label>
-                <input type="text" name="buscar" class="filtros-input" placeholder="Cédula, nombre, email..." value="{{ filtros.buscar }}">
-            </div>
-            
-            <div class="filtros-group">
-                <label><i class="bi bi-tag"></i> Rol:</label>
-                <select name="rol" class="filtros-selec">
-                    <option value="">Todos los roles</option>
-                    {% for rol in roles %}
-                        <option value="{{ rol.name }}" {% if filtros.rol == rol.name %}selected{% endif %}>{{ rol.name|capfirst }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="filtros-group">
-                <label><i class="bi bi-fingerprint"></i> Estado Huella:</label>
-                <select name="estado_huella" class="filtros-selec">
-                    <option value="">Todos</option>
-                    <option value="con_huella" {% if filtros.estado_huella == 'con_huella' %}selected{% endif %}>Con huella</option>
-                    <option value="sin_huella" {% if filtros.estado_huella == 'sin_huella' %}selected{% endif %}>Sin huella</option>
-                </select>
-            </div>
+<div class="dashboard-container">
+
+    <!-- TABLA DE USUARIOS -->
+    <div class="tabla-card">
+        <div class="tabla-header">
+            <h3><i class="bi bi-table"></i> Usuarios Registrados</h3>
         </div>
+
+        <form method="get" class="filtros-form">
+            <div class="filtros-grid">
+                <div class="filtros-group">
+                    <label><i class="bi bi-search"></i> Buscar:</label>
+                    <input type="text" name="buscar" class="filtros-input" placeholder="Cédula, nombre, email..." value="{{ filtros.buscar }}">
+                </div>
+                
+                <div class="filtros-group">
+                    <label><i class="bi bi-tag"></i> Rol:</label>
+                    <select name="rol" class="filtros-selec">
+                        <option value="">Todos los roles</option>
+                        {% for rol in roles %}
+                            <option value="{{ rol.name }}" {% if filtros.rol == rol.name %}selected{% endif %}>{{ rol.name|capfirst }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filtros-group">
+                    <label><i class="bi bi-fingerprint"></i> Estado Huella:</label>
+                    <select name="estado_huella" class="filtros-selec">
+                        <option value="">Todos</option>
+                        <option value="con_huella" {% if filtros.estado_huella == 'con_huella' %}selected{% endif %}>Con huella</option>
+                        <option value="sin_huella" {% if filtros.estado_huella == 'sin_huella' %}selected{% endif %}>Sin huella</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="filtros-botones">
+                <button type="submit" class="btn-filtro">
+                    <i class="bi bi-funnel-fill"></i> Filtrar
+                </button>
+                <button type="button" class="btn-limpiar" onclick="window.location.href='{{ request.path }}'">
+                    <i class="bi bi-eraser-fill"></i> Limpiar
+                </button>
+            </div>
+        </form>
         
-        <div class="filtros-botones">
-            <button type="submit" class="btn-filtro">
-                <i class="bi bi-funnel-fill"></i> Filtrar
-            </button>
-            <button type="button" class="btn-limpiar" onclick="window.location.href='{{ request.path }}'">
-                <i class="bi bi-eraser-fill"></i> Limpiar
-            </button>
+        <div class="tabla-container">
+            <table class="tabla-asistencias">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Cédula</th>
+                        <th>Nombre</th>
+                        <th>Apellido</th>
+                        <th>Rol</th>
+                        <th>Estado Huella</th>
+                        <th>Fecha Registro</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in usuarios %}
+                    <tr>
+                        <td>{{ usuario.id_usuario }}</td>
+                        <td>{{ usuario.cedula }}</td>
+                        <td>{{ usuario.nombre|default:"-" }}</td>
+                        <td>{{ usuario.apellido|default:"-" }}</td>
+                        <td>{{ usuario.nombre_rol|default:"Sin rol"|capfirst }}</td>
+                        <td>
+                            {% if usuario.tiene_huella %}
+                                <span class="badge badge-exitoso">
+                                    <i class="bi bi-check-circle-fill"></i> Registrada
+                                </span>
+                            {% else %}
+                                <span class="badge badge-pendiente">
+                                    <i class="bi bi-exclamation-circle-fill"></i> No registrada
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if usuario.fecha_huella %}
+                                {{ usuario.fecha_huella|date:"d/m/Y H:i" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="acciones">
+                            {% if not usuario.tiene_huella %}
+                                <button class="btn-icon btn-registrar" onclick="registrarHuella('{{ usuario.id_usuario }}')" title="Registrar huella">
+                                    <i class="bi bi-fingerprint"></i>
+                                </button>
+                            {% else %}
+                                <button class="btn-icon btn-eliminar-huella" onclick="eliminarHuella('{{ usuario.id_usuario }}')" title="Eliminar huella">
+                                    <i class="bi bi-trash3-fill"></i>
+                                </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center">No hay usuarios registrados</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-    </form>
-    
-    <div class="tabla-container">
-        <table class="tabla-asistencias">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Cédula</th>
-                    <th>Nombre</th>
-                    <th>Apellido</th>
-                    <th>Rol</th>
-                    <th>Estado Huella</th>
-                    <th>Fecha Registro</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for usuario in usuarios %}
-                <tr>
-                    <td>{{ usuario.id_usuario }}</td>
-                    <td>{{ usuario.cedula }}</td>
-                    <td>{{ usuario.nombre|default:"-" }}</td>
-                    <td>{{ usuario.apellido|default:"-" }}</td>
-                    <td>{{ usuario.nombre_rol|default:"Sin rol"|capfirst }}</td>
-                    <td>
-                        {% if usuario.tiene_huella %}
-                            <span class="badge badge-exitoso">
-                                <i class="bi bi-check-circle-fill"></i> Registrada
-                            </span>
-                        {% else %}
-                            <span class="badge badge-pendiente">
-                                <i class="bi bi-exclamation-circle-fill"></i> No registrada
-                            </span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if usuario.fecha_huella %}
-                            {{ usuario.fecha_huella|date:"d/m/Y H:i" }}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    <td class="acciones">
-                        {% if not usuario.tiene_huella %}
-                            <button class="btn-icon btn-registrar" onclick="registrarHuella('{{ usuario.id_usuario }}')" title="Registrar huella">
-                                <i class="bi bi-fingerprint"></i>
-                            </button>
-                        {% else %}
-                            <button class="btn-icon btn-eliminar-huella" onclick="eliminarHuella('{{ usuario.id_usuario }}')" title="Eliminar huella">
-                                <i class="bi bi-trash3-fill"></i>
-                            </button>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="8" class="text-center">No hay usuarios registrados</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
     </div>
+
 </div>
 
 <script>

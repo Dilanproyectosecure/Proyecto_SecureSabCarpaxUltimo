@@ -18,11 +18,112 @@
     padding-bottom: 0.8rem;
 }
 
+/* ===== DASHBOARD CONTAINER ===== */
+.dashboard-container {
+    animation: fadeIn 0.3s ease;
+}
+
+/* ===== ENCABEZADO DE SECCIÓN ===== */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border-left: 5px solid #178202;
+}
+
+.section-header h1 {
+    color: #333;
+    margin: 0 0 0.4rem 0;
+    font-size: 1.9rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    border: none;
+    padding: 0;
+}
+
+.section-header h1 i {
+    color: #178202;
+}
+
+.section-header p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #6c757d;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.btn-primary-app {
+    background: linear-gradient(135deg, #178202 0%, #0d6e00 100%);
+    color: white;
+    border: none;
+    padding: 0.7rem 1.4rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 8px rgba(23, 130, 2, 0.25);
+}
+
+.btn-primary-app:hover {
+    background: linear-gradient(135deg, #1a9510 0%, #0d6e00 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(23, 130, 2, 0.4);
+    color: white;
+}
+
+/* ===== TARJETA DE TABLA ===== */
+.tabla-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    overflow: hidden;
+    max-width: 1050px;
+    margin: 0 auto;
+}
+
+.tabla-header {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+}
+
+.tabla-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 1.15rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.tabla-header h3 i {
+    color: #178202;
+}
+
 /* ===== FORMULARIO DE FILTROS ===== */
 .filtros-form {
-    margin-bottom: 1.5rem;
+    margin: 1.5rem;
     background: #f8f9fa;
-    padding: 1.25rem;
+    padding: 1.5rem;
     border-radius: 10px;
     border: 1px solid #e9ecef;
 }
@@ -40,13 +141,20 @@
 }
 
 .filtros-group label {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
     margin-bottom: 0.5rem;
     font-weight: 600;
     color: #495057;
     font-size: 0.85rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+.filtros-group label i {
+    font-size: 0.95rem;
+    color: #178202;
 }
 
 .filtros-input,
@@ -59,6 +167,11 @@
     transition: all 0.3s;
     background-color: white;
     color: #495057;
+}
+
+.filtros-input:hover,
+.filtros-selec:hover {
+    border-color: #b5d8a7;
 }
 
 .filtros-selec {
@@ -75,6 +188,10 @@
     outline: none;
     border-color: #178202;
     box-shadow: 0 0 0 3px rgba(23, 130, 2, 0.1);
+}
+
+.filtros-input::placeholder {
+    color: #adb5bd;
 }
 
 .filtros-botones {
@@ -131,16 +248,15 @@
 .tabla-container {
     overflow-x: auto;
     background: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    margin-top: 1.5rem;
+    margin: 0 1.5rem 1.5rem 1.5rem;
     border: 1px solid #e9ecef;
+    border-radius: 10px;
 }
 
 .tabla-asistencias {
     width: 100%;
     border-collapse: collapse;
-    min-width: 900px;
+    min-width: 700px;
     font-size: 0.9rem;
 }
 
@@ -272,6 +388,34 @@
         font-size: 1.5rem;
     }
 
+    .section-header {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 1.25rem;
+    }
+
+    .section-header h1 {
+        font-size: 1.4rem;
+    }
+
+    .header-buttons {
+        width: 100%;
+    }
+
+    .header-buttons .btn-primary-app {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .tabla-card {
+        max-width: 100%;
+    }
+
+    .filtros-form {
+        margin: 1rem;
+        padding: 1.25rem;
+    }
+
     .filtros-grid {
         grid-template-columns: 1fr;
     }
@@ -285,6 +429,10 @@
     .btn-limpiar {
         width: 100%;
         justify-content: center;
+    }
+
+    .tabla-container {
+        margin: 0 1rem 1rem 1rem;
     }
 
     .tabla-asistencias th,
