@@ -84,7 +84,7 @@ class Huella(models.Model):
 
 
 class registro_actividad(models.Model):
-    id = models.AutoField(primary_key=True)
+    id_registro_actividad = models.AutoField(primary_key=True, db_column='id_registro_actividad')
 
     id_usuario = models.ForeignKey(
         Usuarios,

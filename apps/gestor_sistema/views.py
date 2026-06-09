@@ -318,6 +318,15 @@ def perfil_view(request):
 
 
 def crear_usuario(request):
+    registrar_actividad(
+        request=request,
+        usuario=request.user,
+        actividad="Creación de usuario",
+        tipo_accion="USUARIO",
+        descripcion="Se creó un nuevo usuario"
+    )
+    
+    
     if request.method == 'POST':
         cedula = request.POST.get('cedula')
         nombre = request.POST.get('nombre')
