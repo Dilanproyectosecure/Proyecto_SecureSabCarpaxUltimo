@@ -35,6 +35,7 @@ class RoleUser(models.Model):
 class Ficha(models.Model):
     id_ficha = models.AutoField(primary_key=True)
     numero_ficha = models.CharField(max_length=50)
+    estado = models.CharField(max_length=50)
 
     class Meta:
         db_table = 'ficha'
