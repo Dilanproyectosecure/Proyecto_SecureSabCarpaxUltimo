@@ -7,23 +7,30 @@ from django.dispatch import receiver
 from .models import registro_actividad
 
 
-def registrar_actividad(
-    request,
-    usuario,
-    actividad,
-    tipo_accion,
-    descripcion=""
-):
-    registro_actividad.objects.create(
-        id_usuario=usuario,
-        actividad=actividad,
-        tipo_accion=tipo_accion,
-        descripcion=descripcion,
-        fecha=timezone.now().date(),
-        hora=timezone.now().time(),
-        ip_address=request.META.get('REMOTE_ADDR'),
-        user_agent=request.META.get('HTTP_USER_AGENT')
-    )
+
+def registrar_actividad(usuario, tipo_accion, actividad, descripcion="", request=None):
+    try:
+        ip_address = None
+        user_agent = None
+
+        ahora = timezone.localtime(timezone.now())
+
+        if request:
+            ip_address = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
+            user_agent = request.META.get('HTTP_USER_AGENT', '')
+
+        registro_actividad.objects.create(
+            id_usuario=usuario,
+            tipo_accion=tipo_accion,
+            actividad=actividad,
+            descripcion=descripcion,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            fecha_hora=timezone.now(),
+        )
+
+    except Exception as e:
+        print(f"Error al registrar actividad: {e}")
 
 
 @receiver(user_logged_in)

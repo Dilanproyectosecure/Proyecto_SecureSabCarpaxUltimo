@@ -9,6 +9,8 @@ def registrar_actividad(usuario, tipo_accion, actividad, descripcion="", request
         ip_address = None
         user_agent = None
 
+        ahora = timezone.localtime(timezone.now())
+
         if request:
             ip_address = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
             user_agent = request.META.get('HTTP_USER_AGENT', '')
@@ -20,12 +22,11 @@ def registrar_actividad(usuario, tipo_accion, actividad, descripcion="", request
             descripcion=descripcion,
             ip_address=ip_address,
             user_agent=user_agent,
-            fecha=timezone.now().date(),
-            hora=timezone.now().time(),
+            fecha_hora=timezone.now(),
         )
+
     except Exception as e:
         print(f"Error al registrar actividad: {e}")
-
 
 def registrar_asistencia_sede_por_huella(usuario, request=None, momento=None):
     momento = momento or timezone.now()
