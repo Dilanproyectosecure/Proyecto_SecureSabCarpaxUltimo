@@ -2,7 +2,7 @@
 
 /* Contenedor principal */
 .dashboard-container {
-    max-width: 1400px;
+    width: 100%;
     margin: 0 auto;
     padding: 1rem;
 }
@@ -221,7 +221,8 @@
 .tabla-asistencias {
     width: 100%;
     border-collapse: collapse;
-    min-width: 1000px;
+    font-size: 0.9rem;
+    min-width: 800px;
 }
 
 .tabla-asistencias thead tr {
@@ -229,20 +230,56 @@
 }
 
 .tabla-asistencias th {
-    padding: 1rem;
+    padding: 0.5rem 0.6rem;
     text-align: left;
     font-weight: 600;
     color: white;
-    font-size: 0.9rem;
+    font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    white-space: nowrap;
 }
 
 .tabla-asistencias td {
-    padding: 1rem;
+    padding: 0.45rem 0.6rem;
     border-bottom: 1px solid #e9ecef;
     color: #495057;
     vertical-align: middle;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+.tabla-asistencias td strong {
+    display: block;
+    margin-bottom: 0.2rem;
+    line-height: 1.15;
+}
+
+.tabla-asistencias td, .tabla-asistencias th {
+    line-height: 1.25;
+}
+
+/* Columnas compactas específicas */
+.tabla-asistencias td.tipo-documento,
+.tabla-asistencias th.tipo-documento {
+    width: 140px;
+    max-width: 140px;
+}
+
+.tabla-asistencias td.observaciones,
+.tabla-asistencias th.observaciones {
+    width: 180px;
+    max-width: 180px;
+}
+
+/* Texto truncado con puntos suspensivos */
+.tabla-asistencias td .truncated,
+.tabla-asistencias th .truncated {
+    display: inline-block;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .tabla-asistencias tbody tr:hover {
@@ -263,16 +300,15 @@
     transform: translateX(4px);
 }
 
-/* Estilos para filas según estado */
+/* Estilos para filas según estado (borde lateral de color) */
 .fila-en-instalaciones {
-    background-color: #fff9e6;
-    border-left: 0px solid #f59e0b;
+    background-color: #fffbeb;
+    border-left: 4px solid #f59e0b;
 }
 
 .fila-fuera {
-    background-color: #fef2f2;
-    border-left: 0px solid #9f9f9f;
-    opacity: 0.85;
+    background-color: #f9fafb;
+    border-left: 4px solid #9ca3af;
 }
 
 .fila-fuera:hover {
@@ -283,11 +319,18 @@
 .badge-area {
     background: #e0f2f1;
     color: #00695c;
-    padding: 4px 10px;
+    padding: 6px 12px;
     border-radius: 20px;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-weight: 500;
-    display: inline-block;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transform: none !important;
+    writing-mode: horizontal-tb !important;
 }
 
 /* Badges para estados */
@@ -300,7 +343,7 @@
     font-size: 0.85rem;
     font-weight: 600;
     text-align: center;
-    min-width: 130px;
+    min-width: 90px;
     justify-content: center;
 }
 
@@ -520,10 +563,6 @@
     .dashboard-form {
         padding: 1.5rem;
     }
-    
-    .tabla-asistencias {
-        min-width: 900px;
-    }
 }
 
 @media (max-width: 768px) {
@@ -578,16 +617,17 @@
     .tabla-container {
         margin-top: 1rem;
         border-radius: 8px;
+        overflow-x: hidden;
     }
     
     .tabla-asistencias th,
     .tabla-asistencias td {
-        padding: 0.75rem;
-        font-size: 0.85rem;
+        padding: 0.4rem 0.3rem;
+        font-size: 0.7rem;
     }
     
     .tabla-asistencias th {
-        font-size: 0.8rem;
+        font-size: 0.65rem;
     }
     
     .badge {
@@ -683,4 +723,14 @@
     .tabla-asistencias th {
         color: black;
     }
+}
+
+/* Estado: cursor pointer solo en celdas clickeables (En Sede) */
+.celda-estado-clickeable {
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.celda-estado-clickeable:hover {
+    background: rgba(245, 158, 11, 0.1);
 }

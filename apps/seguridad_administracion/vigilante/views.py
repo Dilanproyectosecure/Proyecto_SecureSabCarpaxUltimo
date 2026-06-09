@@ -26,6 +26,7 @@ from apps.seguridad_administracion.vigilante.services import (
 )
 from apps.seguridad_administracion.vigilante.utils.validadores import validar_nombre_apellido, formatear_nombre
 from apps.seguridad_administracion.vigilante.models import Visitante, RegistroManual
+from apps.seguridad_administracion.vigilante.constants import TIPOS_DOCUMENTO
 from apps.gestor_sistema.services import registrar_actividad
 
 
@@ -67,7 +68,7 @@ def consultar_invitado(request):
     # Verificar si hay filtros para registrar actividad
     filtros_activos = any([
         request.GET.get('nombre'), request.GET.get('cedula'),
-        request.GET.get('fechaDesde'), request.GET.get('fechaHasta'), request.GET.get('area')
+        request.GET.get('fechaDesde'), request.GET.get('fechaHasta'), request.GET.get('area'), request.GET.get('tipo_documento')
     ])
     
     
@@ -79,12 +80,14 @@ def consultar_invitado(request):
     page_numbers = range(max(0, page_obj.number - 3), min(paginator.num_pages, page_obj.number + 2))
     ahora = datetime.now()
     areas = obtener_areas_activas()
+    tipos_documento = [(code, label) for code, label in TIPOS_DOCUMENTO]
     
     context = {
         'visitantes': page_obj,
         'fechaHoy': ahora.strftime('%d/%m/%Y'),
         'horaAhora': ahora.strftime('%H:%M:%S'),
         'areas': areas,
+        'tipos_documento': tipos_documento,
         'totalPages': paginator.num_pages,
         'currentPage': page_obj.number - 1,
         'pageNumbers': page_numbers,
@@ -209,6 +212,7 @@ def registrar_invitado(request):
         'areas': areas,
         'fechaHoy': date.today(),
         'horaAhora': datetime.now().strftime('%H:%M:%S'),
+        'tipos_documento': [(code, label) for code, label in TIPOS_DOCUMENTO],
     }
     return render(request, 'registrar_invitado.html', context)
 
