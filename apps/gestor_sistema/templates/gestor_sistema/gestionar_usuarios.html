@@ -65,6 +65,60 @@
         </div>
     </div>
 </div>
+
+<!-- MODAL EDITAR USUARIO -->
+<div class="modal fade" id="modalEditarUsuario" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Editar Usuario</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formEditarUsuario" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label>Nombre:</label>
+                            <input type="text" name="nombre" id="edit_nombre" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label>Apellido:</label>
+                            <input type="text" name="apellido" id="edit_apellido" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <label>Email:</label>
+                            <input type="email" name="correo" id="edit_correo" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label>Teléfono:</label>
+                            <input type="text" name="telefono" id="edit_telefono" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <label>Rol:</label>
+                            <select name="rol" id="edit_rol" class="form-control" required>
+                                <option value="">Seleccione...</option>
+                                {% for rol in roles %}
+                                    <option value="{{ rol.id }}">{{ rol.name|capfirst }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg"></i> Actualizar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
     
     <div id="formularioCrear" class="formulario-crear" style="display: none;">
         <div class="formulario-header">
@@ -206,7 +260,9 @@
                         {% endif %}
                     </td>
                     <td data-label="Acciones" class="acciones col-acciones">
-                        <button class="btn-icon btn-editar" onclick="editarUsuario('{{ usuario.id_usuario }}')" title="Editar">
+                        <button class="btn-icon btn-editar"
+                            onclick="editarUsuario('{{ usuario.id_usuario }}', '{{ usuario.nombre|default:'' }}', '{{ usuario.apellido|default:'' }}', '{{ usuario.correo|default:'' }}', '{{ usuario.telefono|default:'' }}', '{{ usuario.rol_id|default:'' }}')"
+                            title="Editar">
                             <i class="bi bi-pencil-square"></i>
                         </button>
                         
@@ -245,5 +301,28 @@
     </div>
 </div>
 
+{% endblock %}
+
+{% block extra_js %}
 <script src="{% static 'js/gestionar_usuario.js' %}"></script>
+<script>
+function editarUsuario(id, nombre, apellido, correo, telefono, rolId) {
+    document.getElementById('edit_nombre').value = nombre;
+    document.getElementById('edit_apellido').value = apellido;
+    document.getElementById('edit_correo').value = correo;
+    document.getElementById('edit_telefono').value = telefono;
+    if (rolId) {
+        document.getElementById('edit_rol').value = rolId;
+    } else {
+        document.getElementById('edit_rol').value = '';
+    }
+    document.getElementById('formEditarUsuario').action = '/gestor_sistema/usuarios/editar/' + id + '/';
+    var modal = new bootstrap.Modal(document.getElementById('modalEditarUsuario'));
+    modal.show();
+}
+
+document.getElementById('modalEditarUsuario').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('formEditarUsuario').reset();
+});
+</script>
 {% endblock %}

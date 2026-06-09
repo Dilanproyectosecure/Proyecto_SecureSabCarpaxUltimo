@@ -446,7 +446,7 @@ def editar_usuario(request, id_usuario):
 @login_required
 def gestionar_usuarios(request):
     query = """
-        SELECT u.*, r.name as nombre_rol,
+        SELECT u.*, r.name as nombre_rol, ru.role_id as rol_id,
         CASE WHEN EXISTS (
             SELECT 1 FROM huella h WHERE h.id_usuario = u.id_usuario
         ) THEN 1 ELSE 0 END AS huella_registrada
