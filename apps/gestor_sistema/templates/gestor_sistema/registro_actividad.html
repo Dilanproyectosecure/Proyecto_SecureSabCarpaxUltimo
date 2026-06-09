@@ -77,23 +77,23 @@
                     name="tipo_accion"
                     class="form-control">
 
-                    <option value="">
+                    <option value="" {% if not filtros.tipo_accion %}selected{% endif %}>
                         Todos
                     </option>
 
-                    <option value="LOGIN">
+                    <option value="LOGIN" {% if filtros.tipo_accion == 'LOGIN' %}selected{% endif %}>
                         LOGIN
                     </option>
 
-                    <option value="HUELLA">
+                    <option value="HUELLA" {% if filtros.tipo_accion == 'HUELLA' %}selected{% endif %}>
                         HUELLA
                     </option>
 
-                    <option value="USUARIO">
+                    <option value="USUARIO" {% if filtros.tipo_accion == 'USUARIO' %}selected{% endif %}>
                         USUARIO
                     </option>
 
-                    <option value="ASISTENCIA">
+                    <option value="ASISTENCIA" {% if filtros.tipo_accion == 'ASISTENCIA' %}selected{% endif %}>
                         ASISTENCIA
                     </option>
 
@@ -160,11 +160,15 @@
                     <tr>
 
                         <td>
-                            {{ actividad.fecha }}
+                            {{ actividad.fecha|date:"d/m/Y" }}
                         </td>
 
                         <td>
-                            {{ actividad.hora }}
+                            {% if actividad.hora %}
+                                {{ actividad.hora|time:"H:i:s" }}
+                            {% else %}
+                                --
+                            {% endif %}
                         </td>
 
                         <td>

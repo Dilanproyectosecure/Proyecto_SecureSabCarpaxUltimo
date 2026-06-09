@@ -22,7 +22,8 @@ def registrar_actividad(usuario, tipo_accion, actividad, descripcion="", request
             descripcion=descripcion,
             ip_address=ip_address,
             user_agent=user_agent,
-            fecha_hora=timezone.now(),
+            fecha=ahora.date(),
+            hora=ahora.time(),
         )
 
     except Exception as e:

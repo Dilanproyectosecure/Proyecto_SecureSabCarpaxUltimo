@@ -26,7 +26,8 @@ def registrar_actividad(usuario, tipo_accion, actividad, descripcion="", request
             descripcion=descripcion,
             ip_address=ip_address,
             user_agent=user_agent,
-            fecha_hora=timezone.now(),
+            fecha=ahora.date(),
+            hora=ahora.time(),
         )
 
     except Exception as e:
@@ -55,4 +56,13 @@ def logout_handler(sender, request, user, **kwargs):
             actividad="Cierre de sesión",
             tipo_accion="LOGOUT",
             descripcion="Salida del sistema"
+        )
+        
+        
+        registrar_actividad(
+            request=request,
+            usuario=request.user,
+            actividad="Registro de huella",
+            tipo_accion="HUELLA",
+            descripcion="Se registró una nueva huella"
         )
