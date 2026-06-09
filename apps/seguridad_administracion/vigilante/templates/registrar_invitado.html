@@ -47,14 +47,9 @@
                                 value="{{ request.POST.tipo_documento|default:'' }}"
                                 required>
                             <option value="">Seleccione</option>
-                            <option value="CC" {% if request.POST.tipo_documento == 'CC' %}selected{% endif %}>Cédula de ciudadanía</option>
-                            <option value="TI" {% if request.POST.tipo_documento == 'TI' %}selected{% endif %}>Tarjeta de identidad</option>
-                            <option value="CE" {% if request.POST.tipo_documento == 'CE' %}selected{% endif %}>Cédula de extranjería</option>
-                            <option value="PA" {% if request.POST.tipo_documento == 'PA' %}selected{% endif %}>Pasaporte</option>
-                            <option value="PEP" {% if request.POST.tipo_documento == 'PEP' %}selected{% endif %}>Permiso Especial de Permanencia (PEP)</option>
-                            <option value="PPT" {% if request.POST.tipo_documento == 'PPT' %}selected{% endif %}>Permiso por Protección Temporal (PPT)</option>
-                            <option value="NIT" {% if request.POST.tipo_documento == 'NIT' %}selected{% endif %}>NIT</option>
-                            <option value="RC" {% if request.POST.tipo_documento == 'RC' %}selected{% endif %}>Registro civil</option>
+                            {% for code,label in tipos_documento %}
+                            <option value="{{ code }}" {% if request.POST.tipo_documento == code %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     

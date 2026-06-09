@@ -10,6 +10,7 @@ def obtener_visitantes_con_filtros(request):
     
     nombre = request.GET.get('nombre', '').strip()
     cedula = request.GET.get('cedula', '').strip()
+    tipo_documento = request.GET.get('tipo_documento', '').strip()
     fecha_desde = request.GET.get('fechaDesde', '')
     fecha_hasta = request.GET.get('fechaHasta', '')
     area_id = request.GET.get('area', '')
@@ -21,6 +22,9 @@ def obtener_visitantes_con_filtros(request):
     
     if cedula:
         visitantes = visitantes.filter(cedula__icontains=cedula)
+
+    if tipo_documento:
+        visitantes = visitantes.filter(tipo_documento=tipo_documento)
     
     if fecha_desde:
         visitantes = visitantes.filter(id_asistencia_sede__fecha__gte=fecha_desde)

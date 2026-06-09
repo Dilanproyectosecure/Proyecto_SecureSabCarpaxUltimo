@@ -4,7 +4,7 @@
 {% block title %}Consultar Invitados - Vigilante{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'css/cons.css' %}">
+    <link rel="stylesheet" href="{% static 'css/cons.css' %}?v={% now "U" %}">
 {% endblock %}
 
 {% block content %}
@@ -27,6 +27,16 @@
                         <label for="cedula">Cédula</label>
                         <input type="text" id="cedula" name="cedula" class="filtros-input"
                                value="{{ request.GET.cedula|default:'' }}" placeholder="Buscar por cédula">
+                    </div>
+
+                    <div class="filtros-group">
+                        <label for="tipo_documento">Tipo documento</label>
+                        <select name="tipo_documento" class="filtros-input">
+                            <option value="">Todos los tipos</option>
+                            {% for code,label in tipos_documento %}
+                            <option value="{{ code }}" {% if request.GET.tipo_documento == code %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
 
                     <div class="filtros-group">
@@ -92,12 +102,15 @@
                     <thead>
                         <tr>
                             <th>Visitante</th>
+                            <th>Tipo documento</th>
                             <th>Área</th>
                             <th>Motivo</th>
+                            <th>Observaciones</th>
                             <th>Fecha</th>
                             <th>Hora Entrada</th>
                             <th>Hora Salida</th>
                             <th>Estado</th>
+                        </tr>
                         </thead>
                     <tbody>
                         {% for v in visitantes %}
@@ -105,19 +118,23 @@
                             <td>
                                 <strong>{{ v.nombre }} {{ v.apellido }}</strong><br>
                                 <small style="color: #666;">{{ v.cedula }}</small>
-                                {% if v.tipo_documento %}
-                                <br><small style="color: #7a7a7a;">
-                                    {% if v.tipo_documento == 'CC' %}CC - Cédula de ciudadanía
-                                    {% elif v.tipo_documento == 'TI' %}TI - Tarjeta de identidad
-                                    {% elif v.tipo_documento == 'CE' %}CE - Cédula de extranjería
-                                    {% elif v.tipo_documento == 'PA' %}PA - Pasaporte
-                                    {% elif v.tipo_documento == 'PEP' %}PEP - Permiso Especial de Permanencia
-                                    {% elif v.tipo_documento == 'PPT' %}PPT - Permiso por Protección Temporal
-                                    {% elif v.tipo_documento == 'NIT' %}NIT
-                                    {% elif v.tipo_documento == 'RC' %}RC - Registro civil
-                                    {% else %}{{ v.tipo_documento }}{% endif %}
+                            </td>
+                            <td class="tipo-documento">
+                                <small style="color: #7a7a7a;">
+                                    <span class="truncated">
+                                    {% with td=v.tipo_documento|default:'CC' %}
+                                        {% if td == 'CC' %}Cédula de ciudadanía
+                                        {% elif td == 'TI' %}Tarjeta de identidad
+                                        {% elif td == 'CE' %}Cédula de extranjería
+                                        {% elif td == 'PA' %}Pasaporte
+                                        {% elif td == 'PEP' %}Permiso Especial de Permanencia
+                                        {% elif td == 'PPT' %}Permiso por Protección Temporal
+                                        {% elif td == 'NIT' %}NIT
+                                        {% elif td == 'RC' %}Registro civil
+                                        {% else %}{{ td }}{% endif %}
+                                    {% endwith %}
+                                    </span>
                                 </small>
-                                {% endif %}
                             </td>
                             <td>
                                 {% if v.id_area %}
@@ -127,6 +144,7 @@
                                 {% endif %}
                             </td>
                             <td>{{ v.motivo }}</td>
+                            <td class="observaciones"><span class="truncated">{{ v.observaciones|default:'-' }}</span></td>
                             <td>{{ v.id_asistencia_sede.fecha|date:"d/m/Y"|default:'-' }}</td>
                             <td>{{ v.id_asistencia_sede.hora_entrada|date:"h:i A"|default:'-' }}</td>
                             <td>
@@ -159,8 +177,8 @@
             {% if totalPages > 1 %}
             <div class="paginacion">
                 {% for i in pageNumbers %}
-                    <a href="{% url 'vigilante:consultar_invitado' %}?page={{ i|add:1 }}&nombre={{ request.GET.nombre }}&cedula={{ request.GET.cedula }}&fechaDesde={{ request.GET.fechaDesde }}&fechaHasta={{ request.GET.fechaHasta }}"
-                       class="page-link {% if i == currentPage %}active-page{% endif %}">
+                          <a href="{% url 'vigilante:consultar_invitado' %}?page={{ i|add:1 }}&nombre={{ request.GET.nombre }}&cedula={{ request.GET.cedula }}&fechaDesde={{ request.GET.fechaDesde }}&fechaHasta={{ request.GET.fechaHasta }}&tipo_documento={{ request.GET.tipo_documento }}"
+                              class="page-link {% if i == currentPage %}active-page{% endif %}">
                         {{ i|add:1 }}
                     </a>
                 {% endfor %}
