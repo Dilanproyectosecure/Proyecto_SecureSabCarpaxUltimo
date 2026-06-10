@@ -75,6 +75,22 @@
     min-width: 180px;
 }
 
+.area-horizontal {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 260px;
+}
+
+.area-horizontal label {
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+.area-horizontal .filtros-input {
+    flex: 1;
+}
+
 .filtros-group label {
     display: block;
     margin-bottom: 0.5rem;
@@ -158,6 +174,56 @@
     background: #5a6268;
     transform: translateY(-2px);
     color: white;
+}
+
+/* ===== RESUMEN POR TIPO DE DOCUMENTO ===== */
+.resumen-documentos {
+    margin-bottom: 1.5rem;
+    padding: 1.25rem;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+.resumen-documentos-titulo h2 {
+    margin: 0 0 1rem;
+    font-size: 1.05rem;
+    color: #333;
+}
+
+.resumen-documentos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+}
+
+.resumen-documento-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    border-radius: 8px;
+    background: white;
+    border: 1px solid #e1e1e1;
+}
+
+.resumen-documento-label {
+    color: #495057;
+    font-size: 0.9rem;
+    line-height: 1.2;
+}
+
+.resumen-documento-cantidad {
+    min-width: 2.25rem;
+    height: 2.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: #667eea;
+    color: white;
+    font-weight: 700;
 }
 
 /* ===== ALERTAS ===== */
