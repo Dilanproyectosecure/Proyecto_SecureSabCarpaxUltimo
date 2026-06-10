@@ -33,7 +33,7 @@
         <form id="filtrosPanelForm" class="filtros-form" onsubmit="return false;">
             <div class="filtros-grid">
                 <div class="filtros-group">
-                    <label><i class="bi bi-credit-card-2-front"></i> Buscar Cédula:</label>
+                    <label><i class="bi bi-credit-card-2-front"></i> Buscar Documento:</label>
                     <input type="text" id="filtroCedula" class="filtros-input" placeholder="Ej: 1000856944">
                 </div>
                 <div class="filtros-group">
@@ -133,6 +133,16 @@
                 <div class="modal-body-app">
                     <div class="form-grid-app">
                         <div class="form-group-app">
+                            <label>Tipo de Documento <span class="required">*</span></label>
+                            <select name="tipo_documento" required>
+                                <option value="" disabled selected>Seleccione </option>
+                                <option value="Cédula">Cédula</option>
+                                <option value="Pasaporte">Pasaporte</option>
+                                <option value="TI">Tarjeta de Identidad</option>
+                                <option value="CE">Cédula de Extranjería</option>
+                            </select>
+                        </div>
+                        <div class="form-group-app">
                             <label>Cédula <span class="required">*</span></label>
                             <input type="text" name="cedula" required
                                    inputmode="numeric"
@@ -161,6 +171,12 @@
                             <label>Correo <span class="required">*</span></label>
                             <input type="email" name="correo" required>
                         </div>
+
+                        <div class="form-group-app ">
+                            <label>Contraseña <span class="required">*</span></label>
+                            <input type="password" name="password" value="123" placeholder="123" required  title="La contraseña por defecto es '123'">
+                        </div>
+
                         <div class="form-group-app full">
                             <label>Rol <span class="required">*</span></label>
                             <select name="role_id" id="selectRolCrear" required>
@@ -170,6 +186,7 @@
                                 {% endfor %}
                             </select>
                         </div>
+                        
                     </div>
                 </div>
                 <div class="modal-footer-app">
