@@ -24,13 +24,14 @@ class UsuariosManager(BaseUserManager):
 
 class Usuarios(AbstractBaseUser):
     id_usuario = models.AutoField(primary_key=True)
-    cedula = models.CharField(max_length=191, unique=True)
+    tipo_documento = models.CharField(max_length=10, blank=True, null=True)
+    cedula = models.CharField(max_length=20, unique=True)
     correo = models.CharField(max_length=255, blank=True, null=True)
     email_verified_at = models.DateTimeField(blank=True, null=True)
     nombre = models.CharField(max_length=255, blank=True, null=True)
     apellido = models.CharField(max_length=255, blank=True, null=True)
     id_ficha = models.ForeignKey('coordinador.Ficha', on_delete=models.DO_NOTHING, db_column='id_ficha', blank=True, null=True)
-    telefono = models.CharField(max_length=255, blank=True, null=True)
+    telefono = models.CharField(max_length=10, blank=True, null=True)
     estado = models.CharField(max_length=255, blank=True, null=True)
     password = models.CharField(max_length=255)
     foto_perfil = models.CharField(max_length=255, blank=True, null=True)

@@ -75,13 +75,14 @@ def panel_admin(request):
         return HttpResponseRedirect(reverse('gestor_sistema:panel_admin'))
 
     if request.method == "POST":
+        tipo_documento = request.POST.get('tipo_documento')
         cedula = request.POST.get('cedula')
         nombre = request.POST.get('nombre')
         apellido = request.POST.get('apellido')
         correo = request.POST.get('correo')
         telefono = request.POST.get('telefono')
         role_id = request.POST.get('role_id') or request.POST.get('rol')
-        password = request.POST.get('password', '123')
+        password = request.POST.get('password') or '123'
 
         _name_re = re.compile(r'^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$')
         _errores = []
@@ -98,6 +99,7 @@ def panel_admin(request):
 
         try:
             usuario = Usuarios.objects.create_user(
+                tipo_documento=tipo_documento,
                 cedula=cedula,
                 password=password,
                 nombre=nombre,

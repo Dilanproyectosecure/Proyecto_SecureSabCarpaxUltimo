@@ -67,6 +67,7 @@ def _qs_mock(items=None):
     """
     qs = MagicMock()
     qs.filter.return_value = qs
+    qs.annotate.return_value = qs
     qs.select_related.return_value = qs
     qs.all.return_value = qs
     qs.order_by.return_value = qs
@@ -259,6 +260,21 @@ class TestConsultarInvitadoView(SimpleTestCase):
             self.factory, 'GET', '/vigilante/consultar-invitado/', {'nombre': 'Carlos'}
         ))
         qs.filter.assert_called()
+
+    @patch('apps.seguridad_administracion.vigilante.views.render')
+    @patch('apps.seguridad_administracion.vigilante.views.Area.objects')
+    @patch('apps.seguridad_administracion.vigilante.views.Visitante.objects')
+    def test_filtro_nombre_completo_aplica_un_filtro_por_palabra(self, mock_v, mock_area, mock_render):
+        qs = _qs_mock()
+        mock_v.select_related.return_value.all.return_value.order_by.return_value = qs
+        mock_area.filter.return_value.order_by.return_value = []
+        mock_render.return_value = HttpResponse(status=200)
+
+        consultar_invitado(_request(
+            self.factory, 'GET', '/vigilante/consultar-invitado/', {'nombre': 'Juan Perez'}
+        ))
+        self.assertEqual(qs.annotate.call_count, 1)
+        self.assertEqual(qs.filter.call_count, 1)
 
     @patch('apps.seguridad_administracion.vigilante.views.render')
     @patch('apps.seguridad_administracion.vigilante.views.Area.objects')
