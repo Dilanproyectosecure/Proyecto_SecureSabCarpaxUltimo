@@ -30,6 +30,18 @@
                     </div>
 
                     <div class="filtros-group">
+                        <label for="tipo_documento">Tipo de documento</label>
+                        <select id="tipo_documento" name="tipo_documento" class="filtros-input">
+                            <option value="">Todos los tipos</option>
+                            {% for codigo, etiqueta in tipos_documento %}
+                            <option value="{{ codigo }}" {% if request.GET.tipo_documento == codigo %}selected{% endif %}>
+                                {{ etiqueta }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="filtros-group area-horizontal">
                         <label for="area">Área</label>
                         <select name="area" class="filtros-input">
                             <option value="">Todas las áreas</option>
@@ -64,6 +76,22 @@
                 </div>
             </div>
 
+            {% if conteo_tipos_documento %}
+            <div class="resumen-documentos">
+                <div class="resumen-documentos-titulo">
+                    <h2>Cantidad por tipo de documento</h2>
+                </div>
+                <div class="resumen-documentos-grid">
+                    {% for documento in conteo_tipos_documento %}
+                        <div class="resumen-documento-card">
+                            <span class="resumen-documento-label">{{ documento.etiqueta }}</span>
+                            <span class="resumen-documento-cantidad">{{ documento.total }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
             <!-- MENSAJES DE ALERTA -->
             {% if messages %}
                 {% for message in messages %}
@@ -92,6 +120,7 @@
                     <thead>
                         <tr>
                             <th>Visitante</th>
+                            <th>Tipo documento</th>
                             <th>Área</th>
                             <th>Motivo</th>
                             <th>Fecha</th>
@@ -105,19 +134,17 @@
                             <td>
                                 <strong>{{ v.nombre }} {{ v.apellido }}</strong><br>
                                 <small style="color: #666;">{{ v.cedula }}</small>
-                                {% if v.tipo_documento %}
-                                <br><small style="color: #7a7a7a;">
-                                    {% if v.tipo_documento == 'CC' %}CC - Cédula de ciudadanía
-                                    {% elif v.tipo_documento == 'TI' %}TI - Tarjeta de identidad
-                                    {% elif v.tipo_documento == 'CE' %}CE - Cédula de extranjería
-                                    {% elif v.tipo_documento == 'PA' %}PA - Pasaporte
-                                    {% elif v.tipo_documento == 'PEP' %}PEP - Permiso Especial de Permanencia
-                                    {% elif v.tipo_documento == 'PPT' %}PPT - Permiso por Protección Temporal
-                                    {% elif v.tipo_documento == 'NIT' %}NIT
-                                    {% elif v.tipo_documento == 'RC' %}RC - Registro civil
-                                    {% else %}{{ v.tipo_documento }}{% endif %}
-                                </small>
-                                {% endif %}
+                            </td>
+                            <td>
+                                {% if v.tipo_documento == 'CC' %}CC - Cédula de ciudadanía
+                                {% elif v.tipo_documento == 'TI' %}TI - Tarjeta de identidad
+                                {% elif v.tipo_documento == 'CE' %}CE - Cédula de extranjería
+                                {% elif v.tipo_documento == 'PA' %}PA - Pasaporte
+                                {% elif v.tipo_documento == 'PEP' %}PEP - Permiso Especial de Permanencia
+                                {% elif v.tipo_documento == 'PPT' %}PPT - Permiso por Protección Temporal
+                                {% elif v.tipo_documento == 'NIT' %}NIT
+                                {% elif v.tipo_documento == 'RC' %}RC - Registro civil
+                                {% else %}{{ v.tipo_documento|default:'-' }}{% endif %}
                             </td>
                             <td>
                                 {% if v.id_area %}
@@ -159,7 +186,7 @@
             {% if totalPages > 1 %}
             <div class="paginacion">
                 {% for i in pageNumbers %}
-                    <a href="{% url 'vigilante:consultar_invitado' %}?page={{ i|add:1 }}&nombre={{ request.GET.nombre }}&cedula={{ request.GET.cedula }}&fechaDesde={{ request.GET.fechaDesde }}&fechaHasta={{ request.GET.fechaHasta }}"
+                    <a href="{% url 'vigilante:consultar_invitado' %}?page={{ i|add:1 }}&nombre={{ request.GET.nombre }}&cedula={{ request.GET.cedula }}&tipo_documento={{ request.GET.tipo_documento }}&fechaDesde={{ request.GET.fechaDesde }}&fechaHasta={{ request.GET.fechaHasta }}&area={{ request.GET.area }}"
                        class="page-link {% if i == currentPage %}active-page{% endif %}">
                         {{ i|add:1 }}
                     </a>

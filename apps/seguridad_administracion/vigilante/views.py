@@ -25,8 +25,20 @@ from apps.seguridad_administracion.vigilante.services import (
     procesar_registro_manual,
 )
 from apps.seguridad_administracion.vigilante.utils.validadores import validar_nombre_apellido, formatear_nombre
-from apps.seguridad_administracion.vigilante.models import Visitante, RegistroManual
+from apps.seguridad_administracion.vigilante.models import Area, Visitante, RegistroManual
 from apps.gestor_sistema.services import registrar_actividad
+
+
+TIPOS_DOCUMENTO = [
+    ('CC', 'CC - Cédula de ciudadanía'),
+    ('TI', 'TI - Tarjeta de identidad'),
+    ('CE', 'CE - Cédula de extranjería'),
+    ('PA', 'PA - Pasaporte'),
+    ('PEP', 'PEP - Permiso Especial de Permanencia'),
+    ('PPT', 'PPT - Permiso por Protección Temporal'),
+    ('NIT', 'NIT'),
+    ('RC', 'RC - Registro civil'),
+]
 
 
 def obtener_todos_visitantes():
@@ -85,6 +97,7 @@ def consultar_invitado(request):
         'fechaHoy': ahora.strftime('%d/%m/%Y'),
         'horaAhora': ahora.strftime('%H:%M:%S'),
         'areas': areas,
+        'tipos_documento': TIPOS_DOCUMENTO,
         'totalPages': paginator.num_pages,
         'currentPage': page_obj.number - 1,
         'pageNumbers': page_numbers,
