@@ -1,7 +1,7 @@
 from django.db.models import Q, Count
 from django.utils import timezone
 from datetime import timedelta
-from apps.reporte_monitoreo.coordinador.models import Ficha, AsistenciaSede, AsistenciaAmbiente, Justificacion, Novedad
+from apps.reporte_monitoreo.coordinador.models import Ficha, AsistenciaSede, Justificacion
 from apps.login.models import Usuarios
 
 def obtener_total_fichas_activas():
@@ -28,15 +28,16 @@ def obtener_datos_asistencias_semanales():
     hoy = timezone.localdate()
     inicio_semana = hoy - timedelta(days=hoy.weekday())
     labels = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie']
-    presentes = []
-    ausentes = []
+    entradas = []
+    salidas = []
     
     for offset in range(5):
         fecha = inicio_semana + timedelta(days=offset)
-        presentes.append(AsistenciaAmbiente.objects.filter(fecha=fecha, estado_asistencia__icontains='asistio').count())
-        ausentes.append(AsistenciaAmbiente.objects.filter(fecha=fecha, estado_asistencia__icontains='inasistio').count())
+        dia = AsistenciaSede.objects.filter(fecha=fecha)
+        entradas.append(dia.filter(hora_entrada__isnull=False).count())
+        salidas.append(dia.filter(hora_salida__isnull=False).count())
     
-    return labels, presentes, ausentes
+    return labels, entradas, salidas
 
 def obtener_alertas_por_ficha(asistencias):
     """Calcula alertas por ficha para el PDF"""

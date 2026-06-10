@@ -2,13 +2,9 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     
-    // 1. Configurar gráficos si existen los canvas
+    // 1. Configurar gráfico de asistencias semanales
     if (document.getElementById('asistenciasChart')) {
         configurarGraficoAsistencias();
-    }
-    
-    if (document.getElementById('novedadesChart')) {
-        configurarGraficoNovedades();
     }
     
     // 2. Actualizar datos en tiempo real (opcional)
@@ -19,20 +15,19 @@ document.addEventListener('DOMContentLoaded', function() {
 function configurarGraficoAsistencias() {
     const ctx = document.getElementById('asistenciasChart').getContext('2d');
     
-    // Datos de ejemplo (deberían venir del backend)
     const data = {
-        labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+        labels: window.dashboardData.labels_semana,
         datasets: [
             {
-                label: 'Presentes',
-                data: [65, 72, 68, 70, 75, 60],
+                label: 'Entradas',
+                data: window.dashboardData.entradas_semana,
                 backgroundColor: '#48bb78',
                 borderRadius: 6
             },
             {
-                label: 'Ausentes',
-                data: [12, 8, 10, 7, 5, 15],
-                backgroundColor: '#f56565',
+                label: 'Salidas',
+                data: window.dashboardData.salidas_semana,
+                backgroundColor: '#fbbf24',
                 borderRadius: 6
             }
         ]
@@ -63,40 +58,6 @@ function configurarGraficoAsistencias() {
                     }
                 }
             }
-        }
-    });
-}
-
-// Gráfico de estado de novedades
-function configurarGraficoNovedades() {
-    const ctx = document.getElementById('novedadesChart').getContext('2d');
-    
-    // Datos de ejemplo
-    const data = {
-        labels: ['Pendientes', 'En Proceso', 'Resueltas'],
-        datasets: [{
-            data: [12, 8, 25],
-            backgroundColor: [
-                '#fbbf24',
-                '#60a5fa',
-                '#34d399'
-            ],
-            borderWidth: 0
-        }]
-    };
-
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: data,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            },
-            cutout: '65%'
         }
     });
 }

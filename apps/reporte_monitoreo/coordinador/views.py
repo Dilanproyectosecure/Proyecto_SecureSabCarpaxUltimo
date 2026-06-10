@@ -37,12 +37,12 @@ def inicio(request):
     
     coordinador = request.user
     presentes, total_asistencia, porcentaje = obtener_asistencia_sede_hoy()
-    labels_semana, presentes_semana, ausentes_semana = obtener_datos_asistencias_semanales()
+    labels_semana, entradas_semana, salidas_semana = obtener_datos_asistencias_semanales()
     
     dashboard_data = {
         'labels_semana': labels_semana,
-        'presentes_semana': presentes_semana,
-        'ausentes_semana': ausentes_semana,
+        'entradas_semana': entradas_semana,
+        'salidas_semana': salidas_semana,
     }
     
     context = {
