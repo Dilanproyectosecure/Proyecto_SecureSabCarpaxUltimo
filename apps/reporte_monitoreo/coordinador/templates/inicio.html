@@ -3,144 +3,167 @@
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/inicio.css' %}">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}
 
 {% block title %}Dashboard - Coordinador | SecureSab{% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
-    <form method="get" class="dashboard-form">
-            <div class="section-header">
-                <h1> Panel de Control</h1>
+
+    <!-- HEADER -->
+    <div class="dash-header">
+        <div class="dash-header-left">
+            <h1>Dashboard Coordinador</h1>
+            <p>Resumen general de asistencia - Sede</p>
+        </div>
+        <div class="dash-header-right">
+            <div class="dash-date-picker">
+                <i class="bi bi-calendar3"></i>
+                <span>Hoy, {{ fecha_hoy }}</span>
             </div>
 
+        </div>
+    </div>
 
-            <!-- KPI Cards -->
-            <div class="dash-kpi-grid">
-                <div class="dash-kpi-card fichas">
-                    <div class="dash-kpi-icon">
-                        <i class="fas fa-folder-open"></i>
-                    </div>
-                    <div class="dash-kpi-info">
-                        <span class="dash-kpi-value" id="totalFichas">{{ total_fichas_activas }}</span>
-                        <span class="dash-kpi-label">Fichas Activas</span>
-                    </div>
-                </div>
-                <div class="dash-kpi-card aprendices">
-                    <div class="dash-kpi-icon">
-                        <i class="fas fa-user-graduate"></i>
-                    </div>
-                    <div class="dash-kpi-info">
-                        <span class="dash-kpi-value" id="totalAprendices">{{ total_aprendices }}</span>
-                        <span class="dash-kpi-label">Total Aprendices</span>
-                    </div>
-                </div>
-                <div class="dash-kpi-card presentes">
-                    <div class="dash-kpi-icon">
-                        <i class="fas fa-user-check"></i>
-                    </div>
-                    <div class="dash-kpi-info">
-                        <span class="dash-kpi-value" id="presentesSedeHoy">{{ presentes_sede_hoy }}</span>
-                        <span class="dash-kpi-label">Presentes Hoy</span>
-                        <span class="dash-kpi-trend up">{{ porcentaje_asistencia_hoy }}% asistencia</span>
-                    </div>
-                </div>
-                <div class="dash-kpi-card justificaciones">
-                    <div class="dash-kpi-icon">
-                        <i class="fas fa-file-signature"></i>
-                    </div>
-                    <div class="dash-kpi-info">
-                        <span class="dash-kpi-value" id="justPendientes">{{ justificaciones_pendientes }}</span>
-                        <span class="dash-kpi-label">Justificaciones Pendientes</span>
-                    </div>
-                </div>
+    <!-- KPI CARDS -->
+    <div class="dash-kpi-grid">
+        <div class="dash-kpi-card">
+            <div class="dash-kpi-icon dash-kpi-green-light">
+                <i class="bi bi-people-fill dash-icon-green"></i>
             </div>
-
-            <!-- Gráficos -->
-            <div class="dash-charts-section">
-                <div class="dash-chart-card">
-                    <div class="dash-chart-header">
-                        <h3><i class="fas fa-chart-bar"></i> Asistencia Semanal</h3>
-                    </div>
-                    <div class="dash-chart-body">
-                        <canvas id="asistenciasChart"></canvas>
-                    </div>
-                </div>
-                <div class="dash-chart-card">
-                    <div class="dash-chart-header">
-                        <h3><i class="fas fa-chart-pie"></i> Estado de Novedades</h3>
-                    </div>
-                    <div class="dash-chart-body">
-                        <canvas id="novedadesChart"></canvas>
-                    </div>
-                </div>
+            <div class="dash-kpi-info">
+                <span class="dash-kpi-label">Total Aprendices</span>
+                <span class="dash-kpi-value">{{ total_aprendices }}</span>
+                <span class="dash-kpi-subtitle">Matriculados en la sede</span>
             </div>
+        </div>
 
-            <!-- Acciones Rápidas -->
-            <div class="dash-quick-section">
-                <div class="dash-quick-card">
-                    <div class="dash-quick-header">
-                        <h3><i class="fas fa-bolt"></i> Acciones Rápidas</h3>
+        <div class="dash-kpi-card">
+            <div class="dash-kpi-icon dash-kpi-green-circle">
+                <i class="bi bi-check-circle-fill dash-icon-white"></i>
+            </div>
+            <div class="dash-kpi-info">
+                <span class="dash-kpi-label">Presentes Hoy</span>
+                <span class="dash-kpi-value dash-text-green">{{ presentes_hoy }}</span>
+                <span class="dash-kpi-subtitle">{{ porcentaje_presentes }}% del total</span>
+            </div>
+        </div>
+
+        <div class="dash-kpi-card">
+            <div class="dash-kpi-icon dash-kpi-red-circle">
+                <i class="bi bi-x-circle-fill dash-icon-white"></i>
+            </div>
+            <div class="dash-kpi-info">
+                <span class="dash-kpi-label">Ausentes Hoy</span>
+                <span class="dash-kpi-value dash-text-red">{{ ausentes_hoy }}</span>
+                <span class="dash-kpi-subtitle">{{ porcentaje_ausentes }}% del total</span>
+            </div>
+        </div>
+
+        <div class="dash-kpi-card">
+            <div class="dash-kpi-icon dash-kpi-yellow-circle">
+                <i class="bi bi-person-fill dash-icon-white"></i>
+            </div>
+            <div class="dash-kpi-info">
+                <span class="dash-kpi-label">Justificados Hoy</span>
+                <span class="dash-kpi-value dash-text-yellow">{{ justificados_hoy }}</span>
+                <span class="dash-kpi-subtitle">{{ porcentaje_justificados }}% del total</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHARTS ROW -->
+    <div class="dash-charts-row">
+        <div class="dash-chart-card">
+            <div class="dash-chart-header">
+                <div>
+                    <h3>Asistencia General de la Sede</h3>
+                    <span class="dash-chart-subtitle">Distribución de asistencia para hoy</span>
+                </div>
+                <i class="bi bi-info-circle dash-info-icon"></i>
+            </div>
+            <div class="dash-chart-body">
+                <div class="dash-donut-layout">
+                    <div class="dash-donut-container">
+                        <canvas id="donaChart"></canvas>
                     </div>
-                    <div class="dash-quick-body">
-                        <div class="dash-actions-grid">
-                            <a href="{% url 'coordinador:asistencia_ambiente' %}" class="dash-action-btn">
-                                <i class="fas fa-clipboard-check"></i>
-                                <span>Ver Asistencia</span>
-                            </a>
-                            <a href="{% url 'coordinador:justificaciones' %}" class="dash-action-btn">
-                                <i class="fas fa-file-alt"></i>
-                                <span>Justificaciones</span>
-                            </a>
-                            <a href="{% url 'login:mi_perfil' %}" class="dash-action-btn">
-                                <i class="fas fa-user-cog"></i>
-                                <span>Mi Perfil</span>
-                            </a>
+                    <div class="dash-donut-legend">
+                        <div class="dash-legend-item">
+                            <span class="dash-dot dash-dot-green"></span>
+                            <div class="dash-legend-text">
+                                <span class="dash-legend-label">Presentes</span>
+                                <span class="dash-legend-value">{{ presentes_hoy }} ({{ porcentaje_presentes }}%)</span>
+                            </div>
+                        </div>
+                        <div class="dash-legend-item">
+                            <span class="dash-dot dash-dot-red"></span>
+                            <div class="dash-legend-text">
+                                <span class="dash-legend-label">Ausentes</span>
+                                <span class="dash-legend-value">{{ ausentes_hoy }} ({{ porcentaje_ausentes }}%)</span>
+                            </div>
+                        </div>
+                        <div class="dash-legend-item">
+                            <span class="dash-dot dash-dot-yellow"></span>
+                            <div class="dash-legend-text">
+                                <span class="dash-legend-label">Justificados</span>
+                                <span class="dash-legend-value">{{ justificados_hoy }} ({{ porcentaje_justificados }}%)</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-    </form>
+        </div>
+
+        <div class="dash-chart-card">
+            <div class="dash-chart-header">
+                <div>
+                    <h3>Asistencia por Ambiente</h3>
+                    <span class="dash-chart-subtitle">Número de aprendices presentes hoy</span>
+                </div>
+                <i class="bi bi-info-circle dash-info-icon"></i>
+            </div>
+            <div class="dash-chart-body">
+                <div class="dash-barras-container">
+                    <canvas id="barrasChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LINE CHART -->
+    <div class="dash-chart-card dash-chart-full">
+        <div class="dash-chart-header">
+            <div>
+                <h3>Tendencia de Asistencia (Últimos 7 días)</h3>
+                <span class="dash-chart-subtitle">Número de aprendices presentes por día</span>
+            </div>
+            <i class="bi bi-info-circle dash-info-icon"></i>
+        </div>
+        <div class="dash-chart-body">
+            <div class="dash-tendencia-container">
+                <canvas id="tendenciaChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="dash-footer">
+        <p>SecureSAB &copy; 2025 - Todos los derechos reservados</p>
+    </div>
+
 </div>
 
 <script>
-    // Actualizar hora en tiempo real
-    function actualizarHora() {
-        const ahora = new Date();
-        const hora = ahora.getHours().toString().padStart(2, '0');
-        const minutos = ahora.getMinutes().toString().padStart(2, '0');
-        const segundos = ahora.getSeconds().toString().padStart(2, '0');
-        const horaActual = `${hora}:${minutos}:${segundos}`;
-        
-        const horaElement = document.getElementById('horaActual');
-        if (horaElement) {
-            horaElement.textContent = horaActual;
-        }
-    }
-    
-    setInterval(actualizarHora, 1000);
-    actualizarHora();
-    
-    // Actualizar fecha (opcional)
-    function actualizarFecha() {
-        const ahora = new Date();
-        const dia = ahora.getDate().toString().padStart(2, '0');
-        const mes = (ahora.getMonth() + 1).toString().padStart(2, '0');
-        const anio = ahora.getFullYear();
-        const fechaActual = `${dia}/${mes}/${anio}`;
-        
-        const fechaElement = document.getElementById('dateDay');
-        if (fechaElement) {
-            fechaElement.textContent = fechaActual;
-        }
-    }
-    
-    actualizarFecha();
+    window.dashboardData = {
+        distribucion: {
+            presentes: {{ presentes_hoy|default:"0" }},
+            ausentes: {{ ausentes_hoy|default:"0" }},
+            justificados: {{ justificados_hoy|default:"0" }}
+        },
+        ambientes: {{ datos_ambientes_json|safe }},
+        tendencia: {{ datos_tendencia_json|safe }}
+    };
 </script>
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="{% static 'js/inicio.js' %}"></script>
-<script>
-    window.dashboardData = JSON.parse('{{ dashboard_data_json|escapejs }}');
-</script>
 {% endblock %}

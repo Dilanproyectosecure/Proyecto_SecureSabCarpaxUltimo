@@ -1,138 +1,172 @@
 // ===== DASHBOARD DEL COORDINADOR =====
 
 document.addEventListener('DOMContentLoaded', function() {
-    
-    // 1. Configurar gráficos si existen los canvas
-    if (document.getElementById('asistenciasChart')) {
-        configurarGraficoAsistencias();
+    if (document.getElementById('donaChart')) {
+        configurarGraficoDona();
     }
-    
-    if (document.getElementById('novedadesChart')) {
-        configurarGraficoNovedades();
+    if (document.getElementById('barrasChart')) {
+        configurarGraficoBarras();
     }
-    
-    // 2. Actualizar datos en tiempo real (opcional)
-    // actualizarDatos();
+    if (document.getElementById('tendenciaChart')) {
+        configurarGraficoTendencia();
+    }
 });
 
-// Gráfico de asistencias semanales
-function configurarGraficoAsistencias() {
-    const ctx = document.getElementById('asistenciasChart').getContext('2d');
-    
-    // Datos de ejemplo (deberían venir del backend)
-    const data = {
-        labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
-        datasets: [
-            {
-                label: 'Presentes',
-                data: [65, 72, 68, 70, 75, 60],
-                backgroundColor: '#48bb78',
-                borderRadius: 6
-            },
-            {
-                label: 'Ausentes',
-                data: [12, 8, 10, 7, 5, 15],
-                backgroundColor: '#f56565',
-                borderRadius: 6
+function configurarGraficoDona() {
+    const ctx = document.getElementById('donaChart').getContext('2d');
+    const dist = window.dashboardData.distribucion;
+
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Presentes', 'Ausentes', 'Justificados'],
+            datasets: [{
+                data: [dist.presentes, dist.ausentes, dist.justificados],
+                backgroundColor: ['#22c55e', '#ef4444', '#f59e0b'],
+                borderWidth: 0,
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            cutout: '65%',
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    padding: 12,
+                    titleFont: { size: 13 },
+                    bodyFont: { size: 12 },
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const pct = total > 0 ? ((context.raw / total) * 100).toFixed(1) : 0;
+                            return context.label + ': ' + context.raw + ' (' + pct + '%)';
+                        }
+                    }
+                }
             }
-        ]
-    };
+        }
+    });
+}
+
+function configurarGraficoBarras() {
+    const ctx = document.getElementById('barrasChart').getContext('2d');
+    const ambientes = window.dashboardData.ambientes;
+
+    const labels = ambientes.map(function(a) { return a.ambiente; });
+    const data = ambientes.map(function(a) { return a.presentes; });
 
     new Chart(ctx, {
         type: 'bar',
-        data: data,
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: '#22c55e',
+                borderRadius: 4,
+                barThickness: 22
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    padding: 12,
+                    callbacks: {
+                        label: function(context) {
+                            return context.raw + ' aprendices presentes';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    grid: { display: false },
+                    ticks: {
+                        stepSize: 10,
+                        font: { size: 11 },
+                        color: '#6b7280'
+                    }
+                },
+                y: {
+                    grid: { display: false },
+                    ticks: {
+                        font: { size: 12 },
+                        color: '#374151'
+                    }
+                }
+            }
+        }
+    });
+}
+
+function configurarGraficoTendencia() {
+    const ctx = document.getElementById('tendenciaChart').getContext('2d');
+    const tendencia = window.dashboardData.tendencia;
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: tendencia.labels,
+            datasets: [{
+                label: 'Aprendices presentes',
+                data: tendencia.valores,
+                borderColor: '#22c55e',
+                backgroundColor: 'transparent',
+                borderWidth: 2.5,
+                pointBackgroundColor: '#22c55e',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+                tension: 0.3,
+                fill: false
+            }]
+        },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    position: 'top',
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    padding: 12,
+                    callbacks: {
+                        label: function(context) {
+                            return context.raw + ' aprendices presentes';
+                        }
+                    }
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
+                    ticks: {
+                        stepSize: 5,
+                        font: { size: 11 },
+                        color: '#6b7280'
+                    },
                     grid: {
-                        display: true,
                         color: 'rgba(0,0,0,0.05)'
                     }
                 },
                 x: {
-                    grid: {
-                        display: false
+                    grid: { display: false },
+                    ticks: {
+                        font: { size: 11 },
+                        color: '#6b7280'
                     }
                 }
             }
         }
     });
 }
-
-// Gráfico de estado de novedades
-function configurarGraficoNovedades() {
-    const ctx = document.getElementById('novedadesChart').getContext('2d');
-    
-    // Datos de ejemplo
-    const data = {
-        labels: ['Pendientes', 'En Proceso', 'Resueltas'],
-        datasets: [{
-            data: [12, 8, 25],
-            backgroundColor: [
-                '#fbbf24',
-                '#60a5fa',
-                '#34d399'
-            ],
-            borderWidth: 0
-        }]
-    };
-
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: data,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom'
-                }
-            },
-            cutout: '65%'
-        }
-    });
-}
-
-// Función para actualizar datos (simulación)
-function actualizarDatos() {
-    setInterval(() => {
-        // Aquí irían peticiones AJAX para actualizar los KPIs
-        console.log('Actualizando datos...');
-    }, 30000); // Cada 30 segundos
-}
-
-// Tooltips y menús (si es necesario)
-document.addEventListener('click', function(e) {
-    // Cerrar dropdowns al hacer clic fuera
-    const dropdowns = document.querySelectorAll('.user-dropdown');
-    dropdowns.forEach(dropdown => {
-        if (!dropdown.contains(e.target) && !e.target.closest('.user-menu-container')) {
-            dropdown.classList.remove('show');
-        }
-    });
-});
-
-// Animaciones de entrada
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-        }
-    });
-}, { threshold: 0.1 });
-
-document.querySelectorAll('.dash-kpi-card, .dash-chart-card, .dash-quick-card').forEach(el => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(20px)';
-    el.style.transition = 'opacity 0.6s, transform 0.6s';
-    observer.observe(el);
-});

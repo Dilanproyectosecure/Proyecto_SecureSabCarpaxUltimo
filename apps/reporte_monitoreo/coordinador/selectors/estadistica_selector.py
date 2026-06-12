@@ -1,7 +1,7 @@
 from django.db.models import Q, Count
 from django.utils import timezone
 from datetime import timedelta
-from apps.reporte_monitoreo.coordinador.models import Ficha, AsistenciaSede, AsistenciaAmbiente, Justificacion, Novedad
+from apps.reporte_monitoreo.coordinador.models import Ficha, AsistenciaSede, AsistenciaAmbiente, Justificacion
 from apps.login.models import Usuarios
 
 def obtener_total_fichas_activas():
@@ -28,15 +28,16 @@ def obtener_datos_asistencias_semanales():
     hoy = timezone.localdate()
     inicio_semana = hoy - timedelta(days=hoy.weekday())
     labels = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie']
-    presentes = []
-    ausentes = []
+    entradas = []
+    salidas = []
     
     for offset in range(5):
         fecha = inicio_semana + timedelta(days=offset)
-        presentes.append(AsistenciaAmbiente.objects.filter(fecha=fecha, estado_asistencia__icontains='asistio').count())
-        ausentes.append(AsistenciaAmbiente.objects.filter(fecha=fecha, estado_asistencia__icontains='inasistio').count())
+        dia = AsistenciaSede.objects.filter(fecha=fecha)
+        entradas.append(dia.filter(hora_entrada__isnull=False).count())
+        salidas.append(dia.filter(hora_salida__isnull=False).count())
     
-    return labels, presentes, ausentes
+    return labels, entradas, salidas
 
 def obtener_alertas_por_ficha(asistencias):
     """Calcula alertas por ficha para el PDF"""
@@ -76,3 +77,82 @@ def obtener_alertas_por_ficha(asistencias):
         })
     
     return sorted(alertas_ficha, key=lambda a: (a['nivel'] == 'Alta', a['inasistio'], a['sin_instructor']), reverse=True)[:8]
+
+
+def obtener_distribucion_asistencia_hoy():
+    hoy = timezone.localdate()
+    total_aprendices = Usuarios.objects.filter(id_ficha__isnull=False).exclude(
+        Q(nombre__icontains='instructor') | Q(nombre__icontains='coordinador') |
+        Q(apellido__icontains='instructor') | Q(apellido__icontains='coordinador')
+    ).count()
+
+    presentes = AsistenciaSede.objects.filter(
+        fecha=hoy, estado_asistencia__icontains='presente'
+    ).count()
+
+    justificados = Justificacion.objects.filter(
+        fecha=hoy,
+        estado__icontains='aprobado'
+    ).count()
+
+    ausentes = total_aprendices - presentes - justificados
+    if ausentes < 0:
+        ausentes = 0
+
+    pct_presentes = round((presentes / total_aprendices) * 100, 1) if total_aprendices > 0 else 0
+    pct_ausentes = round((ausentes / total_aprendices) * 100, 1) if total_aprendices > 0 else 0
+    pct_justificados = round((justificados / total_aprendices) * 100, 1) if total_aprendices > 0 else 0
+
+    return {
+        'total': total_aprendices,
+        'presentes': presentes,
+        'ausentes': ausentes,
+        'justificados': justificados,
+        'pct_presentes': pct_presentes,
+        'pct_ausentes': pct_ausentes,
+        'pct_justificados': pct_justificados,
+    }
+
+
+def obtener_asistencia_por_ambiente_hoy():
+    hoy = timezone.localdate()
+    asistencias = AsistenciaAmbiente.objects.filter(
+        fecha=hoy,
+        estado_asistencia__icontains='presente'
+    ).values('id_usuario__id_ficha__numero_ficha').annotate(
+        total=Count('id_asistencia_ambiente')
+    ).order_by('-total')
+
+    resultado = []
+    for item in asistencias:
+        ficha_num = item['id_usuario__id_ficha__numero_ficha']
+        if ficha_num:
+            resultado.append({
+                'ambiente': str(ficha_num),
+                'presentes': item['total']
+            })
+
+    return resultado
+
+
+def obtener_tendencia_asistencia_7_dias():
+    hoy = timezone.localdate()
+    labels = []
+    valores = []
+
+    dias_nombre = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom']
+
+    for i in range(6, -1, -1):
+        fecha = hoy - timedelta(days=i)
+        labels.append(f"{dias_nombre[fecha.weekday()]} {fecha.day}")
+
+        count = AsistenciaSede.objects.filter(
+            fecha=fecha,
+            estado_asistencia__icontains='presente'
+        ).count()
+        valores.append(count)
+
+    return {
+        'labels': labels,
+        'valores': valores,
+    }
