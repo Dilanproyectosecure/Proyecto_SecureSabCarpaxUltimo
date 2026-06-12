@@ -13,7 +13,8 @@ from apps.gestor_sistema.services import registrar_actividad
 
 from .selectors.estadistica_selector import (
     obtener_total_fichas_activas, obtener_total_aprendices, obtener_asistencia_sede_hoy,
-    obtener_justificaciones_pendientes, obtener_datos_asistencias_semanales, obtener_alertas_por_ficha
+    obtener_justificaciones_pendientes, obtener_datos_asistencias_semanales, obtener_alertas_por_ficha,
+    obtener_distribucion_asistencia_hoy, obtener_asistencia_por_ambiente_hoy, obtener_tendencia_asistencia_7_dias
 )
 from .selectors.asistencia_selector import (
     obtener_asistencias_ambiente_con_filtros, obtener_asistencias_sede_con_filtros,
@@ -36,27 +37,31 @@ def inicio(request):
     """Vista principal del dashboard del coordinador"""
     
     coordinador = request.user
-    presentes, total_asistencia, porcentaje = obtener_asistencia_sede_hoy()
-    labels_semana, entradas_semana, salidas_semana = obtener_datos_asistencias_semanales()
+    distribucion = obtener_distribucion_asistencia_hoy()
+    ambientes = obtener_asistencia_por_ambiente_hoy()
+    tendencia = obtener_tendencia_asistencia_7_dias()
     
-    dashboard_data = {
-        'labels_semana': labels_semana,
-        'entradas_semana': entradas_semana,
-        'salidas_semana': salidas_semana,
-    }
+    from django.utils import timezone
+    hoy = timezone.localdate()
+    meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+             'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+    fecha_hoy = f"{hoy.day} de {meses[hoy.month - 1]} de {hoy.year}"
     
     context = {
         'coordinador_nombre': f"{coordinador.nombre or ''} {coordinador.apellido or ''}".strip() or 'Coordinador',
         'coordinador_primer_nombre': coordinador.nombre or 'Coordinador',
         'coordinador_correo': coordinador.correo or '',
-        'total_fichas_activas': obtener_total_fichas_activas(),
-        'total_aprendices': obtener_total_aprendices(),
-        'presentes_sede_hoy': presentes,
-        'justificaciones_pendientes': obtener_justificaciones_pendientes(),
-        'porcentaje_asistencia_hoy': porcentaje,
-        'dashboard_data_json': json.dumps(dashboard_data),
+        'fecha_hoy': fecha_hoy,
+        'total_aprendices': distribucion['total'],
+        'presentes_hoy': distribucion['presentes'],
+        'ausentes_hoy': distribucion['ausentes'],
+        'justificados_hoy': distribucion['justificados'],
+        'porcentaje_presentes': distribucion['pct_presentes'],
+        'porcentaje_ausentes': distribucion['pct_ausentes'],
+        'porcentaje_justificados': distribucion['pct_justificados'],
+        'datos_ambientes_json': json.dumps(ambientes),
+        'datos_tendencia_json': json.dumps(tendencia),
     }
-    
     
     return render(request, 'inicio.html', context)
 
