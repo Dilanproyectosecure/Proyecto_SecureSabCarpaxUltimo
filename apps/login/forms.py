@@ -52,7 +52,8 @@ class NuevaPasswordForm(forms.Form):
         label='Nueva contraseña',
         widget=forms.PasswordInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Ingrese nueva contraseña'
+            'placeholder': 'Ingrese nueva contraseña',
+            'style': 'padding-right:44px; width:100%; box-sizing:border-box;'
         }),
         error_messages={
             'required': 'La contraseña es obligatoria'
@@ -62,7 +63,8 @@ class NuevaPasswordForm(forms.Form):
         label='Confirmar contraseña',
         widget=forms.PasswordInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Confirme su nueva contraseña'
+            'placeholder': 'Confirme su nueva contraseña',
+            'style': 'padding-right:44px; width:100%; box-sizing:border-box;'
         }),
         error_messages={
             'required': 'Debe confirmar la contraseña'
@@ -85,5 +87,7 @@ class NuevaPasswordForm(forms.Form):
                 raise ValidationError('La contraseña debe contener al menos una mayúscula')
             if not re.search(r'[0-9]', password):
                 raise ValidationError('La contraseña debe contener al menos un número')
+            if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
+                raise ValidationError('La contraseña debe contener al menos un carácter especial (!@#$%^&*)')
         
         return cleaned_data

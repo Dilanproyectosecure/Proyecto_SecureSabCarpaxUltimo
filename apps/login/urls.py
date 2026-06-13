@@ -14,5 +14,6 @@ urlpatterns = [
     # Rutas de recuperación de contraseña
     path('recuperar/', views.recuperar, name='recuperar'),
     path('recuperar/confirmar/<str:email>/', views.recuperar_confirmar, name='recuperar_confirmar'),
+    path('recuperar/reenviar/<str:email>/', views.reenviar_codigo, name='reenviar_codigo'),
     path('recuperar/nueva-pass/<str:token>/', views.recuperar_nueva_pass, name='recuperar_nueva_pass'),
 ]

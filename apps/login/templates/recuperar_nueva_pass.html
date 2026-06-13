@@ -2,7 +2,8 @@
 
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'css/recuperacion.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/recuperacion.css' %}?v=2">
 {% endblock %}
 
 {% block content %}
@@ -26,7 +27,15 @@
         
         <div class="form-group">
             <label for="id_password">Nueva contraseña</label>
-            {{ form.password }}
+            <div style="position:relative;">
+                {{ form.password }}
+                <button type="button" class="toggle-password" data-target="id_password" aria-label="Mostrar contraseña" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); border:none; background:transparent; padding:0; cursor:pointer;">
+                    <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2f6b2f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                </button>
+            </div>
             {% if form.password.errors %}
                 <ul class="errorlist">
                     {% for error in form.password.errors %}
@@ -38,7 +47,15 @@
         
         <div class="form-group">
             <label for="id_password_confirm">Confirmar contraseña</label>
-            {{ form.password_confirm }}
+            <div style="position:relative;">
+                {{ form.password_confirm }}
+                <button type="button" class="toggle-password" data-target="id_password_confirm" aria-label="Mostrar contraseña" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); border:none; background:transparent; padding:0; cursor:pointer;">
+                    <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2f6b2f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                </button>
+            </div>
             {% if form.password_confirm.errors %}
                 <ul class="errorlist">
                     {% for error in form.password_confirm.errors %}
@@ -46,6 +63,22 @@
                     {% endfor %}
                 </ul>
             {% endif %}
+        </div>
+
+        <div class="password-requirements" id="password-requirements">
+            <p class="requirements-title">La contraseña debe contener:</p>
+            <div class="requirement" id="req-length">
+                <i class="req-icon fas fa-times-circle"></i> Mínimo 8 caracteres
+            </div>
+            <div class="requirement" id="req-uppercase">
+                <i class="req-icon fas fa-times-circle"></i> Al menos una mayúscula
+            </div>
+            <div class="requirement" id="req-number">
+                <i class="req-icon fas fa-times-circle"></i> Al menos un número
+            </div>
+            <div class="requirement" id="req-special">
+                <i class="req-icon fas fa-times-circle"></i> Al menos un carácter especial (!@#$%^&*)
+            </div>
         </div>
         
         <button type="submit" class="btn-verificar">
@@ -61,12 +94,62 @@
 </div>
 
 <script>
-    // Validación en tiempo real de la contraseña
-    const passwordInput = document.getElementById('id_password');
-    if (passwordInput) {
+    // Toggle show/hide password
+    document.querySelectorAll('.toggle-password').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var targetId = this.getAttribute('data-target');
+            var input = document.getElementById(targetId);
+            var eye = this.querySelector('.eye-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                eye.setAttribute('stroke', '#006400');
+            } else {
+                input.type = 'password';
+                eye.setAttribute('stroke', '#2f6b2f');
+            }
+        });
+    });
+
+    // Real-time password validation
+    var passwordInput = document.getElementById('id_password');
+    var reqContainer = document.getElementById('password-requirements');
+    if (passwordInput && reqContainer) {
         passwordInput.addEventListener('input', function() {
-            const password = this.value;
-            // Puedes agregar validación visual aquí si quieres
+            var pw = this.value;
+
+            var checks = {
+                'req-length': pw.length >= 8,
+                'req-uppercase': /[A-Z]/.test(pw),
+                'req-number': /[0-9]/.test(pw),
+                'req-special': /[!@#$%^&*(),.?":{}|<>]/.test(pw)
+            };
+
+            var allMet = true;
+            for (var id in checks) {
+                var el = document.getElementById(id);
+                if (!el) continue;
+                var icon = el.querySelector('.req-icon');
+                if (checks[id]) {
+                    el.classList.add('met');
+                    el.classList.remove('unmet');
+                    icon.className = 'req-icon fas fa-check-circle';
+                } else {
+                    el.classList.add('unmet');
+                    el.classList.remove('met');
+                    icon.className = 'req-icon fas fa-times-circle';
+                    allMet = false;
+                }
+            }
+
+            if (pw.length === 0) {
+                reqContainer.classList.remove('all-met', 'has-error');
+            } else if (allMet) {
+                reqContainer.classList.add('all-met');
+                reqContainer.classList.remove('has-error');
+            } else {
+                reqContainer.classList.add('has-error');
+                reqContainer.classList.remove('all-met');
+            }
         });
     }
 </script>
