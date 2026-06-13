@@ -29,6 +29,15 @@ def login_view(request):
         cedula = request.POST.get('cedula')
         password = request.POST.get('password')
         
+        # Verificar si el usuario existe pero está inactivo
+        try:
+            usuario_check = Usuarios.objects.get(cedula=cedula)
+            if not usuario_check.is_active:
+                messages.error(request, 'Usuario inactivo, comuníquese con el gestor')
+                return render(request, 'login.html', {'error': 'Usuario inactivo, comuníquese con el gestor'})
+        except Usuarios.DoesNotExist:
+            pass
+
         # Intento de autenticación con Django
         user = authenticate(request, username=cedula, password=password)
         
