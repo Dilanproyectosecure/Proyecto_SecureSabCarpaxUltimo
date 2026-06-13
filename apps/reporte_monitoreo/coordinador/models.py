@@ -83,6 +83,7 @@ class FichaInstructor(models.Model):
     id_ficha = models.ForeignKey(
     Ficha,
     on_delete=models.CASCADE,
+    db_column='id_ficha',
     null=True,
     blank=True
 )
@@ -93,10 +94,18 @@ class FichaInstructor(models.Model):
     null=True,
     blank=True
 )
+    
+    id_competencia = models.ForeignKey(
+    'Competencia',
+    on_delete=models.CASCADE,
+    db_column='id_competencia',
+    null=True,
+    blank=True
+    )
 
     class Meta:
         db_table = 'ficha_instructor'
-        unique_together = (('id_ficha', 'id_instructor'),)
+        unique_together = (('id_ficha', 'id_instructor', 'id_competencia'),)
         managed = False
 
 

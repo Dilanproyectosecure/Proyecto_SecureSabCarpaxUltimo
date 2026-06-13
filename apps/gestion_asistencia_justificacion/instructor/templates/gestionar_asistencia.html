@@ -56,7 +56,8 @@
                         <th>Nombre Completo</th>
                         <th>Correo</th>
                         <th>Teléfono</th>
-                        <th>Asistencia</th>
+                        <th>Asistencia.S</th>  <!-- NUEVA COLUMNA -->
+                        <th>Asistencia.A</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -96,6 +97,22 @@
                             {{ aprendiz.telefono|default:"-" }}
                         </a>
                     </td>
+
+                     <!-- 🔥 NUEVA CELDA: ASISTENCIA SEDE -->
+        <td class="col-asistencia-sede">
+            {% if aprendiz.tiene_asistencia_sede %}
+                <span class="badge-sede presente">
+                    <i class="bi bi-check-circle-fill"></i> En sede
+                </span>
+            {% else %}
+                <span class="badge-sede ausente">
+                    <i class="bi bi-x-circle-fill"></i> Sin registro
+                </span>
+            {% endif %}
+        </td>
+
+
+                    
                     <td>
     <select name="asistencia_{{ aprendiz.id_usuario }}" class="asistencia-select">
         {% if not aprendiz.tiene_asistencia_sede %}
