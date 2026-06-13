@@ -83,6 +83,125 @@ body {
     font-weight: bold;
 }
 
+/* Password wrapper (input + eye icon) */
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.form-group .password-wrapper input,
+.form-group .password-wrapper .form-control {
+    width: 100%;
+    padding: 12px 45px 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+.form-group .password-wrapper input:focus,
+.form-group .password-wrapper .form-control:focus {
+    border-color: #006400;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 100, 0, 0.2);
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    padding: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+.toggle-password:hover {
+    background: rgba(0, 100, 0, 0.08);
+}
+
+.toggle-password:hover .eye-icon {
+    stroke: #006400;
+}
+
+/* Password requirements */
+.password-requirements {
+    margin-top: 10px;
+    padding: 12px 14px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    border-left: 3px solid #ccc;
+    background-color: #fafafa;
+    transition: all 0.3s ease;
+}
+
+.password-requirements.all-met {
+    border-color: #c3e6cb;
+    border-left-color: #28a745;
+    background-color: #f0faf3;
+}
+
+.password-requirements.has-error {
+    border-color: #f5c6cb;
+    border-left-color: #dc3545;
+    background-color: #fef8f8;
+}
+
+.requirements-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    margin: 0 0 8px 0;
+    text-align: left;
+}
+
+.requirement {
+    font-size: 13px;
+    color: #888;
+    padding: 3px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    transition: color 0.25s ease;
+    line-height: 1.6;
+}
+
+.requirement .req-icon {
+    font-size: 13px;
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.requirement.unmet {
+    color: #888;
+}
+
+.requirement.unmet .req-icon {
+    color: #dc3545;
+}
+
+.requirement.met {
+    color: #28a745;
+}
+
+.requirement.met .req-icon {
+    color: #28a745;
+}
+
 /* Botón */
 .btn-verificar {
     background-color: #006400;
@@ -180,5 +299,9 @@ body {
     #id_codigo {
         font-size: 20px;
         letter-spacing: 3px;
+    }
+
+    .toggle-password {
+        right: 8px;
     }
 }
