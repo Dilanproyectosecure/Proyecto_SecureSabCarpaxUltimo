@@ -38,18 +38,13 @@
             </div>
 
             <!-- MENSAJES DE ALERTA -->
-            {% if success %}
-            <div class="alerta alerta-exito">
-                <i class="fas fa-check-circle"></i>
-                <span>{{ success }}</span>
-            </div>
-            {% endif %}
-
-            {% if error %}
-            <div class="alerta alerta-error">
-                <i class="fas fa-times-circle"></i>
-                <span>{{ error }}</span>
-            </div>
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alerta alerta-{% if message.tags == 'success' %}exito{% elif message.tags == 'error' %}error{% else %}info{% endif %}">
+                    <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}times-circle{% endif %}"></i>
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
             {% endif %}
 
             <!-- TARJETA DEL FORMULARIO -->
@@ -242,6 +237,10 @@
 
     function validarDocumento() {
         const val = documento.value.trim();
+        if(val.length === 0) {
+            errDocumento.style.display = 'none';
+            return false;
+        }
         if(val.length !== 10) {
             errDocumento.textContent = 'Documento inválido: debe tener exactamente 10 dígitos.';
             errDocumento.style.display = 'block';
@@ -292,31 +291,9 @@
             const doc = documento.value.trim();
             const tipoMovimiento = document.getElementById('tipoMovimiento').value;
 
-            // Si es ingreso, validar que no exista una entrada sin salida
-            if(tipoMovimiento === 'Ingreso') {
-                // Buscar la última acción registrada para este documento
-                const filas = document.querySelectorAll('table tbody tr');
-                let ultimoTipo = null;
-
-                filas.forEach(fila => {
-                    const celdaDocumento = fila.querySelector('td:first-child')?.textContent.trim();
-                    const celdaTipo = fila.querySelector('td:nth-child(3)')?.textContent.trim();
-                    if(celdaDocumento === doc && celdaTipo && !ultimoTipo) {
-                        ultimoTipo = celdaTipo;
-                    }
-                });
-
-                if(ultimoTipo === 'Ingreso') {
-                    Swal.fire({
-                        title: 'Atención',
-                        text: 'Esta persona ya está registrada como ingreso en la sede. Debe registrar la salida primero.',
-                        icon: 'warning',
-                        confirmButtonText: 'Entendido',
-                        backdrop: 'rgba(0,0,0,0.45)',
-                        allowOutsideClick: false
-                    });
-                    return;
-                }
+            if(!tipoMovimiento) {
+                Swal.fire('Error', 'Debe seleccionar un tipo de movimiento (Ingreso o Salida).', 'error');
+                return;
             }
 
             // Si todo está bien, enviar el formulario
