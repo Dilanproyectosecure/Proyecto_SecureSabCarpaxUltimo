@@ -31,15 +31,19 @@ def procesar_registro_manual(request, documento, tipo_movimiento, motivo):
             return False, f'No se puede registrar salida. {usuario.nombre} {usuario.apellido} no tiene un ingreso registrado hoy'
     
     # Procesar ingreso o salida
+    mensaje_extra = ''
     if tipo_movimiento == 'Ingreso':
         ingreso_pendiente = AsistenciaSede.objects.filter(
             id_usuario=usuario,
             fecha=date.today(),
             hora_salida__isnull=True
-        ).exists()
+        ).first()
         
         if ingreso_pendiente:
-            return False, f'{usuario.nombre} {usuario.apellido} ya tiene un ingreso registrado hoy sin salida'
+            ingreso_pendiente.hora_salida = datetime.now().time()
+            ingreso_pendiente.estado_asistencia = 'Salida'
+            ingreso_pendiente.save(update_fields=['hora_salida', 'estado_asistencia'])
+            mensaje_extra = ' (Se cerró el ingreso anterior automáticamente)'
         
         asistencia = AsistenciaSede.objects.create(
             id_usuario=usuario,
@@ -86,4 +90,4 @@ def procesar_registro_manual(request, documento, tipo_movimiento, motivo):
         tipo_registro='Manual'
     )
     
-    return True, f'{tipo_movimiento} registrado exitosamente para {usuario.nombre} {usuario.apellido}'
+    return True, f'{tipo_movimiento} registrado exitosamente para {usuario.nombre} {usuario.apellido}{mensaje_extra}'
