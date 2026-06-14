@@ -75,7 +75,7 @@
 
 {% elif user.get_rol == 'gestor' %}
     
-    <a href="{% url 'gestor_sistema:crear_usuario' %}" class="nav-link {% if request.resolver_match.url_name == 'crear_usuario' %}active{% endif %}">
+    <a href="{% url 'gestor_sistema:panel_admin' %}" class="nav-link {% if request.resolver_match.url_name == 'panel_admin' %}active{% endif %}">
         <i class="bi bi-person-plus me-2"></i>
         <span>Gestionar Usuarios</span>
     </a>

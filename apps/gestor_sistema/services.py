@@ -1,7 +1,27 @@
+import random
+import string
+
 from apps.login.models import Usuarios, Roles, RoleUser
 from apps.reporte_monitoreo.coordinador.models import Ficha
 from django.utils import timezone
 from .models import AsistenciaSede, Huella, registro_actividad
+
+
+def generar_password_segura(cedula='', nombre=''):
+    if cedula and len(cedula) >= 8:
+        inicial = nombre[0].upper() if nombre else 'A'
+        signo = random.choice('!@#$%^&*')
+        return cedula + inicial + signo
+    chars = string.ascii_letters + string.digits + '!@#$%^&*'
+    password = [
+        random.choice(string.ascii_uppercase),
+        random.choice(string.ascii_lowercase),
+        random.choice(string.digits),
+        random.choice('!@#$%^&*'),
+    ]
+    password += random.choices(chars, k=6)
+    random.shuffle(password)
+    return ''.join(password)
 
 
 def registrar_actividad(usuario, tipo_accion, actividad, descripcion="", request=None):
@@ -95,7 +115,7 @@ def crear_usuario(request, datos):
     apellido = datos.get('apellido')
     correo = datos.get('correo')
     telefono = datos.get('telefono')
-    password = datos.get('password', '123')
+    password = datos.get('password') or generar_password_segura(datos.get('cedula', ''), datos.get('nombre', ''))
     rol_id = datos.get('rol_id')
     ficha_id = datos.get('ficha_id')
 

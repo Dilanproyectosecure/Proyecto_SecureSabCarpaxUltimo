@@ -175,27 +175,18 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Configuración de correo:
 # - Usa SMTP por defecto para enviar correos reales.
-# - Activa consola solo cuando EMAIL_USE_CONSOLE=true.
 # - La clave puede llegar por GMAIL_APP_PASSWORD o EMAIL_HOST_PASSWORD.
-EMAIL_HOST_USER = 'securesabsena@gmail.com'
-
-# Leer contraseña desde archivo .env
+# - Leer contraseña desde archivo .env
 from dotenv import dotenv_values
 env_vars = dotenv_values(os.path.join(BASE_DIR, '.env'))
-EMAIL_HOST_PASSWORD = env_vars.get('GMAIL_APP_PASSWORD', '')
-
-DEFAULT_FROM_EMAIL = 'secureSab <securesabsena@gmail.com>'
-
-USE_CONSOLE_EMAIL = False  # TEMPORAL: imprimir correos en consola para depuración
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-
 EMAIL_HOST_USER = 'securesabsena@gmail.com'
-EMAIL_HOST_PASSWORD ='unkjhiyrivblzlem'
+EMAIL_HOST_PASSWORD = env_vars.get('GMAIL_APP_PASSWORD', '') or 'unkjhiyrivblzlem'
+DEFAULT_FROM_EMAIL = 'secureSab <securesabsena@gmail.com>'
 
 # =====================================================
 # FIN CONFIGURACIÓN DE CORREO

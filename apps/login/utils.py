@@ -1,10 +1,11 @@
 import random
 import string
-from django.core.mail import send_mail
 from django.conf import settings
 import hashlib
 import time
 import logging
+
+from apps.email_service import enviar_correo_seguro
 
 logger = logging.getLogger(__name__)
 
@@ -62,14 +63,7 @@ def enviar_codigo_recuperacion(email, codigo):
     """
     
     try:
-        send_mail(
-            asunto,
-            mensaje_texto,
-            settings.EMAIL_HOST_USER,
-            [email],
-            html_message=mensaje,
-            fail_silently=False
-        )
+        enviar_correo_seguro(asunto, email, mensaje_texto, mensaje)
         return True, None
     except Exception as e:
         logger.exception("Error al enviar correo de recuperación")
