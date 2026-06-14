@@ -96,7 +96,7 @@ def login_view(request):
         'error': 'Cédula o contraseña incorrectos' if request.method == 'POST' else None
     })
 
-
+@login_required
 def logout_view(request):
     user = request.user
     nombre = f"{user.nombre} {user.apellido}"
@@ -104,11 +104,12 @@ def logout_view(request):
     Vista para cerrar sesión
     """
      # ✅ REGISTRAR CIERRE DE SESIÓN
+    
     registrar_actividad(
         usuario=user,
         tipo_accion='LOGOUT',
         actividad='Cierre de sesión',
-        descripcion=f'Usuario {nombre} cerró sesión',
+        descripcion=f'Usuario {user.nombre} {user.apellido}  cerró sesión',
         request=request
     )
 

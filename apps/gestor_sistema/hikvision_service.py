@@ -294,24 +294,24 @@ def procesar_eventos():
 
 
         try:
-            # Buscar en el modelo de usuarios del app `login` (clase `Usuarios`),
+            # Buscar en el modelo de usuarios del app login (clase Usuarios),
             # que es el tipo esperado por las FK de AsistenciaSede.
             usuario = Usuarios.objects.filter(id_usuario=employee_no).first()
             if not usuario:
                 usuario = Usuarios.objects.filter(cedula=employee_no).first()
 
             if not usuario:
-                print("⚠ Usuario no existe:", employee_no)
+                print("⚠️ Usuario no existe:", employee_no)
                 continue
 
             resultado = registrar_asistencia_sede_por_huella(usuario)
 
             if resultado["estado"] == "entrada":
-                print(f"✔ Entrada registrada: {usuario.nombre}")
+                print(f"✔️ Entrada registrada: {usuario.nombre}")
             elif resultado["estado"] == "salida":
-                print(f"✔ Salida registrada: {usuario.nombre}")
+                print(f"✔️ Salida registrada: {usuario.nombre}")
             else:
-                print(f"⚠ Ya tenía entrada y salida hoy: {usuario.nombre}")
+                print(f"⚠️ Ya tenía entrada y salida hoy: {usuario.nombre}")
 
             cache.set("ultima_huella", {
                 "nombre": usuario.nombre,
@@ -402,7 +402,7 @@ def guardar_huella_a_archivo(usuario_id, datos_huella):
     import os
     
     # Ruta de carpeta temporal para huellas
-    temp_dir = os.path.join(os.path.dirname(__file__), 'temp_huellas')
+    temp_dir = os.path.join(os.path.dirname(_file_), 'temp_huellas')
     os.makedirs(temp_dir, exist_ok=True)
     
     # Archivo JSON con nombre único por usuario
@@ -727,7 +727,7 @@ def definir_tipo(usuario):
 
     # Intentar contar registros según el modelo de AsistenciaAmbiente
     try:
-        # El campo en la tabla de ambiente es `id_usuario` (FK a login.Usuarios)
+        # El campo en la tabla de ambiente es id_usuario (FK a login.Usuarios)
         registros = AsistenciaAmbiente.objects.filter(
             id_usuario=usuario,
             fecha=hoy
@@ -740,3 +740,4 @@ def definir_tipo(usuario):
         return "Entrada"
     else:
         return "Salida"
+    

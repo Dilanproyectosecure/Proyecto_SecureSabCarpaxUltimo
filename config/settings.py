@@ -142,9 +142,9 @@ USE_I18N = True
 USE_TZ = True
 
 # ==================== CONFIGURACIÓN DE AUTENTICACIÓN ====================
-LOGIN_URL = 'autenticacion:login'
-LOGIN_REDIRECT_URL = 'autenticacion:perfil'
-LOGOUT_REDIRECT_URL = 'autenticacion:login'
+LOGIN_URL = 'login:login'
+LOGIN_REDIRECT_URL = 'login:mi_perfil'
+LOGOUT_REDIRECT_URL = 'login:login'
 
 # Modelo personalizado de usuarios
 AUTH_USER_MODEL = 'login.Usuarios' 
