@@ -35,7 +35,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ==================== SEGURIDAD ====================
 SECRET_KEY = 'django-insecure-%u1ia%ra2e#7@s9o4cf#go!xzs5!=38k7!5!(8+ysvpy7u(o41'
 DEBUG = True
-ALLOWED_HOSTS = ['158.23.17.242', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['securesab.app', 'www.securesab.app', '158.23.17.242', 'localhost', '127.0.0.1']
 
 # ==================== APLICACIONES ====================
 INSTALLED_APPS = [
