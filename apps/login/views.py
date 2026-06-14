@@ -6,7 +6,6 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from apps.login.models import Usuarios, RoleUser
 from apps.reporte_monitoreo.coordinador.models import AsistenciaAmbiente, Competencia, Justificacion
-from django.core.cache import cache
 from django.views.decorators.cache import never_cache
 from django.contrib.auth.hashers import make_password
 from django.views.decorators.csrf import csrf_protect
@@ -29,6 +28,15 @@ def login_view(request):
         cedula = request.POST.get('cedula')
         password = request.POST.get('password')
         
+        # Verificar si el usuario existe pero está inactivo
+        try:
+            usuario_check = Usuarios.objects.get(cedula=cedula)
+            if not usuario_check.is_active:
+                messages.error(request, 'Usuario inactivo, comuníquese con el gestor')
+                return render(request, 'login.html', {'error': 'Usuario inactivo, comuníquese con el gestor'})
+        except Usuarios.DoesNotExist:
+            pass
+
         # Intento de autenticación con Django
         user = authenticate(request, username=cedula, password=password)
         
@@ -134,13 +142,13 @@ def recuperar(request):
             email = form.cleaned_data['email']
             usuario = form.usuario
             
-            # Generar código y guardar en caché (expira en 10 minutos)
+            # Generar código y guardar en sesión
             codigo = generar_codigo_recuperacion()
-            cache.set(f'recuperacion_{email}', {
+            request.session[f'recuperacion_{email}'] = {
                 'codigo': codigo,
                 'usuario_id': usuario.id_usuario,
                 'timestamp': time.time()
-            }, timeout=600)  # 10 minutos
+            }
             
             # Enviar correo
             enviado, error_envio = enviar_codigo_recuperacion(email, codigo)
@@ -160,7 +168,7 @@ def recuperar(request):
 def recuperar_confirmar(request, email):
     """Paso 2: Ingresar código de verificación"""
     # Verificar que el email está en proceso de recuperación
-    datos = cache.get(f'recuperacion_{email}')
+    datos = request.session.get(f'recuperacion_{email}')
     if not datos:
         messages.error(request, 'La sesión de recuperación ha expirado. Por favor, inicia nuevamente.')
         return redirect('login:recuperar')
@@ -173,10 +181,10 @@ def recuperar_confirmar(request, email):
             if codigo_ingresado == datos['codigo']:
                 # Código correcto, generar token y redirigir
                 token = generar_token_seguro(email)
-                cache.set(f'recuperacion_token_{token}', {
+                request.session[f'recuperacion_token_{token}'] = {
                     'email': email,
                     'usuario_id': datos['usuario_id']
-                }, timeout=600)
+                }
                 return redirect('login:recuperar_nueva_pass', token=token)
             else:
                 messages.error(request, 'Código incorrecto. Verifica e intenta nuevamente.')
@@ -191,7 +199,7 @@ def recuperar_confirmar(request, email):
 
 
 def recuperar_nueva_pass(request, token):
-    datos = cache.get(f'recuperacion_token_{token}')
+    datos = request.session.get(f'recuperacion_token_{token}')
     if not datos:
         messages.error(request, 'El enlace de recuperación ha expirado')
         return redirect('login:recuperar')
@@ -209,9 +217,9 @@ def recuperar_nueva_pass(request, token):
                 usuario.password = make_password(nueva_password)
                 usuario.save()
                 
-                # Limpiar caché
-                cache.delete(f'recuperacion_{email}')
-                cache.delete(f'recuperacion_token_{token}')
+                # Limpiar sesión
+                request.session.pop(f'recuperacion_{email}', None)
+                request.session.pop(f'recuperacion_token_{token}', None)
                 
                 messages.success(request, '✅ Contraseña actualizada correctamente')
                 return redirect('login:login')
@@ -231,3 +239,33 @@ def recuperar_nueva_pass(request, token):
         'email': email
     }
     return render(request, 'recuperar_nueva_pass.html', context)
+
+
+@never_cache
+def reenviar_codigo(request, email):
+    """Reenviar código de verificación al mismo correo"""
+    usuario_data = request.session.get(f'recuperacion_{email}')
+    if not usuario_data:
+        messages.error(request, 'La sesión de recuperación ha expirado. Por favor, inicia nuevamente.')
+        return redirect('login:recuperar')
+
+    try:
+        usuario = Usuarios.objects.get(id_usuario=usuario_data['usuario_id'])
+    except Usuarios.DoesNotExist:
+        messages.error(request, 'Usuario no encontrado')
+        return redirect('login:recuperar')
+
+    codigo = generar_codigo_recuperacion()
+    request.session[f'recuperacion_{email}'] = {
+        'codigo': codigo,
+        'usuario_id': usuario.id_usuario,
+        'timestamp': time.time()
+    }
+
+    enviado, error_envio = enviar_codigo_recuperacion(email, codigo)
+    if enviado:
+        messages.success(request, f'Se ha enviado un nuevo código de verificación a {email}')
+    else:
+        messages.error(request, 'Error al enviar el correo. Intenta nuevamente.')
+
+    return redirect('login:recuperar_confirmar', email=email)

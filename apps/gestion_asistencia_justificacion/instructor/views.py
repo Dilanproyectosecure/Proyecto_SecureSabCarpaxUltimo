@@ -24,7 +24,7 @@ from apps.gestor_sistema.services import registrar_actividad
 # ==================== FICHAS ====================
 @login_required
 def fichas_instructor(request):
-    fichas = obtener_fichas_con_estadisticas()
+    fichas = obtener_fichas_con_estadisticas(instructor_id=request.user.id_usuario)
 
     return render(request, 'fichas_instructor.html', {
         'fichas': fichas
@@ -47,7 +47,7 @@ def gestionar_asistencia(request):
     try:
         ficha = Ficha.objects.select_related('id_programa', 'id_jornada').get(id_ficha=ficha_id)
         # SELECTOR
-        aprendices, competencias, competencia = obtener_datos_ficha(ficha, fecha)
+        aprendices, competencias, competencia = obtener_datos_ficha(ficha, fecha, instructor_id=request.user.id_usuario)
         # SERVICE: inasistencias
 
         for a in aprendices:

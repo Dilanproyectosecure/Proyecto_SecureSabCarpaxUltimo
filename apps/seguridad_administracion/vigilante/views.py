@@ -17,6 +17,7 @@ from apps.seguridad_administracion.vigilante.selectors import (
     obtener_registros_recientes,
     obtener_movimientos_hoy,
     obtener_areas_activas,
+    buscar_usuario_por_cedula,
 )
 from apps.seguridad_administracion.vigilante.services import (
     registrar_entrada_visitante,
@@ -194,6 +195,20 @@ def registrar_invitado(request):
                 'horaAhora': datetime.now().strftime('%H:%M:%S'),
             })
         
+        # Verificar si la cédula pertenece a un usuario del sistema
+        usuario_sistema = buscar_usuario_por_cedula(cedula)
+        if usuario_sistema:
+            messages.error(
+                request,
+                f'La cédula {cedula} pertenece a un usuario registrado en el sistema '
+                f'({usuario_sistema.nombre} {usuario_sistema.apellido}). No se puede registrar como invitado.'
+            )
+            return render(request, 'registrar_invitado.html', {
+                'areas': areas,
+                'fechaHoy': date.today(),
+                'horaAhora': datetime.now().strftime('%H:%M:%S'),
+            })
+        
         # Formatear nombres
         nombre = formatear_nombre(nombre)
         apellido = formatear_nombre(apellido)
@@ -339,4 +354,13 @@ def buscar_visitante_por_cedula(request):
             'en_sede': en_sede,
         })
     
-    return JsonResponse({'encontrado': False})
+    usuario = buscar_usuario_por_cedula(cedula)
+    if usuario:
+        return JsonResponse({
+            'encontrado': False,
+            'es_usuario': True,
+            'nombre': usuario.nombre or '',
+            'apellido': usuario.apellido or '',
+        })
+    
+    return JsonResponse({'encontrado': False, 'es_usuario': False})

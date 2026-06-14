@@ -177,14 +177,14 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # - Usa SMTP por defecto para enviar correos reales.
 # - Activa consola solo cuando EMAIL_USE_CONSOLE=true.
 # - La clave puede llegar por GMAIL_APP_PASSWORD o EMAIL_HOST_PASSWORD.
-EMAIL_HOST_USER = 'mariver913@gmail.com'
+EMAIL_HOST_USER = 'securesabsena@gmail.com'
 
 # Leer contraseña desde archivo .env
 from dotenv import dotenv_values
 env_vars = dotenv_values(os.path.join(BASE_DIR, '.env'))
 EMAIL_HOST_PASSWORD = env_vars.get('GMAIL_APP_PASSWORD', '')
 
-DEFAULT_FROM_EMAIL = 'secureSab <mariver913@gmail.com>'
+DEFAULT_FROM_EMAIL = 'secureSab <securesabsena@gmail.com>'
 
 USE_CONSOLE_EMAIL = False  # TEMPORAL: imprimir correos en consola para depuración
 
@@ -194,8 +194,8 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
-EMAIL_HOST_USER = 'mariver913@gmail.com'
-EMAIL_HOST_PASSWORD ='vkixlnisfxjknoov'
+EMAIL_HOST_USER = 'securesabsena@gmail.com'
+EMAIL_HOST_PASSWORD ='unkjhiyrivblzlem'
 
 # =====================================================
 # FIN CONFIGURACIÓN DE CORREO
