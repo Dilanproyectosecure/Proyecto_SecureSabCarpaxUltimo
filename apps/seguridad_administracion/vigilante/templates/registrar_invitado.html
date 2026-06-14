@@ -312,7 +312,31 @@
                             btnRegistrar.style.opacity = '0.5';
                             btnRegistrar.style.cursor = 'not-allowed';
                         }
-                    } else {
+                } else if (data.es_usuario) {
+                    // La cédula pertenece a un usuario del sistema
+                    datosEncontrados = false;
+                    textResultado.innerHTML = '<strong style="color: #721c24;">&#9888; Esta cédula pertenece a un usuario registrado del sistema:</strong> ' + data.nombre + ' ' + data.apellido + '. No se puede registrar como invitado.';
+                    resultadoBusqueda.style.backgroundColor = '#f8d7da';
+                    resultadoBusqueda.style.borderLeft = '4px solid #dc3545';
+                    resultadoBusqueda.style.display = 'block';
+                    btnEditar.style.display = 'none';
+                    
+                    nombre.value = '';
+                    apellido.value = '';
+                    if (tipoDocumento) {
+                        tipoDocumento.value = '';
+                    }
+                    document.getElementById('id_visitante').value = '';
+                    nombre.readOnly = false;
+                    apellido.readOnly = false;
+                    
+                    const btnRegistrar = document.getElementById('btn-registrar');
+                    if (btnRegistrar) {
+                        btnRegistrar.disabled = true;
+                        btnRegistrar.style.opacity = '0.5';
+                        btnRegistrar.style.cursor = 'not-allowed';
+                    }
+                } else {
                         textResultado.innerHTML = `<strong style="color: #28a745;">✓ Visitante encontrado:</strong> ${data.nombre} ${data.apellido}`;
                         resultadoBusqueda.style.backgroundColor = '#d4edda';
                         resultadoBusqueda.style.borderLeft = '4px solid #28a745';
@@ -326,7 +350,7 @@
                 } else {
                     // No encontrado
                     datosEncontrados = false;
-                    textResultado.innerHTML = '<strong style="color: #856404;">ℹ Nuevo visitante:</strong> Completa los datos';
+                    textResultado.innerHTML = '<strong style="color: #856404;">&#8493 Nuevo visitante:</strong> Completa los datos';
                     resultadoBusqueda.style.backgroundColor = '#fff3cd';
                     resultadoBusqueda.style.borderLeft = '4px solid #ffc107';
                     resultadoBusqueda.style.display = 'block';
@@ -338,6 +362,17 @@
                     if (tipoDocumento) {
                         tipoDocumento.value = '';
                     }
+                    document.getElementById('id_visitante').value = '';
+                    nombre.readOnly = false;
+                    apellido.readOnly = false;
+
+                    const btnRegistrar = document.getElementById('btn-registrar');
+                    if (btnRegistrar) {
+                        btnRegistrar.disabled = false;
+                        btnRegistrar.style.opacity = '';
+                        btnRegistrar.style.cursor = '';
+                    }
+                }
                     document.getElementById('id_visitante').value = '';
                     nombre.readOnly = false;
                     apellido.readOnly = false;

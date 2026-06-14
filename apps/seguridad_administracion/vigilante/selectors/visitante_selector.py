@@ -68,6 +68,13 @@ def obtener_visitante_reciente_por_cedula(cedula):
     """Obtiene el visitante más reciente por cédula"""
     return Visitante.objects.filter(cedula=cedula).order_by('-id_visitante').first()
 
+
+def buscar_usuario_por_cedula(cedula):
+    """Busca si la cédula pertenece a un usuario del sistema"""
+    from apps.login.models import Usuarios
+    return Usuarios.objects.filter(cedula=cedula).first()
+
+
 def obtener_todos_visitantes():
     """Obtiene todos los visitantes ordenados por fecha"""
     from apps.seguridad_administracion.vigilante.models import Visitante

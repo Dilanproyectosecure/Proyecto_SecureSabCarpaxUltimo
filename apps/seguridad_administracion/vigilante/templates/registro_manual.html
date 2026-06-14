@@ -294,20 +294,19 @@
 
             // Si es ingreso, validar que no exista una entrada sin salida
             if(tipoMovimiento === 'Ingreso') {
-                // Buscar en la tabla si existe una entrada sin salida
+                // Buscar la última acción registrada para este documento
                 const filas = document.querySelectorAll('table tbody tr');
-                let ingresoSinSalida = false;
+                let ultimoTipo = null;
 
                 filas.forEach(fila => {
                     const celdaDocumento = fila.querySelector('td:first-child')?.textContent.trim();
                     const celdaTipo = fila.querySelector('td:nth-child(3)')?.textContent.trim();
-                    
-                    if(celdaDocumento === doc && celdaTipo === 'Ingreso') {
-                        ingresoSinSalida = true;
+                    if(celdaDocumento === doc && celdaTipo && !ultimoTipo) {
+                        ultimoTipo = celdaTipo;
                     }
                 });
 
-                if(ingresoSinSalida) {
+                if(ultimoTipo === 'Ingreso') {
                     Swal.fire({
                         title: 'Atención',
                         text: 'Esta persona ya está registrada como ingreso en la sede. Debe registrar la salida primero.',
