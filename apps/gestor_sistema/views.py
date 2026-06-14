@@ -34,14 +34,15 @@ from .hikvision_service import (
     guardar_huella_a_archivo,
     subir_huella_a_dispositivo,
 )
-from .models import AsistenciaAmbiente, AsistenciaSede, Ficha, HistorialFallos, Huella, registro_actividad
+from .models import HistorialFallos, Huella, registro_actividad
 from apps.login.models import Roles, RoleUser
+from apps.reporte_monitoreo.coordinador.models import Ficha, AsistenciaAmbiente, AsistenciaSede
 from .services import (
     registrar_actividad,
     registrar_asistencia_sede_por_huella,
 )
 from .usuario_huella_services import eliminar_huella as eliminar_huella_service, registrar_huella as registrar_huella_service
-from .models import registro_actividad
+from .models import registro_actividad  # noqa: F811
 
 def generar_password_segura(cedula='', nombre=''):
     if cedula and len(cedula) >= 8:

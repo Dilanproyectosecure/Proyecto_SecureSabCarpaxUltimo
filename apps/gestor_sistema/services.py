@@ -2,9 +2,9 @@ import random
 import string
 
 from apps.login.models import Usuarios, Roles, RoleUser
-from apps.reporte_monitoreo.coordinador.models import Ficha
+from apps.reporte_monitoreo.coordinador.models import Ficha, AsistenciaSede
 from django.utils import timezone
-from .models import AsistenciaSede, Huella, registro_actividad
+from .models import Huella, registro_actividad
 
 
 def generar_password_segura(cedula='', nombre=''):
