@@ -54,9 +54,11 @@ def panel_admin(request):
         reader = csv.DictReader(decoded_file)
 
         creados = 0
+        omitos = 0
         for row in reader:
             try:
                 Usuarios.objects.create_user(
+                    tipo_documento=row.get('tipo_documento'),
                     cedula=row['cedula'],
                     password=row.get('password', '123'),
                     nombre=row['nombre'],
@@ -66,12 +68,46 @@ def panel_admin(request):
                     estado='Activo',
                     is_active=True,
                 )
+                
+                nombre_rol = row.get('rol', '').strip().lower()
+                
+                #validaciones para evitar duplicados
+                if Usuarios.objects.filter(cedula=row['cedula']).exists():
+                    print(f"⚠️ Usuario con cédula {row['cedula']} ya existe.")
+                    omitos += 1
+                    continue
+                if Usuarios.objects.filter(correo=row['correo']).exists():
+                    print(f"⚠️ Usuario con correo {row['correo']} ya existe.")
+                    omitos += 1     
+                    continue
+                
+                if Usuarios.objects.filter(documento=row['tipo_documento']).exists():
+                    print(f"⚠️ Usuario con documento {row['tipo_documento']} ya existe.")
+                    omitos += 1
+                    continue
+                if Usuarios.objects.filter(telefono=row['telefono']).exists():  
+                    print(f"⚠️ Usuario con teléfono {row['telefono']} ya existe.")
+                    omitos += 1 
+                    continue
+
+
+                if nombre_rol:
+                    rol = Roles.objects.filter(name=nombre_rol).first()
+                    if rol:
+                        usuario = Usuarios.objects.get(cedula=row['cedula'])
+                        with connections['default'].cursor() as cursor:
+                            cursor.execute(
+                                "INSERT INTO role_user (id_usuario, role_id) VALUES (%s, %s)",
+                                [usuario.id_usuario, rol.id],
+                            )
                 creados += 1
             except Exception as e:
                 print(f"Error: {e}")
 
         if creados > 0:
             messages.success(request, f'Se crearon {creados} usuarios.')
+        if omitos > 0:
+            messages.warning(request, f'Se omitieron {omitos} usuarios.')
         return HttpResponseRedirect(reverse('gestor_sistema:panel_admin'))
 
     if request.method == "POST":
@@ -96,6 +132,27 @@ def panel_admin(request):
             for _e in _errores:
                 messages.error(request, _e)
             return redirect('gestor_sistema:panel_admin')
+        
+        #vaalida la cedula pa que no se repita
+        if Usuarios.objects.filter(cedula=cedula).exists():
+            messages.error(request, f'Ya existe un usuario con la cédula {cedula}')
+            return redirect('gestor_sistema:panel_admin')
+        
+        #valida el documento pa que no se repita
+        if Usuarios.objects.filter(documento=tipo_documento).exists():
+            messages.error(request, f'Ya existe un usuario con el documento {tipo_documento}')
+            return redirect('gestor_sistema:panel_admin')
+        
+        #valida el correo pa que no se repita
+        if Usuarios.objects.filter(correo=correo).exists():
+            messages.error(request, f'Ya existe un usuario con el correo {correo}')
+            return redirect('gestor_sistema:panel_admin')
+        
+        #valida el celular pa que no se repita
+        if Usuarios.objects.filter(telefono=telefono).exists():
+            messages.error(request, f'Ya existe un usuario con el teléfono {telefono}')
+            return redirect('gestor_sistema:panel_admin')
+        
 
         try:
             usuario = Usuarios.objects.create_user(
@@ -144,7 +201,7 @@ def panel_admin(request):
         'usuarios': usuarios_con_roles,
         'roles': roles_disponibles,
     })
-
+    
 
 @csrf_exempt
 def registrar_huella_view(request, id_usuario):
@@ -155,76 +212,62 @@ def registrar_huella_view(request, id_usuario):
         usuario = get_object_or_404(Usuarios, id_usuario=id_usuario)
 
         print(f"👤 Sincronizando usuario {usuario.nombre} en el dispositivo...")
-        usuario_dispositivo_ok = enviar_usuario_hikvision(usuario)
-        if not usuario_dispositivo_ok:
-            print(f"⚠️ No se pudo confirmar la sincronización del usuario {usuario.nombre} en el dispositivo")
+        enviar_usuario_hikvision(usuario)
 
         print(f"📱 Iniciando captura de huella para {usuario.nombre}...")
         response = registrar_huella_hikvision(usuario)
 
         if not response.get("ok"):
             return JsonResponse({
-                "error": response.get("error", "No fue posible iniciar el registro de huella en el dispositivo"),
+                "error": response.get("error", "No fue posible capturar la huella"),
                 "detalle": response.get("raw", "")
             }, status=502)
 
         datos_huella = response.get("huella")
         if not datos_huella:
             return JsonResponse({
-                "error": "El dispositivo no devolvió datos de huella",
-                "info": "Asegúrate de colocar el dedo en el lector de manera firme"
+                "error": "El dispositivo no devolvió datos de huella"
             }, status=422)
 
-        print(f"📄 Guardando huella a archivo JSON para {usuario.nombre}...")
-        resultado_archivo = guardar_huella_a_archivo(usuario.id_usuario, datos_huella)
-
-        if not resultado_archivo.get("ok"):
-            return JsonResponse({
-                "error": "No se pudo guardar la huella en archivo temporal",
-                "detalle": resultado_archivo.get("error", "")
-            }, status=500)
-
+        # Guardar en BD
         print(f"💾 Guardando huella en BD para {usuario.nombre}...")
-        resultado_guardado = guardar_huella_en_bd(usuario, datos_huella)
-
-        if not resultado_guardado.get("ok"):
+        resultado_bd = guardar_huella_en_bd(usuario, datos_huella)
+        if not resultado_bd.get("ok"):
             return JsonResponse({
-                "error": "Se capturó la huella pero no se pudo guardar en BD",
-                "detalle": resultado_guardado.get("error", "")
+                "error": "No se pudo guardar en BD",
+                "detalle": resultado_bd.get("error", "")
             }, status=500)
 
+        # ── Subir al dispositivo (PUT /UserInfo/Modify con fingerData + doorRight) ──
         print(f"📤 Subiendo huella al dispositivo para {usuario.nombre}...")
         subida = subir_huella_a_dispositivo(usuario.id_usuario, datos_huella)
 
         if not subida.get("ok"):
+            print(f"⚠️ Huella en BD pero NO en dispositivo: {subida.get('error')}")
             return JsonResponse({
-                "mensaje": "✅ Huella guardada en BD pero NO en el dispositivo",
-                "id_huella": resultado_guardado.get("id_huella"),
+                "mensaje": "⚠️ Huella guardada en BD pero no en dispositivo",
+                "id_huella": resultado_bd.get("id_huella"),
                 "usuario": usuario.nombre,
-                "archivo_temp": resultado_archivo.get("archivo", ""),
-                "detalle_subida": subida.get("error", subida.get("raw", ""))
+                "detalle_subida": subida.get("raw", subida.get("error", ""))
             }, status=207)
 
-        print(f"✅ Huella capturada, guardada y subida exitosamente para {usuario.nombre}")
+        print(f"✅ Proceso completo para {usuario.nombre}")
         return JsonResponse({
-            "mensaje": "✅ Huella registrada, guardada y subida al dispositivo exitosamente",
-            "id_huella": resultado_guardado.get("id_huella"),
+            "mensaje": "✅ Huella registrada correctamente",
+            "id_huella": resultado_bd.get("id_huella"),
             "usuario": usuario.nombre,
-            "usuario_dispositivo_ok": usuario_dispositivo_ok,
-            "archivo_temp": resultado_archivo.get("archivo", ""),
-            "payload_usado": response.get("payload_usado", ""),
-            "detalle_subida": subida.get("raw", "")
+            
         }, status=200)
 
     except Exception as e:
-        print(f"❌ ERROR NO CONTROLADO en registrar_huella_view: {e}")
+        
         import traceback
         traceback.print_exc()
         return JsonResponse({
-            "error": f"Error no esperado: {str(e)}",
-            "tipo": type(e).__name__
+            "error": f"Error no esperado: {str(e)}"
         }, status=500)
-
+        
+        
 
 def dashboard(request):
     total_usuarios = Usuarios.objects.count()
@@ -338,6 +381,7 @@ def crear_usuario(request):
 
         try:
             usuario = Usuarios.objects.create_user(
+                tipo_documento=request.POST.get('tipo_documento'),
                 cedula=cedula,
                 password=request.POST.get('password', '123'),
                 nombre=nombre,

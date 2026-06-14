@@ -219,11 +219,13 @@
                         <i class="fas fa-info-circle"></i>
                         <strong>El archivo CSV debe tener las siguientes columnas:</strong>
                         <ul>
+                            <li><strong>tipo_documento</strong> — Cédula, Pasaporte, TI, CE</li>
                             <li><strong>cedula</strong> — Número de identificación</li>
                             <li><strong>nombre</strong> — Nombre del usuario</li>
                             <li><strong>apellido</strong> — Apellido del usuario</li>
                             <li><strong>correo</strong> — Correo electrónico</li>
                             <li><strong>rol</strong> — aprendiz, instructor, vigilante, coordinador</li>
+                            <li><strong>password</strong> — Contraseña (opcional, por defecto '123')</li>
                         </ul>
                     </div>
                     <div class="form-group-app">
@@ -260,7 +262,11 @@
                 <div class="modal-body-app">
                     <div class="form-grid-app">
                         <div class="form-group-app">
-                            <label>Cédula</label>
+                            <label>Tipo de Documento</label>
+                            <input type="text" id="edit_tipo_documento" disabled>
+                        </div>
+                        <div class="form-group-app">
+                            <label>Documento</label>
                             <input type="text" name="cedula" id="edit_cedula" required>
                         </div>
                         <div class="form-group-app">
@@ -274,6 +280,15 @@
                         <div class="form-group-app">
                             <label>Correo</label>
                             <input type="email" name="correo" id="edit_correo" required>
+                        </div>
+                        <div class="form-group-app">
+                            <label>Rol</label>
+                            <select name="role_id" id="edit_selectRol" required>
+                                <option value="" disabled>Seleccione un rol</option>
+                                {% for role in roles %}
+                                    <option value="{{ role.id }}" data-rol-name="{{ role.name }}">{{ role.name|capfirst }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -318,11 +333,11 @@ document.getElementById('modalEditarUsuario').addEventListener('hidden.bs.modal'
 });
 
 // ===== VALIDACIONES EN TIEMPO REAL (modal Crear Usuario) =====
-// Cédula: solo dígitos, máximo 10
+// Documento: solo dígitos, máximo 10
 (function () {
-    var cedulaInput = document.querySelector('#modalCrearUsuario input[name="cedula"]');
-    if (cedulaInput) {
-        cedulaInput.addEventListener('input', function () {
+    var documentoInput = document.querySelector('#modalCrearUsuario input[name="documento"]');
+    if (documentoInput) {
+        documentoInput  .addEventListener('input', function () {
             this.value = this.value.replace(/\D/g, '').slice(0, 10);
         });
     }
@@ -334,6 +349,7 @@ document.getElementById('modalEditarUsuario').addEventListener('hidden.bs.modal'
             this.value = this.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, '').slice(0, 40);
         });
     });
+
 })();
 
 $(document).ready(function() {
