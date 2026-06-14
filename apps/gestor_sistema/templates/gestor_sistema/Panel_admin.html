@@ -66,6 +66,7 @@
                     <tr>
                     <th>ID</th>
                     <th>Cédula</th>
+                    <th>Tipo Doc.</th>
                     <th>Nombre Completo</th>
                     <th>Correo</th>
                     <th>Rol</th>
@@ -78,6 +79,7 @@
                     <tr>
                         <td data-label="ID" class="col-id">{{ u.id_usuario }}</td>
                         <td data-label="Cédula">{{ u.cedula }}</td>
+                        <td data-label="Tipo Doc.">{{ u.tipo_documento|default:"No asignado" }}</td>
                         <td data-label="Nombre Completo">{{ u.nombre }} {{ u.apellido }}</td>
                         <td data-label="Correo">{{ u.correo }}</td>
                         <td data-label="Rol">
@@ -93,7 +95,7 @@
                             {% endif %}
                         </td>
                         <td data-label="Acción" class="col-acciones">
-                            <button type="button" class="btn-action btn-action-edit" onclick="abrirModalEditar('{{ u.id_usuario }}', '{{ u.cedula }}', '{{ u.nombre }}', '{{ u.apellido }}', '{{ u.correo }}')" title="Editar">
+                            <button type="button" class="btn-action btn-action-edit" onclick="abrirModalEditar('{{ u.id_usuario }}', '{{ u.tipo_documento }}', '{{ u.cedula }}', '{{ u.nombre }}', '{{ u.apellido }}', '{{ u.correo }}')" title="Editar">
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button type="button" class="btn-action btn-action-fingerprint" onclick="registrarHuella('{{ u.id_usuario }}')" title="Registrar huella">
@@ -174,7 +176,15 @@
 
                         <div class="form-group-app ">
                             <label>Contraseña <span class="required">*</span></label>
-                            <input type="password" name="password" value="123" placeholder="123" required  title="La contraseña por defecto es '123'">
+                            <div style="display:flex; gap:6px;">
+                                <input type="password" name="password" id="passwordCrear" required readonly style="flex:1;">
+                                <button type="button" class="btn-action btn-action-edit" onclick="togglePasswordCrear()" title="Mostrar/ocultar contraseña">
+                                    <i class="fas fa-eye" id="iconoPassword"></i>
+                                </button>
+                                <button type="button" class="btn-action btn-action-fingerprint" onclick="generarPassword()" title="Generar nueva contraseña">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="form-group-app full">
@@ -225,7 +235,7 @@
                             <li><strong>apellido</strong> — Apellido del usuario</li>
                             <li><strong>correo</strong> — Correo electrónico</li>
                             <li><strong>rol</strong> — aprendiz, instructor, vigilante, coordinador</li>
-                            <li><strong>password</strong> — Contraseña (opcional, por defecto '123')</li>
+                            <li><strong>password</strong> — Contraseña (opcional, se genera una segura automáticamente)</li>
                         </ul>
                     </div>
                     <div class="form-group-app">
@@ -263,7 +273,12 @@
                     <div class="form-grid-app">
                         <div class="form-group-app">
                             <label>Tipo de Documento</label>
-                            <input type="text" id="edit_tipo_documento" disabled>
+                            <select name="tipo_documento" id="edit_tipo_documento" required>
+                                <option value="Cédula">Cédula</option>
+                                <option value="Pasaporte">Pasaporte</option>
+                                <option value="TI">Tarjeta de Identidad</option>
+                                <option value="CE">Cédula de Extranjería</option>
+                            </select>
                         </div>
                         <div class="form-group-app">
                             <label>Documento</label>
@@ -313,15 +328,16 @@
 
 <script>
 // FUNCIONES DE MODAL (Bootstrap)
-function abrirModalEditar(id, cedula, nombre, apellido, correo) {
+function abrirModalEditar(id, tipoDocumento, cedula, nombre, apellido, correo) {
     document.getElementById('edit_id_usuario').value = id;
+    document.getElementById('edit_tipo_documento').value = tipoDocumento || 'Cédula';
     document.getElementById('edit_cedula').value = cedula;
     document.getElementById('edit_nombre').value = nombre;
     document.getElementById('edit_apellido').value = apellido;
     document.getElementById('edit_correo').value = correo;
 
     // Seteamos la URL dinámicamente incluyendo el ID
-    document.getElementById('formEditar').action = `/gestor_sistema/usuarios/editar/${id}/`;
+    document.getElementById('formEditar').action = `/gestor_sistema/editar-usuario/${id}/`;
 
     var modal = new bootstrap.Modal(document.getElementById('modalEditarUsuario'));
     modal.show();
@@ -331,6 +347,52 @@ function abrirModalEditar(id, cedula, nombre, apellido, correo) {
 document.getElementById('modalEditarUsuario').addEventListener('hidden.bs.modal', function () {
     document.getElementById('formEditar').reset();
 });
+
+// ===== FUNCIONES DE CONTRASEÑA =====
+function generarPassword() {
+    const cedula = document.querySelector('#modalCrearUsuario input[name="cedula"]').value.trim();
+    const nombre = document.querySelector('#modalCrearUsuario input[name="nombre"]').value.trim();
+
+    if (cedula.length >= 8 && nombre.length > 0) {
+        const inicial = nombre.charAt(0).toUpperCase();
+        const signos = '!@#$%^&*';
+        const signo = signos[Math.floor(Math.random() * signos.length)];
+        document.getElementById('passwordCrear').value = cedula + inicial + signo;
+    } else if (cedula.length >= 8) {
+        const signos = '!@#$%^&*';
+        const signo = signos[Math.floor(Math.random() * signos.length)];
+        document.getElementById('passwordCrear').value = cedula + 'A' + signo;
+    } else {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+        let pass = [
+            'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)],
+            'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)],
+            '0123456789'[Math.floor(Math.random() * 10)],
+            '!@#$%^&*'[Math.floor(Math.random() * 8)],
+        ];
+        for (let i = 4; i < 10; i++) {
+            pass.push(chars[Math.floor(Math.random() * chars.length)]);
+        }
+        pass.sort(() => Math.random() - 0.5);
+        document.getElementById('passwordCrear').value = pass.join('');
+    }
+}
+
+function togglePasswordCrear() {
+    const input = document.getElementById('passwordCrear');
+    const icon = document.getElementById('iconoPassword');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+}
+
+// Regenerar contraseña cuando cambia cédula o nombre
+document.querySelector('#modalCrearUsuario input[name="cedula"]').addEventListener('input', generarPassword);
+document.querySelector('#modalCrearUsuario input[name="nombre"]').addEventListener('input', generarPassword);
 
 // ===== VALIDACIONES EN TIEMPO REAL (modal Crear Usuario) =====
 // Documento: solo dígitos, máximo 10
@@ -356,13 +418,13 @@ $(document).ready(function() {
     var table = $('#tablaUsuarios').DataTable({
         "orderCellsTop": true,
         "language": { "url": "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" },
-        "columnDefs": [{ "orderable": false, "targets": [5, 6] }]
+        "columnDefs": [{ "orderable": false, "targets": [6, 7] }]
     });
 
     $('#btnFiltrarPanel').on('click', function() {
         table.column(1).search($('#filtroCedula').val().trim()).draw();
-        table.column(2).search($('#filtroNombre').val().trim()).draw();
-        table.column(4).search($('#filtroRol').val().trim()).draw();
+        table.column(3).search($('#filtroNombre').val().trim()).draw();
+        table.column(5).search($('#filtroRol').val().trim()).draw();
     });
 
     $('#btnLimpiarPanel').on('click', function() {

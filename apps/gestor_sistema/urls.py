@@ -3,13 +3,7 @@ from . import views
 
 app_name = 'gestor_sistema' 
 urlpatterns = [
-    path('admin-sistema/', views.panel_admin, name='panel_admin'),
-    path('', views.gestionar_usuarios, name='gestionar_usuarios'),
-    path('usuarios/crear/', views.crear_usuario_view, name='crear_usuario_view'),
-    path('usuarios/carga-masiva/', views.carga_masiva_usuarios, name='carga_masiva'),
-    path('usuarios/editar/<int:id_usuario>/', views.editar_usuario_view, name='editar_usuario_view'),
-    path('usuarios/eliminar/<int:id_usuario>/', views.eliminar_usuario_view, name='eliminar_usuario_view'),
-    path('usuarios/cambiar-estado/<int:id_usuario>/', views.cambiar_estado_usuario_view, name='cambiar_estado_usuario_view'),
+    path('', views.panel_admin, name='panel_admin'),
     path('huellas/', views.gestion_huellas, name='gestion_huellas'),
     path('huellas/eliminar/<int:id_usuario>/', views.eliminar_huella_usuario_view, name='eliminar_huella_usuario_view'),
     path('historial-fallos/', views.historial_fallos, name='historial_fallos'),
