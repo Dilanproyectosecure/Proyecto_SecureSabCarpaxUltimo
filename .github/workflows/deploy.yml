@@ -46,7 +46,7 @@ jobs:
             cp -r staticfiles/* /var/www/securesab-static/
 
             echo "8. Restarting Django..."
-            pkill -f "manage.py runserver" || true
+            fuser -k 8000/tcp 2>/dev/null || true
             sleep 2
             nohup venv/bin/python manage.py runserver 0.0.0.0:8000 > /home/azureuser/django.log 2>&1 &
 
