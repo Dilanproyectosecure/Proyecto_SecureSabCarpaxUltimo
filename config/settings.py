@@ -37,6 +37,13 @@ SECRET_KEY = 'django-insecure-%u1ia%ra2e#7@s9o4cf#go!xzs5!=38k7!5!(8+ysvpy7u(o41
 DEBUG = True
 ALLOWED_HOSTS = ['securesab.app', 'www.securesab.app', '158.23.17.242', 'localhost', '127.0.0.1']
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://securesab.app',
+    'https://www.securesab.app',
+    'http://securesab.app',
+    'http://www.securesab.app',
+]
+
 # ==================== APLICACIONES ====================
 INSTALLED_APPS = [
     'django.contrib.admin',
