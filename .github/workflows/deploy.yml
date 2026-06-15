@@ -9,6 +9,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -17,4 +20,41 @@ jobs:
           key: ${{ secrets.AZURE_SSH_KEY }}
           script: |
             cd /home/azureuser/securesab_project
-            bash deploy.sh
+
+            echo "1. Guardando configuracion local..."
+            mkdir -p /tmp/deploy_backup
+            cp config/settings.py /tmp/deploy_backup/settings.py
+            cp .env /tmp/deploy_backup/.env 2>/dev/null || true
+
+            echo "2. Stashing local changes..."
+            git stash --include-untracked 2>/dev/null || true
+
+            echo "3. Pulling latest code..."
+            git pull origin main
+
+            echo "4. Restaurando configuracion del servidor..."
+            cp /tmp/deploy_backup/settings.py config/settings.py
+            cp /tmp/deploy_backup/.env .env 2>/dev/null || true
+
+            echo "5. Activando virtualenv..."
+            source venv/bin/activate
+
+            echo "6. Running collectstatic..."
+            python manage.py collectstatic --noinput 2>&1
+
+            echo "7. Syncing static files..."
+            cp -r staticfiles/* /var/www/securesab-static/
+
+            echo "8. Restarting Django..."
+            pkill -f "manage.py runserver" || true
+            sleep 2
+            nohup venv/bin/python manage.py runserver 0.0.0.0:8000 > /home/azureuser/django.log 2>&1 &
+
+            echo "9. Verificando..."
+            sleep 3
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/)
+            if [ "$STATUS" = "200" ]; then
+                echo "=== Deploy exitoso! HTTP $STATUS ==="
+            else
+                echo "=== Deploy con problema! HTTP $STATUS ==="
+            fi
