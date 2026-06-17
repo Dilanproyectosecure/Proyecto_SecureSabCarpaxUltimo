@@ -11,7 +11,6 @@
 <div class="content-card">
     <h1>Mi Perfil</h1>
     
-    <!-- Mensajes de éxito/error -->
     {% if messages %}
         <div class="messages">
             {% for message in messages %}
@@ -20,29 +19,104 @@
         </div>
     {% endif %}
     
-    <!-- Información personal -->
     <div class="perfil-info">
         <div class="info-grid">
             <div class="info-item">
                 <label>Cédula:</label>
-                <span>{{ user.cedula }}</span>
+                <span>{{ usuario.cedula }}</span>
             </div>
             
             <div class="info-item">
                 <label>Nombre completo:</label>
-                <span>{{ user.nombre }} {{ user.apellido }}</span>
+                <span>{{ usuario.nombre }} {{ usuario.apellido }}</span>
             </div>
             
             <div class="info-item">
                 <label>Correo electrónico:</label>
-                <span>{{ user.correo|default:"No registrado" }}</span>
+                <span>{{ usuario.correo|default:"No registrado" }}</span>
             </div>
             
             <div class="info-item">
                 <label>Teléfono:</label>
-                <span>{{ user.telefono|default:"No registrado" }}</span>
+                <span>{{ usuario.telefono|default:"No registrado" }}</span>
             </div>
         </div>
     </div>
+
+    <div class="perfil-actions" style="text-align: center; margin-top: 25px;">
+        <button onclick="toggleForm('edit-form')" class="btn btn-primary">Editar Perfil</button>
+        <button onclick="toggleForm('password-form')" class="btn btn-secondary">Cambiar Contraseña</button>
+    </div>
+
+    <div id="edit-form" class="perfil-form" style="display: none; margin-top: 25px; border-top: 2px solid #e0e0e0; padding-top: 20px;">
+        <h3>Editar datos personales</h3>
+        <form method="POST" action="">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="actualizar_perfil">
+            <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="form-group">
+                    <label>Cédula:</label>
+                    <input type="text" name="cedula" value="{{ usuario.cedula }}" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Nombre:</label>
+                    <input type="text" name="nombre" value="{{ usuario.nombre }}" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Apellido:</label>
+                    <input type="text" name="apellido" value="{{ usuario.apellido }}" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Correo:</label>
+                    <input type="email" name="correo" value="{{ usuario.correo|default:'' }}" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Teléfono:</label>
+                    <input type="text" name="telefono" value="{{ usuario.telefono|default:'' }}" class="form-control">
+                </div>
+            </div>
+            <div class="form-actions" style="text-align: center; margin-top: 15px;">
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                <button type="button" onclick="toggleForm('edit-form')" class="btn btn-cancel">Cancelar</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="password-form" class="perfil-form" style="display: none; margin-top: 25px; border-top: 2px solid #e0e0e0; padding-top: 20px;">
+        <h3>Cambiar contraseña</h3>
+        <form method="POST" action="">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="cambiar_password">
+            <div class="form-grid" style="max-width: 400px; margin: 0 auto;">
+                <div class="form-group">
+                    <label>Contraseña actual:</label>
+                    <input type="password" name="password_actual" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Nueva contraseña:</label>
+                    <input type="password" name="password_nueva" required minlength="6" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Confirmar nueva contraseña:</label>
+                    <input type="password" name="password_confirm" required minlength="6" class="form-control">
+                </div>
+            </div>
+            <div class="form-actions" style="text-align: center; margin-top: 15px;">
+                <button type="submit" class="btn btn-secondary">Cambiar contraseña</button>
+                <button type="button" onclick="toggleForm('password-form')" class="btn btn-cancel">Cancelar</button>
+            </div>
+        </form>
+    </div>
 </div>
+
+<script>
+function toggleForm(formId) {
+    var form = document.getElementById(formId);
+    if (form.style.display === 'none' || form.style.display === '') {
+        form.style.display = 'block';
+    } else {
+        form.style.display = 'none';
+    }
+}
+</script>
 {% endblock %}
