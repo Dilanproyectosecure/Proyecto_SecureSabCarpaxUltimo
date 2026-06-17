@@ -40,10 +40,7 @@ def procesar_registro_manual(request, documento, tipo_movimiento, motivo):
         ).first()
         
         if ingreso_pendiente:
-            ingreso_pendiente.hora_salida = datetime.now().time()
-            ingreso_pendiente.estado_asistencia = 'Salida'
-            ingreso_pendiente.save(update_fields=['hora_salida', 'estado_asistencia'])
-            mensaje_extra = ' (Se cerró el ingreso anterior automáticamente)'
+            return False, f'{usuario.nombre} {usuario.apellido} ya tiene un ingreso registrado hoy. Registre una salida primero.'
         
         asistencia = AsistenciaSede.objects.create(
             id_usuario=usuario,
