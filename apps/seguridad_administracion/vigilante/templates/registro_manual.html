@@ -68,6 +68,17 @@
                             required
                             autofocus>
                         <small id="error_documento" style="color:#d9534f; font-size:0.9em; display:none;"></small>
+                        <!-- Info del usuario consultado -->
+                        <div id="usuarioInfo" class="usuario-info" style="display:none; margin-top:10px; padding:12px; border-radius:8px; background:#f8f9fa; border:1px solid #dee2e6;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <div id="statusIcon" style="width:12px; height:12px; border-radius:50%;"></div>
+                                <strong id="usuarioNombre" style="font-size:1.1em;"></strong>
+                            </div>
+                            <div style="margin-top:6px; font-size:0.9em; color:#555;">
+                                <span id="usuarioCedula"></span> &middot; Ficha: <span id="usuarioFicha"></span> &middot; Rol: <span id="usuarioRol"></span>
+                            </div>
+                            <div id="usuarioStatus" style="margin-top:6px; font-weight:500;"></div>
+                        </div>
                         {% if form.documento.errors %}
                         <div class="error-campo">
                         </div>
@@ -130,9 +141,47 @@
             <!-- SEPARADOR -->
             <div class="separator-line"></div>
 
+            <!-- PERSONAS EN SEDE -->
+            <div class="form-card">
+                <h2><i class="fas fa-building"></i> Personas en Sede</h2>
+                {% if en_sede %}
+                <div class="tabla-container">
+                    <table class="tabla-asistencias">
+                        <thead>
+                            <tr>
+                                <th>Documento</th>
+                                <th>Nombre</th>
+                                <th>Rol / Ficha</th>
+                                <th>Entrada</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in en_sede %}
+                            <tr>
+                                <td><strong>{{ a.id_usuario.cedula }}</strong></td>
+                                <td>{{ a.id_usuario.nombre }} {{ a.id_usuario.apellido }}</td>
+                                <td>
+                                    {{ a.id_usuario.get_rol|default:'-' }}
+                                    {% if a.id_usuario.id_ficha %}
+                                        &middot; Ficha: {{ a.id_usuario.id_ficha.numero_ficha }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ a.hora_entrada|date:"h:i A" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="no-data-message">
+                    <i class="fas fa-door-open"></i>
+                    <p>No hay personas en sede actualmente</p>
+                </div>
+                {% endif %}
+            </div>
+
             <!-- HISTORIAL DE REGISTROS -->
-            <!-- HISTORIAL DE REGISTROS -->
-<div class="form-card">
+            <div class="form-card">
     <h2><i class="fas fa-history"></i> Últimos Registros Manuales</h2>
 
     {% if registrosList %}
@@ -193,6 +242,52 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    // Consultar estado del usuario en sede al escribir cédula
+    var timeoutBuscar = null;
+    function consultarUsuario() {
+        var cedula = documento.value.trim();
+        var usuarioInfo = document.getElementById('usuarioInfo');
+        var statusIcon = document.getElementById('statusIcon');
+        var usuarioNombre = document.getElementById('usuarioNombre');
+        var usuarioCedula = document.getElementById('usuarioCedula');
+        var usuarioFicha = document.getElementById('usuarioFicha');
+        var usuarioRol = document.getElementById('usuarioRol');
+        var usuarioStatus = document.getElementById('usuarioStatus');
+        var tipoMovimiento = document.getElementById('tipoMovimiento');
+
+        if (cedula.length !== 10) {
+            usuarioInfo.style.display = 'none';
+            return;
+        }
+
+        fetch('{% url "vigilante:consultar_usuario_sede" %}?cedula=' + encodeURIComponent(cedula))
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.error) {
+                    usuarioInfo.style.display = 'none';
+                    return;
+                }
+                usuarioNombre.textContent = data.nombre + ' ' + data.apellido;
+                usuarioCedula.textContent = data.cedula;
+                usuarioFicha.textContent = data.ficha || 'N/A';
+                usuarioRol.textContent = data.rol;
+
+                if (data.esta_en_sede) {
+                    statusIcon.style.background = '#28a745';
+                    usuarioStatus.innerHTML = '<span style="color:#28a745;">&#9679; DENTRO DE SEDE</span> - Entrada: ' + data.hora_entrada;
+                    tipoMovimiento.value = 'Salida';
+                } else {
+                    statusIcon.style.background = '#6c757d';
+                    usuarioStatus.innerHTML = '<span style="color:#6c757d;">&#9679; FUERA DE SEDE</span>';
+                    tipoMovimiento.value = 'Ingreso';
+                }
+                usuarioInfo.style.display = 'block';
+            })
+            .catch(function() {
+                usuarioInfo.style.display = 'none';
+            });
+    }
+
     // Actualizar hora en tiempo real
     function actualizarHora() {
         const ahora = new Date();
@@ -222,6 +317,12 @@
     const errDocumento = document.getElementById('error_documento');
 
     if(documento) {
+        // Consultar estado del usuario en sede
+        documento.addEventListener('input', function() {
+            if (timeoutBuscar) clearTimeout(timeoutBuscar);
+            timeoutBuscar = setTimeout(consultarUsuario, 400);
+        });
+
         // Permitir solo números
         documento.addEventListener('input', function(e) {
             const cleaned = e.target.value.replace(/\D+/g, '');

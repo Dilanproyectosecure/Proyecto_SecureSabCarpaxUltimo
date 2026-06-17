@@ -2,6 +2,7 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), "apps", "gestor_sistema"))  # para poder importar hikvision_sdk.py
 
 
 def main():
@@ -20,3 +21,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

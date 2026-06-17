@@ -4,7 +4,7 @@ import string
 from apps.login.models import Usuarios, Roles, RoleUser
 from apps.reporte_monitoreo.coordinador.models import Ficha, AsistenciaSede
 from django.utils import timezone
-from .models import AsistenciaSede, Huella, registro_actividad
+from .models import Huella, registro_actividad
 
 
 def registrar_actividad(usuario, tipo_accion, actividad, descripcion="", request=None):
@@ -33,7 +33,7 @@ def registrar_actividad(usuario, tipo_accion, actividad, descripcion="", request
         print(f"Error al registrar actividad: {e}")
 
 def registrar_asistencia_sede_por_huella(usuario, request=None, momento=None):
-    momento = momento or timezone.now()
+    momento = momento or timezone.localtime()
     hoy = momento.date()
 
     asistencia_hoy = AsistenciaSede.objects.filter(

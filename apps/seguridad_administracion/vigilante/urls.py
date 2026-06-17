@@ -12,4 +12,5 @@ urlpatterns = [
     path('registro-manual/', views.registro_manual, name='registro_manual'),
     path('historial/', views.historial, name='historial'),
     path('api/buscar-visitante/', views.buscar_visitante_por_cedula, name='buscar_visitante'),
+    path('api/consultar-usuario-sede/', views.consultar_usuario_sede_api, name='consultar_usuario_sede'),
 ]

@@ -20,10 +20,12 @@ urlpatterns = [
     path('reportes/', views.reportes, name='reportes'),
     path('registro-actividad-panel/', views.registro_view, name='registro_actividad_panel'),
     path('perfil/', views.perfil_view, name='mi_perfil'),
-    path('crear-usuario/', views.crear_usuario, name='crear_usuario'), 
+    path('crear-usuario/', views.crear_usuario, name='crear_usuario'),
+    path('crear-usuario-view/', views.crear_usuario_view, name='crear_usuario_view'),
     path('reportes/asistencia-ambientes/excel/', views.exportar_ambientes_excel, name='exportar_ambientes_excel'),
     path('sincronizar-asistencia/', views.sincronizar_asistencia, name='sincronizar_asistencia'),
     path('desactivar-usuario/<int:id_usuario>/', views.desactivar_usuario, name='desactivar_usuario'),
     path('activar-usuario/<int:id_usuario>/', views.activar_usuario, name='activar_usuario'),
     path('editar-usuario/<int:id_usuario>/', views.editar_usuario, name='editar_usuario'),
+    path('editar-usuario-view/<int:id_usuario>/', views.editar_usuario_view, name='editar_usuario_view'),
 ]
