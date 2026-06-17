@@ -267,6 +267,12 @@
     border: 1px solid transparent;
 }
 
+.badge-exitoso {
+    background: #d4edda;
+    color: #155724;
+    border-color: #c3e6cb;
+}
+
 .badge-huella-fallida {
     background: #f8d7da;
     color: #721c24;

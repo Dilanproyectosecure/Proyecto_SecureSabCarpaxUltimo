@@ -4,24 +4,7 @@ import string
 from apps.login.models import Usuarios, Roles, RoleUser
 from apps.reporte_monitoreo.coordinador.models import Ficha, AsistenciaSede
 from django.utils import timezone
-from .models import Huella, registro_actividad
-
-
-def generar_password_segura(cedula='', nombre=''):
-    if cedula and len(cedula) >= 8:
-        inicial = nombre[0].upper() if nombre else 'A'
-        signo = random.choice('!@#$%^&*')
-        return cedula + inicial + signo
-    chars = string.ascii_letters + string.digits + '!@#$%^&*'
-    password = [
-        random.choice(string.ascii_uppercase),
-        random.choice(string.ascii_lowercase),
-        random.choice(string.digits),
-        random.choice('!@#$%^&*'),
-    ]
-    password += random.choices(chars, k=6)
-    random.shuffle(password)
-    return ''.join(password)
+from .models import AsistenciaSede, Huella, registro_actividad
 
 
 def registrar_actividad(usuario, tipo_accion, actividad, descripcion="", request=None):
@@ -56,7 +39,7 @@ def registrar_asistencia_sede_por_huella(usuario, request=None, momento=None):
     asistencia_hoy = AsistenciaSede.objects.filter(
         id_usuario=usuario,
         fecha=hoy,
-    ).first()
+    ).order_by('-id_asistencia').first()
 
     if not asistencia_hoy:
         asistencia = AsistenciaSede.objects.create(
@@ -103,9 +86,28 @@ def registrar_asistencia_sede_por_huella(usuario, request=None, momento=None):
             'asistencia': asistencia_hoy,
         }
 
+    # Ya tiene entrada y salida → es un reingreso, crear nuevo registro
+    asistencia = AsistenciaSede.objects.create(
+        id_usuario=usuario,
+        fecha=hoy,
+        hora_entrada=momento.time(),
+        estado_asistencia='Entrada',
+    )
+
+    registrar_actividad(
+        usuario=usuario,
+        tipo_accion='HUELLA_SEDE_ENTRADA',
+        actividad='Reingreso en sede por huella',
+        descripcion=(
+            f'Reingreso registrado por huella para {usuario.nombre} {usuario.apellido} '
+            f'(cédula: {usuario.cedula}) a las {momento:%H:%M:%S}'
+        ),
+        request=request,
+    )
+
     return {
-        'estado': 'duplicado',
-        'asistencia': asistencia_hoy,
+        'estado': 'entrada',
+        'asistencia': asistencia,
     }
 
 

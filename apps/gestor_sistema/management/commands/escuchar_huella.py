@@ -1,19 +1,17 @@
 from django.core.management.base import BaseCommand
 import time
-# Cambiamos guardar_eventos por procesar_eventos
-from apps.gestor_sistema.hikvision_service import procesar_eventos 
+from apps.gestor_sistema.hikvision_service import procesar_eventos
 
 class Command(BaseCommand):
-    help = 'Escucha eventos del Hikvision'
+    help = 'Escucha eventos del Hikvision cada 10 segundos'
 
     def handle(self, *args, **kwargs):
-        self.stdout.write("Escuchando huellas...")
+        self.stdout.write(self.style.SUCCESS("📡 Escuchando huellas del dispositivo Hikvision..."))
+        self.stdout.write(self.style.WARNING("Presiona Ctrl+C para detener"))
 
-        while True:
-            try:
-                # Usamos el nombre correcto aquí también
-                procesar_eventos() 
-            except Exception as e:
-                self.stdout.write(f"Error: {e}")
-
-            time.sleep(10)
+        try:
+            while True:
+                procesar_eventos()
+                time.sleep(10)
+        except KeyboardInterrupt:
+            self.stdout.write(self.style.SUCCESS("\n✅ Escucha de huellas detenida"))

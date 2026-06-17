@@ -70,6 +70,7 @@ class registro_actividad(models.Model):
 
 class HistorialFallos(models.Model):
     TIPO_FALLOS = [
+        ('REGISTRO_HUELLA', 'Huella registrada'),
         ('HUELLA_FALLIDA', 'Huella no coincide'),
         ('SIN_HUELLA', 'Usuario sin huella registrada'),
         ('LECTOR_ERROR', 'Error en el lector biométrico'),

@@ -37,3 +37,5 @@ class TestGestionUsuarios(TestCase):
         url = reverse('gestor_sistema:activar_usuario', args=[9999])
         response = self.client.post(url)
         self.assertEqual(response.status_code, 404)
+        
+        
