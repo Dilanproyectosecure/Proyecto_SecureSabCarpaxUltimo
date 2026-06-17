@@ -112,6 +112,9 @@ DATABASES = {
     }
 }
 
+DATABASES['default']['USER'] = env_vars.get('DATABASE_USER', '') or 'root'
+DATABASES['default']['PASSWORD'] = env_vars.get('DATABASE_PASSWORD', '') or ''
+
 if 'test' in sys.argv:
     DATABASES = {
         'default': {
