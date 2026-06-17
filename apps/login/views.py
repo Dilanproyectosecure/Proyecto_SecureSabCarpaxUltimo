@@ -123,8 +123,90 @@ def mi_perfil(request):
     """
     Vista del perfil de usuario (accesible para todos los roles)
     """
+    usuario = request.user
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'actualizar_perfil':
+            nombre = request.POST.get('nombre', '').strip()
+            apellido = request.POST.get('apellido', '').strip()
+            telefono = request.POST.get('telefono', '').strip()
+            correo = request.POST.get('correo', '').strip()
+            cedula = request.POST.get('cedula', '').strip()
+
+            errores = []
+
+            if cedula and cedula != usuario.cedula:
+                if Usuarios.objects.filter(cedula=cedula).exclude(id_usuario=usuario.id_usuario).exists():
+                    errores.append(f'Ya existe otro usuario con la cédula {cedula}')
+
+            if correo and correo != usuario.correo:
+                if Usuarios.objects.filter(correo=correo).exclude(id_usuario=usuario.id_usuario).exists():
+                    errores.append(f'Ya existe otro usuario con el correo {correo}')
+
+            if telefono and telefono != usuario.telefono:
+                if Usuarios.objects.filter(telefono=telefono).exclude(id_usuario=usuario.id_usuario).exists():
+                    errores.append(f'Ya existe otro usuario con el teléfono {telefono}')
+
+            if errores:
+                for e in errores:
+                    messages.error(request, e)
+                return redirect('login:mi_perfil')
+
+            usuario.nombre = nombre or usuario.nombre
+            usuario.apellido = apellido or usuario.apellido
+            usuario.telefono = telefono or usuario.telefono
+            usuario.correo = correo or usuario.correo
+            usuario.cedula = cedula or usuario.cedula
+            usuario.save()
+
+            registrar_actividad(
+                usuario=request.user,
+                tipo_accion='UPDATE',
+                actividad='Actualización de perfil',
+                descripcion='El usuario actualizó su perfil',
+                request=request,
+            )
+
+            messages.success(request, 'Perfil actualizado correctamente.')
+            return redirect('login:mi_perfil')
+
+        elif action == 'cambiar_password':
+            password_actual = request.POST.get('password_actual', '')
+            password_nueva = request.POST.get('password_nueva', '')
+            password_confirm = request.POST.get('password_confirm', '')
+
+            if not usuario.check_password(password_actual):
+                messages.error(request, 'La contraseña actual no es correcta.')
+                return redirect('login:mi_perfil')
+
+            if len(password_nueva) < 6:
+                messages.error(request, 'La nueva contraseña debe tener al menos 6 caracteres.')
+                return redirect('login:mi_perfil')
+
+            if password_nueva != password_confirm:
+                messages.error(request, 'Las contraseñas nuevas no coinciden.')
+                return redirect('login:mi_perfil')
+
+            usuario.set_password(password_nueva)
+            usuario.save()
+
+            registrar_actividad(
+                usuario=request.user,
+                tipo_accion='UPDATE',
+                actividad='Cambio de contraseña',
+                descripcion='El usuario cambió su contraseña',
+                request=request,
+            )
+
+            messages.success(request, 'Contraseña cambiada correctamente.')
+            from django.contrib.auth import update_session_auth_hash
+            update_session_auth_hash(request, usuario)
+            return redirect('login:mi_perfil')
+
     return render(request, 'mi_perfil.html', {
-        'usuario': request.user
+        'usuario': usuario
     })
 
 
