@@ -26,10 +26,15 @@
     if (btnCerrar) btnCerrar.addEventListener('click', cerrarFormulario);
     if (btnCancelar) btnCancelar.addEventListener('click', cerrarFormulario);
 
+    function toggleFicha() {
+        if (!selectRol || !divFicha) return;
+        var texto = selectRol.options[selectRol.selectedIndex]?.text || '';
+        var esAprendiz = texto.toLowerCase() === 'aprendiz';
+        divFicha.style.display = esAprendiz ? 'block' : 'none';
+    }
+
     if (selectRol && divFicha) {
-        selectRol.addEventListener('change', function () {
-            const texto = (selectRol.options[selectRol.selectedIndex]?.text || '').toLowerCase();
-            divFicha.style.display = (texto === 'aprendiz') ? 'block' : 'none';
-        });
+        selectRol.addEventListener('change', toggleFicha);
+        setTimeout(toggleFicha, 100);
     }
 })();

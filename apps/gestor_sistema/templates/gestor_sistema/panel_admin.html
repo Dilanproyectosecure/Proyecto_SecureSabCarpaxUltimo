@@ -196,7 +196,19 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        
+
+                        <div class="form-group-app full" id="divFichaCrear" style="display:none;">
+                            <label>Ficha existente:</label>
+                            <select name="ficha" class="form-control" onchange="if(this.value) document.getElementById('nuevaFicha').value=''">
+                                <option value="">Seleccione...</option>
+                                {% for ficha in fichas %}
+                                    <option value="{{ ficha.id_ficha }}">{{ ficha.numero_ficha }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="mt-2"><small class="text-muted">ó</small></div>
+                            <label>Nueva ficha:</label>
+                            <input type="text" name="nueva_ficha" id="nuevaFicha" class="form-control" placeholder="Escriba número de ficha..." oninput="if(this.value) document.querySelector('[name=ficha]').value=''">
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer-app">
@@ -412,6 +424,22 @@ document.querySelector('#modalCrearUsuario input[name="nombre"]').addEventListen
         });
     });
 
+})();
+
+// Mostrar/ocultar campo ficha según rol
+(function() {
+    var selectRol = document.getElementById('selectRolCrear');
+    var divFicha = document.getElementById('divFichaCrear');
+    function toggleFicha() {
+        if (!selectRol || !divFicha) return;
+        var opt = selectRol.options[selectRol.selectedIndex];
+        var esAprendiz = opt && opt.text && opt.text.toLowerCase() === 'aprendiz';
+        divFicha.style.display = esAprendiz ? 'block' : 'none';
+    }
+    if (selectRol) {
+        selectRol.addEventListener('change', toggleFicha);
+        setTimeout(toggleFicha, 100);
+    }
 })();
 
 $(document).ready(function() {

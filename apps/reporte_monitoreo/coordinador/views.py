@@ -46,7 +46,7 @@ def inicio(request):
     meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
              'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
     fecha_hoy = f"{hoy.day} de {meses[hoy.month - 1]} de {hoy.year}"
-    
+
     context = {
         'coordinador_nombre': f"{coordinador.nombre or ''} {coordinador.apellido or ''}".strip() or 'Coordinador',
         'coordinador_primer_nombre': coordinador.nombre or 'Coordinador',

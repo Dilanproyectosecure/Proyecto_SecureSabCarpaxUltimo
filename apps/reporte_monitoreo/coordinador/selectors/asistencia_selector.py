@@ -95,7 +95,7 @@ def obtener_asistencias_sede_con_filtros(request):
         usuarios_con_rol = RoleUser.objects.filter(role__name__iexact=rol_filtro).values_list('id_usuario', flat=True)
         asistencias = asistencias.filter(id_usuario__id_usuario__in=usuarios_con_rol)
     
-    return asistencias.order_by('-fecha', '-hora_entrada')
+    return asistencias.order_by('-id_asistencia')
 
 
 def obtener_fichas_activas():

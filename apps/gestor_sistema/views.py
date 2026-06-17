@@ -39,6 +39,10 @@ from apps.reporte_monitoreo.coordinador.models import Ficha, AsistenciaAmbiente,
 from .services import (
     registrar_actividad,
     registrar_asistencia_sede_por_huella,
+    crear_usuario,
+    actualizar_usuario,
+    eliminar_usuario,
+    cambiar_estado_usuario,
 )
 from .usuario_huella_services import eliminar_huella as eliminar_huella_service, registrar_huella as registrar_huella_service
 from .models import registro_actividad  # noqa: F811
@@ -188,8 +192,8 @@ def panel_admin(request):
 
         _name_re = re.compile(r'^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$')
         _errores = []
-        if not (cedula and cedula.isdigit() and len(cedula) == 10):
-            _errores.append("La cédula debe tener exactamente 10 dígitos numéricos.")
+        if not (cedula and cedula.isdigit() and len(cedula) > 4 and len(cedula) <= 10):
+            _errores.append("La cédula debe tener entre 5 y 10 dígitos numéricos.")
         if not (nombre and 3 <= len(nombre) <= 40 and _name_re.match(nombre)):
             _errores.append("El nombre debe tener entre 3 y 40 letras.")
         if not (apellido and 3 <= len(apellido) <= 40 and _name_re.match(apellido)):
@@ -203,22 +207,18 @@ def panel_admin(request):
         if Usuarios.objects.filter(cedula=cedula).exists():
             messages.error(request, f'Ya existe un usuario con la cédula {cedula}')
             return redirect('gestor_sistema:panel_admin')
-        
-        #valida el documento pa que no se repita
-        if Usuarios.objects.filter(documento=tipo_documento).exists():
-            messages.error(request, f'Ya existe un usuario con el documento {tipo_documento}')
-            return redirect('gestor_sistema:panel_admin')
-        
+
         #valida el correo pa que no se repita
-        if Usuarios.objects.filter(correo=correo).exists():
+        if correo and Usuarios.objects.filter(correo=correo).exists():
             messages.error(request, f'Ya existe un usuario con el correo {correo}')
             return redirect('gestor_sistema:panel_admin')
         
-        #valida el celular pa que no se repita
-        if Usuarios.objects.filter(telefono=telefono).exists():
-            messages.error(request, f'Ya existe un usuario con el teléfono {telefono}')
-            return redirect('gestor_sistema:panel_admin')
-        
+
+        ficha_id = request.POST.get('ficha')
+        nueva_ficha = request.POST.get('nueva_ficha')
+        if nueva_ficha:
+            ficha, _ = Ficha.objects.get_or_create(numero_ficha=nueva_ficha)
+            ficha_id = ficha.id_ficha
 
         try:
             usuario = Usuarios.objects.create_user(
@@ -608,6 +608,12 @@ def crear_usuario_view(request):
             messages.error(request, f'Ya existe un usuario con la cédula {cedula}')
             return redirect('gestor_sistema:gestionar_usuarios')
 
+        ficha_id = request.POST.get('ficha')
+        nueva_ficha = request.POST.get('nueva_ficha')
+        if nueva_ficha:
+            ficha, _ = Ficha.objects.get_or_create(numero_ficha=nueva_ficha)
+            ficha_id = ficha.id_ficha
+
         datos = {
             'cedula': cedula,
             'nombre': request.POST.get('nombre'),
@@ -616,10 +622,10 @@ def crear_usuario_view(request):
             'telefono': request.POST.get('telefono'),
             'password': request.POST.get('password'),
             'rol_id': request.POST.get('rol'),
-            'ficha_id': request.POST.get('ficha'),
+            'ficha_id': ficha_id,
         }
 
-        usuario = crear_usuario_service(request, datos)
+        usuario = crear_usuario(request, datos)
         messages.success(request, f'Usuario {usuario.nombre} {usuario.apellido} creado exitosamente')
         return redirect('gestor_sistema:gestionar_usuarios')
 
@@ -639,7 +645,7 @@ def editar_usuario_view(request, id_usuario):
             'rol_id': request.POST.get('rol'),
         }
 
-        actualizar_usuario_service(usuario, datos)
+        actualizar_usuario(usuario, datos)
         registrar_actividad(
             usuario=request.user,
             tipo_accion='UPDATE',
@@ -659,7 +665,7 @@ def eliminar_usuario_view(request, id_usuario):
     usuario = get_object_or_404(Usuarios, id_usuario=id_usuario)
 
     if request.method == 'POST':
-        eliminar_usuario_service(request, usuario)
+        eliminar_usuario(request, usuario)
         messages.success(request, 'Usuario eliminado permanentemente')
 
     return redirect('gestor_sistema:gestionar_usuarios')
@@ -889,9 +895,9 @@ def webhook_huella(request):
                 resultado = registrar_asistencia_sede_por_huella(usuario, request=request)
 
                 if resultado['estado'] == 'entrada':
-                    print(f"   🟢 ENTRADA: {usuario.nombre} {usuario.apellido} - {timezone.now().time()}")
+                    print(f"   🟢 ENTRADA: {usuario.nombre} {usuario.apellido} - {timezone.localtime().time()}")
                 elif resultado['estado'] == 'salida':
-                    print(f"   🔴 SALIDA: {usuario.nombre} {usuario.apellido} - {timezone.now().time()}")
+                    print(f"   🔴 SALIDA: {usuario.nombre} {usuario.apellido} - {timezone.localtime().time()}")
                 else:
                     print(f"   ⚠️ Ya tiene entrada y salida hoy")
 
@@ -900,8 +906,8 @@ def webhook_huella(request):
                 HistorialFallos.objects.create(
                     tipo_fallo='USUARIO_NO_EXISTE',
                     cedula_intentada=cedula,
-                    fecha=timezone.now().date(),
-                    hora=timezone.now().time(),
+                    fecha=timezone.localtime().date(),
+                    hora=timezone.localtime().time(),
                     detalles=f"Webhook: huella detectada con cédula {cedula} pero no existe en el sistema",
                     ip_address=request.META.get('REMOTE_ADDR'),
                 )

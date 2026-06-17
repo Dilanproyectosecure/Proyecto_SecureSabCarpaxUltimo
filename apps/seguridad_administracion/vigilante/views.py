@@ -28,6 +28,7 @@ from apps.seguridad_administracion.vigilante.services import (
 from apps.seguridad_administracion.vigilante.utils.validadores import validar_nombre_apellido, formatear_nombre
 from apps.seguridad_administracion.vigilante.models import Area, Visitante, RegistroManual
 from apps.gestor_sistema.services import registrar_actividad
+from apps.login.models import Usuarios
 
 
 TIPOS_DOCUMENTO = [
@@ -244,6 +245,41 @@ def registrar_invitado(request):
 # ==================== REGISTRO MANUAL ====================
 
 @login_required
+@login_required
+def consultar_usuario_sede_api(request):
+    """AJAX: busca usuario por cédula y retorna su estado actual en sede"""
+    from apps.reporte_monitoreo.coordinador.models import AsistenciaSede
+
+    cedula = request.GET.get('cedula', '').strip()
+    if not cedula:
+        return JsonResponse({'error': 'Cédula requerida'}, status=400)
+
+    usuario = Usuarios.objects.filter(cedula=cedula).first()
+    if not usuario:
+        return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
+
+    hoy = timezone.localtime().date()
+
+    # Buscar asistencia pendiente hoy (entrada sin salida)
+    pendiente = AsistenciaSede.objects.filter(
+        id_usuario=usuario,
+        fecha=hoy,
+        hora_salida__isnull=True
+    ).first()
+
+    ficha = getattr(usuario, 'id_ficha', None)
+    return JsonResponse({
+        'id_usuario': usuario.id_usuario,
+        'nombre': usuario.nombre,
+        'apellido': usuario.apellido,
+        'cedula': usuario.cedula,
+        'ficha': ficha.numero_ficha if ficha else '',
+        'rol': usuario.get_rol() or '',
+        'esta_en_sede': pendiente is not None,
+        'hora_entrada': pendiente.hora_entrada.strftime('%H:%M') if pendiente and pendiente.hora_entrada else None,
+    })
+
+
 def registro_manual(request):
     """Registro manual de ingreso/salida por fallo de huella"""
     
@@ -261,12 +297,18 @@ def registro_manual(request):
         
         return redirect('vigilante:registro_manual')
     
+    from apps.reporte_monitoreo.coordinador.models import AsistenciaSede
     registros_list = obtener_registros_recientes(30)
-    
+    hoy = timezone.localtime().date()
+    en_sede = AsistenciaSede.objects.filter(
+        fecha=hoy, hora_salida__isnull=True
+    ).select_related('id_usuario').order_by('id_usuario__nombre')
+
     context = {
         'fechaHoy': date.today().strftime('%d/%m/%Y'),
         'horaAhora': datetime.now().strftime('%H:%M:%S'),
         'registrosList': registros_list,
+        'en_sede': en_sede,
     }
     
     return render(request, 'registro_manual.html', context)
