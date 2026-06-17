@@ -1,6 +1,7 @@
 import time
 from .hikvision_service import obtener_eventos
-from .models import Usuario, Huella
+from apps.login.models import Usuarios as Usuario
+from .models import Huella
 
 def worker_huellas():
     while True:

@@ -1,7 +1,10 @@
+import random
+import string
+
 from apps.login.models import Usuarios, Roles, RoleUser
 from apps.reporte_monitoreo.coordinador.models import Ficha, AsistenciaSede
 from django.utils import timezone
-from .models import Huella, registro_actividad
+from .models import AsistenciaSede, Huella, registro_actividad
 
 
 def registrar_actividad(usuario, tipo_accion, actividad, descripcion="", request=None):
@@ -114,7 +117,7 @@ def crear_usuario(request, datos):
     apellido = datos.get('apellido')
     correo = datos.get('correo')
     telefono = datos.get('telefono')
-    password = datos.get('password', '123')
+    password = datos.get('password') or generar_password_segura(datos.get('cedula', ''), datos.get('nombre', ''))
     rol_id = datos.get('rol_id')
     ficha_id = datos.get('ficha_id')
 

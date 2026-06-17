@@ -1,6 +1,8 @@
 import csv
 import json
+import random
 import re
+import string
 import pandas as pd
 
 from datetime import date
@@ -8,6 +10,10 @@ from datetime import date
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
+from django.core.mail import send_mail
+from django.conf import settings
+
+from apps.email_service import enviar_correo_seguro
 from django.db import connections
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
@@ -27,19 +33,82 @@ from .hikvision_service import (
     guardar_huella_en_bd,
     subir_huella_a_dispositivo,
 )
-from .models import AsistenciaAmbiente, AsistenciaSede, Ficha, HistorialFallos, Huella, registro_actividad
+from .models import HistorialFallos, Huella, registro_actividad
 from apps.login.models import Roles, RoleUser
+from apps.reporte_monitoreo.coordinador.models import Ficha, AsistenciaAmbiente, AsistenciaSede
 from .services import (
-    cambiar_estado_usuario,
-    crear_usuario as crear_usuario_service,
-    eliminar_usuario as eliminar_usuario_service,
-    procesar_carga_masiva,
     registrar_actividad,
     registrar_asistencia_sede_por_huella,
-    actualizar_usuario as actualizar_usuario_service,
 )
 from .usuario_huella_services import eliminar_huella as eliminar_huella_service, registrar_huella as registrar_huella_service
-from .models import registro_actividad
+from .models import registro_actividad  # noqa: F811
+
+def generar_password_segura(cedula='', nombre=''):
+    if cedula and len(cedula) >= 8:
+        inicial = nombre[0].upper() if nombre else 'A'
+        signo = random.choice('!@#$%^&*')
+        return cedula + inicial + signo
+    chars = string.ascii_letters + string.digits + '!@#$%^&*'
+    password = [
+        random.choice(string.ascii_uppercase),
+        random.choice(string.ascii_lowercase),
+        random.choice(string.digits),
+        random.choice('!@#$%^&*'),
+    ]
+    password += random.choices(chars, k=6)
+    random.shuffle(password)
+    return ''.join(password)
+
+
+def enviar_password_usuario(nombre, apellido, correo, password, cedula):
+    asunto = "SecureSab - Tu cuenta ha sido creada"
+    mensaje_texto = (
+        f"Hola {nombre} {apellido},\n\n"
+        f"Tu cuenta en SecureSab ha sido creada exitosamente.\n\n"
+        f"Tu usuario es: {cedula}\n"
+        f"Tu contraseña de acceso es: {password}\n\n"
+        "Por favor cambia tu contraseña después de iniciar sesión.\n\n"
+        "SecureSab - Sistema de Control de Asistencia SENA"
+    )
+    mensaje_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+    </head>
+    <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <div style="background: linear-gradient(135deg, #178202 0%, #1a9e05 100%); padding: 20px; text-align: center;">
+                <h1 style="color: white; margin: 0;">SecureSab</h1>
+                <p style="color: rgba(255,255,255,0.9); margin: 5px 0 0;">Sistema de Control de Asistencia</p>
+            </div>
+            <div style="padding: 30px;">
+                <h2 style="color: #333; margin-top: 0;">Hola {nombre} {apellido}</h2>
+                <p>Tu cuenta en <strong>SecureSab</strong> ha sido creada exitosamente.</p>
+                <p>Tu <strong>usuario</strong> es:</p>
+                <div style="background: #f8f9fa; padding: 15px; text-align: center; border-radius: 8px; margin: 10px 0;">
+                    <span style="font-size: 24px; font-weight: bold; letter-spacing: 3px; color: #333;">{cedula}</span>
+                </div>
+                <p>Tu <strong>contraseña</strong> de acceso es:</p>
+                <div style="background: #f8f9fa; padding: 15px; text-align: center; border-radius: 8px; margin: 10px 0;">
+                    <span style="font-size: 24px; font-weight: bold; letter-spacing: 3px; color: #178202;">{password}</span>
+                </div>
+                <p style="color: #e74c3c; font-weight: bold;">Por favor cambia tu contraseña después de iniciar sesión.</p>
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+                <p style="color: #999; font-size: 12px; text-align: center;">
+                    SecureSab - Sistema de Control de Asistencia SENA<br>
+                    Este es un correo automático, por favor no responder.
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    try:
+        enviar_correo_seguro(asunto, correo, mensaje_texto, mensaje_html)
+        return True
+    except Exception:
+        return False
 
 @login_required
 def panel_admin(request):
@@ -56,49 +125,47 @@ def panel_admin(request):
         omitos = 0
         for row in reader:
             try:
+                cedula = row.get('cedula', '').strip()
+                correo = row.get('correo', '').strip()
+                telefono = row.get('telefono', '').strip()
+                tipo_doc = row.get('tipo_documento', '').strip()
+
+                if Usuarios.objects.filter(cedula=cedula).exists():
+                    omitos += 1
+                    continue
+                if Usuarios.objects.filter(correo=correo).exists():
+                    omitos += 1
+                    continue
+                if telefono and Usuarios.objects.filter(telefono=telefono).exists():
+                    omitos += 1
+                    continue
+
                 Usuarios.objects.create_user(
-                    tipo_documento=row.get('tipo_documento'),
-                    cedula=row['cedula'],
-                    password=row.get('password', '123'),
+                    tipo_documento=tipo_doc,
+                    cedula=cedula,
+                    password=row.get('password') or generar_password_segura(cedula, row.get('nombre', '')),
                     nombre=row['nombre'],
                     apellido=row['apellido'],
-                    correo=row['correo'],
-                    telefono=row.get('telefono', ''),
+                    correo=correo,
+                    telefono=telefono,
                     estado='Activo',
                     is_active=True,
                 )
-                
-                nombre_rol = row.get('rol', '').strip().lower()
-                
-                #validaciones para evitar duplicados
-                if Usuarios.objects.filter(cedula=row['cedula']).exists():
-                    print(f"⚠️ Usuario con cédula {row['cedula']} ya existe.")
-                    omitos += 1
-                    continue
-                if Usuarios.objects.filter(correo=row['correo']).exists():
-                    print(f"⚠️ Usuario con correo {row['correo']} ya existe.")
-                    omitos += 1     
-                    continue
-                
-                if Usuarios.objects.filter(documento=row['tipo_documento']).exists():
-                    print(f"⚠️ Usuario con documento {row['tipo_documento']} ya existe.")
-                    omitos += 1
-                    continue
-                if Usuarios.objects.filter(telefono=row['telefono']).exists():  
-                    print(f"⚠️ Usuario con teléfono {row['telefono']} ya existe.")
-                    omitos += 1 
-                    continue
 
+                nombre_rol = row.get('rol', '').strip().lower()
 
                 if nombre_rol:
                     rol = Roles.objects.filter(name=nombre_rol).first()
                     if rol:
-                        usuario = Usuarios.objects.get(cedula=row['cedula'])
+                        usuario = Usuarios.objects.get(cedula=cedula)
                         with connections['default'].cursor() as cursor:
                             cursor.execute(
                                 "INSERT INTO role_user (id_usuario, role_id) VALUES (%s, %s)",
                                 [usuario.id_usuario, rol.id],
                             )
+
+                password_generada = row.get('password') or generar_password_segura(cedula, row.get('nombre', ''))
+                enviar_password_usuario(row['nombre'], row['apellido'], correo, password_generada, cedula)
                 creados += 1
             except Exception as e:
                 print(f"Error: {e}")
@@ -118,14 +185,6 @@ def panel_admin(request):
         telefono = request.POST.get('telefono')
         role_id = request.POST.get('role_id') or request.POST.get('rol')
         password = request.POST.get('password') or '123'
-        ficha_id = request.POST.get('ficha')
-        nueva_ficha = request.POST.get('nueva_ficha', '').strip()
-        if nueva_ficha:
-            ficha, created = Ficha.objects.get_or_create(
-                numero_ficha=nueva_ficha,
-                defaults={'estado': 'Activa'}
-            )
-            ficha_id = ficha.id_ficha
 
         _name_re = re.compile(r'^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$')
         _errores = []
@@ -145,11 +204,18 @@ def panel_admin(request):
             messages.error(request, f'Ya existe un usuario con la cédula {cedula}')
             return redirect('gestor_sistema:panel_admin')
         
-        if correo and Usuarios.objects.filter(correo=correo).exists():
+        #valida el documento pa que no se repita
+        if Usuarios.objects.filter(documento=tipo_documento).exists():
+            messages.error(request, f'Ya existe un usuario con el documento {tipo_documento}')
+            return redirect('gestor_sistema:panel_admin')
+        
+        #valida el correo pa que no se repita
+        if Usuarios.objects.filter(correo=correo).exists():
             messages.error(request, f'Ya existe un usuario con el correo {correo}')
             return redirect('gestor_sistema:panel_admin')
         
-        if telefono and Usuarios.objects.filter(telefono=telefono).exists():
+        #valida el celular pa que no se repita
+        if Usuarios.objects.filter(telefono=telefono).exists():
             messages.error(request, f'Ya existe un usuario con el teléfono {telefono}')
             return redirect('gestor_sistema:panel_admin')
         
@@ -179,6 +245,7 @@ def panel_admin(request):
                 usuario.save(update_fields=['id_ficha_id'])
 
             enviar_usuario_hikvision(usuario)
+            enviar_password_usuario(nombre, apellido, correo, password, cedula)
             messages.success(request, f"Usuario {nombre} creado y sincronizado correctamente.")
         except Exception as e:
             messages.error(request, f"Error al guardar: {str(e)}")
@@ -388,7 +455,7 @@ def crear_usuario(request):
             usuario = Usuarios.objects.create_user(
                 tipo_documento=request.POST.get('tipo_documento'),
                 cedula=cedula,
-                password=request.POST.get('password', '123'),
+                password=request.POST.get('password') or generar_password_segura(request.POST.get('cedula', ''), request.POST.get('nombre', '')),
                 nombre=nombre,
                 apellido=apellido,
                 correo=correo,
@@ -473,6 +540,7 @@ def activar_usuario(request, id_usuario):
 def editar_usuario(request, id_usuario):
     usuario = get_object_or_404(Usuarios, id_usuario=id_usuario)
     if request.method == "POST":
+        usuario.tipo_documento = request.POST.get('tipo_documento', usuario.tipo_documento)
         usuario.cedula = request.POST.get('cedula')
         usuario.nombre = request.POST.get('nombre')
         usuario.apellido = request.POST.get('apellido')
@@ -540,16 +608,6 @@ def crear_usuario_view(request):
             messages.error(request, f'Ya existe un usuario con la cédula {cedula}')
             return redirect('gestor_sistema:gestionar_usuarios')
 
-        ficha_id = request.POST.get('ficha')
-        nueva_ficha = request.POST.get('nueva_ficha', '').strip()
-
-        if nueva_ficha:
-            ficha, created = Ficha.objects.get_or_create(
-                numero_ficha=nueva_ficha,
-                defaults={'estado': 'Activa'}
-            )
-            ficha_id = ficha.id_ficha
-
         datos = {
             'cedula': cedula,
             'nombre': request.POST.get('nombre'),
@@ -558,7 +616,7 @@ def crear_usuario_view(request):
             'telefono': request.POST.get('telefono'),
             'password': request.POST.get('password'),
             'rol_id': request.POST.get('rol'),
-            'ficha_id': ficha_id,
+            'ficha_id': request.POST.get('ficha'),
         }
 
         usuario = crear_usuario_service(request, datos)
@@ -809,36 +867,6 @@ def historial_fallos(request):
         }
     }
     return render(request, 'gestor_sistema/historial_fallos.html', context)
-
-
-@login_required
-def carga_masiva_usuarios(request):
-    if request.method == 'POST' and request.FILES.get('archivo_csv'):
-        csv_file = request.FILES['archivo_csv']
-        password_default = request.POST.get('password_default', '123')
-
-        if not csv_file.name.endswith('.csv'):
-            messages.error(request, 'El archivo debe ser CSV')
-            return redirect('gestor_sistema:gestionar_usuarios')
-
-        creados, errores, errores_lista = procesar_carga_masiva(request, csv_file, password_default)
-
-        registrar_actividad(
-            usuario=request.user,
-            tipo_accion='CARGA_MASIVA',
-            actividad='Carga masiva de usuarios',
-            descripcion=f'Se crearon {creados} usuarios mediante archivo CSV. Errores: {errores}',
-            request=request
-        )
-
-        if creados > 0:
-            messages.success(request, f'✅ Se crearon {creados} usuarios')
-        if errores > 0:
-            messages.warning(request, f'⚠️ {errores} errores')
-
-        return redirect('gestor_sistema:gestionar_usuarios')
-
-    return redirect('gestor_sistema:gestionar_usuarios')
 
 
 @csrf_exempt
