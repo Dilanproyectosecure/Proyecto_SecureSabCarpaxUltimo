@@ -168,7 +168,211 @@
     opacity: 1;
 }
 
-/* Select de asistencia */
+/* ============================================
+   ===== ESTADO DE NOVEDADES (NUEVO) =====
+   ============================================ */
+.col-numero {
+    min-width: 150px;
+    white-space: nowrap;
+}
+
+.estado-con-novedad {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+}
+
+.badge-novedad {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background-color: #fff3e0;
+    color: #e65100;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid #ffcc80;
+}
+
+.badge-sin-novedad {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid #a5d6a7;
+}
+
+.btn-ver-novedades {
+    background: #ff6b00;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 107, 0, 0.3);
+    flex-shrink: 0;
+}
+
+.btn-ver-novedades:hover {
+    transform: scale(1.15);
+    background: #e65100;
+    box-shadow: 0 4px 12px rgba(255, 107, 0, 0.5);
+}
+
+.btn-ver-novedades i {
+    font-size: 16px;
+}
+
+/* ============================================
+   ===== MODAL DE NOVEDADES =====
+   ============================================ */
+.modal-novedades-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-novedades-content {
+    background: white;
+    border-radius: 16px;
+    padding: 30px;
+    max-width: 520px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+}
+
+.modal-novedades-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 15px;
+}
+
+.modal-novedades-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-novedades-header h3 i {
+    color: #ff6b00;
+}
+
+.btn-cerrar-modal {
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: #999;
+    transition: color 0.3s;
+    padding: 0 8px;
+    line-height: 1;
+}
+
+.btn-cerrar-modal:hover {
+    color: #333;
+}
+
+.modal-novedades-body {
+    padding: 10px 0;
+}
+
+.novedad-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.novedad-item:last-child {
+    border-bottom: none;
+}
+
+.novedad-icono {
+    font-size: 28px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.novedad-texto {
+    flex: 1;
+}
+
+.novedad-texto strong {
+    display: block;
+    color: #333;
+    font-size: 15px;
+    margin-bottom: 4px;
+}
+
+.novedad-texto p {
+    margin: 4px 0 8px 0;
+    color: #666;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.novedad-texto .faltas-total {
+    display: inline-block;
+    background: #ffebee;
+    color: #c62828;
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* ===== ANIMACIONES ===== */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* ============================================
+   ===== SELECT DE ASISTENCIA =====
+   ============================================ */
 .asistencia-select {
     width: 100%;
     padding: 0.5rem;
@@ -190,6 +394,12 @@
     box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+.asistencia-select:disabled {
+    background-color: #e9ecef;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
 .asistencia-select.changed {
     border-color: #28a745;
     animation: pulse 0.5s;
@@ -201,84 +411,50 @@
     100% { transform: scale(1); }
 }
 
-/* Mensaje sin datos */
-.text-center {
+/* ============================================
+   ===== COLUMNA ASISTENCIA SEDE =====
+   ============================================ */
+.col-asistencia-sede {
     text-align: center;
-    padding: 2rem !important;
-    color: #6c757d;
-    font-style: italic;
+    min-width: 110px;
 }
 
-/* Botones de acción */
-.form-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-start;
-    margin-top: 2rem;
-}
-
-.btn-cancelar {
-    padding: 0.75rem 2rem;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    text-decoration: none;
+.badge-sede {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s;
-    background: #e9ecef;
-    color: #495057;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
 }
 
-.btn-cancelar:hover {
-    background: #dee2e6;
+.badge-sede.presente {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .ficha-badges {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    
-    .fecha-selector {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .fecha-input-group {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.5rem;
-    }
-    
-    .fecha-input-group label {
-        min-width: auto;
-    }
-    
-    .botones-group {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    
-    .btn-actualizar, .btn-registrar, .btn-cancelar {
-        width: 100%;
-        justify-content: center;
-    }
-    
-    .form-actions {
-        flex-direction: column;
-    }
+.badge-sede.ausente {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
 }
 
-/* ========== NUEVAS REGLAS PARA ALERTAS ========== */
-.col-numero {
-    white-space: nowrap;
+/* ============================================
+   ===== FILAS SIN ASISTENCIA SEDE =====
+   ============================================ */
+.tabla-aprendices tbody tr.fila-sin-asistencia-sede {
+    background-color: #fff5f5;
 }
 
+.tabla-aprendices tbody tr.fila-sin-asistencia-sede:hover {
+    background-color: #ffebee;
+}
+
+/* ============================================
+   ===== TOOLTIP PARA ICONOS (legado) =====
+   ============================================ */
 .tooltip-icono {
     display: inline-block;
     margin-left: 8px;
@@ -325,72 +501,173 @@
 
 .alerta-riesgo {
     background-color: #fff3cd !important;
-    border-left: 4px solid #ffc107;
+    border-left: 4px solid #ff0707;
 }
 
 .alerta-cancelacion {
     background-color: #f8d7da !important;
-    border-left: 4px solid #dc3545;
+    border-left: 4px solid #ff0019;
 }
 
-
-/* ===== ESTILO PARA FILAS SIN ASISTENCIA SEDE ===== */
-/* Versión mejorada con mayor especificidad */
-.tabla-aprendices tbody tr.fila-sin-asistencia-sede {
-    background-color: #f8d7da !important;
-    border-left: 2px solid #ef1919 !important;
-}
-
-.tabla-aprendices tbody tr.fila-sin-asistencia-sede td {
-    background-color: #f8d7da !important;
-}
-
-/* Evitar que el hover sobrescriba el rojo */
-.tabla-aprendices tbody tr.fila-sin-asistencia-sede:hover,
-.tabla-aprendices tbody tr.fila-sin-asistencia-sede:hover td {
-    background-color: #f5c6cb !important;
-}
-
-/* Si quieres mantener el rojo fuerte original */
-.fila-sin-asistencia-sede {
-    background-color: #f8d7da !important;
-}
-
-.fila-sin-asistencia-sede td {
-    background-color: #f8d7da !important;
-}
-
-/* Estilo para selects deshabilitados */
-.asistencia-select:disabled {
-    background-color: #e9ecef;
-    cursor: not-allowed;
-    opacity: 0.8;
-}
-
-/* Columna de asistencia sede */
-.col-asistencia-sede {
+/* ============================================
+   ===== MENSAJE SIN DATOS =====
+   ============================================ */
+.text-center {
     text-align: center;
-    min-width: 120px;
+    padding: 2rem !important;
+    color: #6c757d;
+    font-style: italic;
 }
 
-.badge-sede {
+/* ============================================
+   ===== BOTONES DE ACCIÓN =====
+   ============================================ */
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-start;
+    margin-top: 2rem;
+}
+
+.btn-cancelar {
+    padding: 0.75rem 2rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 500;
+    gap: 0.5rem;
+    transition: all 0.3s;
+    background: #e9ecef;
+    color: #495057;
 }
 
-.badge-sede.presente {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+.btn-cancelar:hover {
+    background: #dee2e6;
 }
 
-.badge-sede.ausente {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+/* ============================================
+   ===== RESPONSIVE =====
+   ============================================ */
+@media (max-width: 768px) {
+    .ficha-badges {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .fecha-selector {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .fecha-input-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    
+    .fecha-input-group label {
+        min-width: auto;
+    }
+    
+    .botones-group {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .btn-actualizar, .btn-registrar, .btn-cancelar {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    /* Responsive para novedades */
+    .estado-con-novedad {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    
+    .badge-novedad, .badge-sin-novedad {
+        font-size: 10px;
+        padding: 3px 8px;
+    }
+    
+    .btn-ver-novedades {
+        width: 26px;
+        height: 26px;
+        font-size: 12px;
+    }
+    
+    .modal-novedades-content {
+        padding: 20px;
+        margin: 15px;
+        max-height: 90vh;
+    }
+    
+    .modal-novedades-header h3 {
+        font-size: 17px;
+    }
+    
+    .novedad-item {
+        padding: 10px 0;
+    }
+    
+    .novedad-icono {
+        font-size: 22px;
+    }
+    
+    .novedad-texto strong {
+        font-size: 14px;
+    }
+    
+    .novedad-texto p {
+        font-size: 13px;
+    }
+    
+    .badge-sede {
+        font-size: 10px;
+        padding: 3px 8px;
+    }
+    
+    .col-asistencia-sede {
+        min-width: 80px;
+    }
+}
+
+@media (max-width: 480px) {
+    .ficha-header-info h1 {
+        font-size: 1.3rem;
+    }
+    
+    .tabla-aprendices {
+        font-size: 12px;
+        min-width: 600px;
+    }
+    
+    .tabla-aprendices th,
+    .tabla-aprendices td {
+        padding: 0.6rem 0.5rem;
+    }
+    
+    .asistencia-select {
+        font-size: 12px;
+        padding: 0.3rem;
+    }
+    
+    .btn-ver-novedades {
+        width: 22px;
+        height: 22px;
+        font-size: 10px;
+    }
+    
+    .badge-novedad, .badge-sin-novedad {
+        font-size: 9px;
+        padding: 2px 6px;
+    }
 }

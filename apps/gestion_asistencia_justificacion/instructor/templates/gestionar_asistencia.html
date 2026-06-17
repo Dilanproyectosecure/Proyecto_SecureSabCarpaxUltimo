@@ -26,21 +26,12 @@
         </div>
     </div>
 
-    <!-- ========== CONTENEDOR DE ALERTAS ========== -->
-    <div id="alertas-container"></div>
-
     <!-- Selector de fecha -->
     <div class="fecha-selector" data-ficha-id="{{ ficha.id_ficha }}">
         <div class="fecha-input-group">
             <label for="fecha">Fecha:</label>
             <span class="fecha-texto">{{ fecha_seleccionada }}</span>
-            <!-- <input type="date" id="fecha" name="fecha" class="fecha-input" value="{{ fecha_seleccionada }}">  -->
         </div>
-        <!--<div class="botones-group">
-            <button type="button" class="btn-actualizar" onclick="actualizarAsistencia()">
-                <i class="bi bi-arrow-clockwise"></i> Actualizar
-            </button> 
-        </div> -->
     </div>
 
     <!-- Formulario de asistencia -->
@@ -56,7 +47,7 @@
                         <th>Nombre Completo</th>
                         <th>Correo</th>
                         <th>Teléfono</th>
-                        <th>Asistencia.S</th>  <!-- NUEVA COLUMNA -->
+                        <th>Asistencia.S</th>
                         <th>Asistencia.A</th>
                     </tr>
                 </thead>
@@ -64,73 +55,69 @@
                 {% for aprendiz in aprendices %}
                 <tr id="fila-{{ aprendiz.id_usuario }}" class="{% if not aprendiz.tiene_asistencia_sede %}fila-sin-asistencia-sede{% endif %}">
                     <td class="col-numero">
-                        <!-- Icono de 3 inasistencias consecutivas -->
-                        {% if aprendiz.tiene_3_consecutivas %}
-                        <span class="icono-alerta icono-3" 
-                            data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}"
-                            data-tipo="3"
-                            data-total="{{ aprendiz.total_inasistencias }}"
-                            onclick="mostrarAlerta(this)">
-                            ⚠️
-                        </span>
-                        {% endif %}
-                        <!-- Icono de 5 inasistencias totales -->
-                        {% if aprendiz.tiene_5_inasistencias %}
-                        <span class="icono-alerta icono-5" 
-                            data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}"
-                            data-tipo="5"
-                            data-total="{{ aprendiz.total_inasistencias }}"
-                            onclick="mostrarAlerta(this)">
-                            🚨
-                        </span>
+                        {% if aprendiz.tiene_3_consecutivas or aprendiz.tiene_5_inasistencias %}
+                            <!-- Tiene novedades -->
+                            <div class="estado-con-novedad">
+                                <span class="badge-novedad">
+                                    <i class="bi bi-exclamation-triangle-fill" style="color: #f30000;"></i> 
+                                    En riesgo 
+                                </span>
+                                    <button type="button" class="btn-ver-novedades" 
+                                            data-id="{{ aprendiz.id_usuario }}"
+                                            data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}"
+                                            data-tiene3="{{ aprendiz.tiene_3_consecutivas|yesno:'true,false' }}"
+                                            data-tiene5="{{ aprendiz.tiene_5_inasistencias|yesno:'true,false' }}"
+                                            data-total="{{ aprendiz.total_inasistencias }}">
+                                        <i class="bi bi-question-circle-fill"></i>
+                                    </button>
+                            </div>
+                        {% else %}
+                            <!-- Sin novedades -->
+                            <span class="badge-sin-novedad">
+                                <i class="bi bi-check-circle-fill" style="color: #28a745;"></i> 
+                                Sin riesgo
+                            </span>
                         {% endif %}
                     </td>
                     <td>{{ aprendiz.cedula }}</td>
                     <td>{{ aprendiz.nombre }} {{ aprendiz.apellido }}</td>
                     <td>
-                        <a href='#' onclick='abrirModal("{{ aprendiz.id_usuario }}", "{{ aprendiz.correo|default:"-" }}", "correo")' class="editar-link">
+                        <a href="#" class="editar-link" data-id="{{ aprendiz.id_usuario }}" data-correo="{{ aprendiz.correo|default:'-' }}" data-tipo="correo">
                             {{ aprendiz.correo|default:"-" }}
                         </a>
                     </td>
                     <td>
-                        <a href='#' onclick='abrirModal("{{ aprendiz.id_usuario }}", "{{ aprendiz.telefono|default:"-" }}", "telefono")' class="editar-link">
+                        <a href="#" class="editar-link" data-id="{{ aprendiz.id_usuario }}" data-telefono="{{ aprendiz.telefono|default:'-' }}" data-tipo="telefono">
                             {{ aprendiz.telefono|default:"-" }}
                         </a>
                     </td>
-
-                     <!-- 🔥 NUEVA CELDA: ASISTENCIA SEDE -->
-        <td class="col-asistencia-sede">
-            {% if aprendiz.tiene_asistencia_sede %}
-                <span class="badge-sede presente">
-                    <i class="bi bi-check-circle-fill"></i> En sede
-                </span>
-            {% else %}
-                <span class="badge-sede ausente">
-                    <i class="bi bi-x-circle-fill"></i> Sin registro
-                </span>
-            {% endif %}
-        </td>
-
-
-                    
+                    <td class="col-asistencia-sede">
+                        {% if aprendiz.tiene_asistencia_sede %}
+                            <span class="badge-sede presente">
+                                <i class="bi bi-check-circle-fill"></i> En sede
+                            </span>
+                        {% else %}
+                            <span class="badge-sede ausente">
+                                <i class="bi bi-x-circle-fill"></i> Sin registro
+                            </span>
+                        {% endif %}
+                    </td>
                     <td>
-    <select name="asistencia_{{ aprendiz.id_usuario }}" class="asistencia-select">
-        {% if not aprendiz.tiene_asistencia_sede %}
-            <!-- Si no tiene asistencia sede, solo puede seleccionar Inasistio -->
-            <option value="Inasistio" selected>Inasistio</option>
-        {% else %}
-            <!-- Si tiene asistencia sede, todas las opciones normales -->
-            <option value="">Seleccionar</option>
-            <option value="Asistio" {% if aprendiz.asistencia == 'Asistio' %}selected{% endif %}>Asistio</option>
-            <option value="Inasistio" {% if aprendiz.asistencia == 'Inasistio' %}selected{% endif %}>Inasistio</option>
-            <option value="Retardo" {% if aprendiz.asistencia == 'Retardo' %}selected{% endif %}>Retardo</option>
-        {% endif %}
-    </select>
-</td>
+                        <select name="asistencia_{{ aprendiz.id_usuario }}" class="asistencia-select">
+                            {% if not aprendiz.tiene_asistencia_sede %}
+                                <option value="Inasistio" selected>Inasistio</option>
+                            {% else %}
+                                <option value="">Seleccionar</option>
+                                <option value="Asistio" {% if aprendiz.asistencia == 'Asistio' %}selected{% endif %}>Asistio</option>
+                                <option value="Inasistio" {% if aprendiz.asistencia == 'Inasistio' %}selected{% endif %}>Inasistio</option>
+                                <option value="Retardo" {% if aprendiz.asistencia == 'Retardo' %}selected{% endif %}>Retardo</option>
+                            {% endif %}
+                        </select>
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center">No hay aprendices en esta ficha</td>
+                    <td colspan="7" class="text-center">No hay aprendices en esta ficha</td>
                 </tr>
                 {% endfor %}
                 </tbody>
@@ -149,70 +136,9 @@
 <!-- INCLUIR EL MODAL -->
 {% include 'actualizar_aprendiz.html' %}
 
-<script>
-let alertaActual = null;
-
-function mostrarAlerta(elemento) {
-    const nombre = elemento.getAttribute('data-nombre');
-    const tipo = elemento.getAttribute('data-tipo');
-    const total = elemento.getAttribute('data-total');
-    
-    let html = '';
-    
-    if (tipo === '3') {
-        html = `
-            <div class="alert alert-warning alert-3-inasistencias" role="alert" id="alerta-temporal">
-                <strong>⚠️ ¡Atención!</strong> El aprendiz ${nombre} presenta 3 inasistencias sin justificar en el sistema. 
-                solicite que justifique dichas inasistencias, se encuentra próximo a una cancelación de matrícula.
-                <button type="button" class="btn-cerrar-alerta" onclick="cerrarAlerta()">×</button>
-            </div>
-        `;
-    } else if (tipo === '5') {
-        html = `
-            <div class="alert alert-danger alert-5-inasistencias" role="alert" id="alerta-temporal">
-                <strong>🚨 ¡Atención!</strong> El aprendiz ${nombre} ha acumulado ${total} días de inasistencia sin justificar en el trimestre. 
-                Esto excede el límite permitido (5 faltas), proceda con la cancelación de matrícula según normativa SENA.
-                <button type="button" class="btn-cerrar-alerta" onclick="cerrarAlerta()">×</button>
-            </div>
-        `;
-    }
-    
-    // Eliminar alerta anterior si existe
-    if (alertaActual) {
-        alertaActual.remove();
-    }
-    
-    // Insertar nueva alerta
-    const container = document.getElementById('alertas-container');
-    container.innerHTML = html;
-    alertaActual = document.getElementById('alerta-temporal');
-    
-    // SCROLL SUAVE HACIA ARRIBA
-    window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-    });
-    
-const alertContainer = document.getElementById('alertas-container');
-    if (alertContainer) {
-        alertContainer.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start',
-            inline: 'nearest'
-        });
-    
-}
-}
-
-function cerrarAlerta() {
-    if (alertaActual) {
-        alertaActual.remove();
-        alertaActual = null;
-    }
-}
-</script>
-
 <script src="{% static 'js/gestionar_asistencia.js' %}"></script>
 <script src="{% static 'js/actualizar_aprendiz.js' %}"></script>
+
+
 
 {% endblock %}
