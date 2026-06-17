@@ -39,6 +39,7 @@ def gestionar_asistencia(request):
 
     ficha_id = request.GET.get('ficha')
     fecha = request.GET.get('fecha', date.today().isoformat())
+    competencia_id = request.GET.get('competencia')
 
     if not ficha_id:
         messages.error(request, 'Debe seleccionar una ficha')
@@ -48,7 +49,13 @@ def gestionar_asistencia(request):
         ficha = Ficha.objects.select_related('id_programa', 'id_jornada').get(id_ficha=ficha_id)
         # SELECTOR
         aprendices, competencias, competencia = obtener_datos_ficha(ficha, fecha, instructor_id=request.user.id_usuario)
-        # SERVICE: inasistencias
+
+        # Seleccionar competencia específica si se proporciona
+        if competencia_id and competencias.exists():
+            try:
+                competencia = competencias.get(id_competencia=competencia_id)
+            except Competencia.DoesNotExist:
+                competencia = competencias.first()
 
         for a in aprendices:
             datos = calcular_inasistencias_aprendiz(a)
@@ -57,9 +64,15 @@ def gestionar_asistencia(request):
             a.total_inasistencias = datos["total"]
 
         if request.method == 'POST':
+            post_competencia_id = request.POST.get('competencia_id')
+            if post_competencia_id and competencias.exists():
+                try:
+                    competencia = competencias.get(id_competencia=post_competencia_id)
+                except Competencia.DoesNotExist:
+                    pass
+
             registradas = registrar_asistencia(aprendices, request, fecha, competencia)
 
-            # ✅ REGISTRAR ACTIVIDAD - REGISTRO DE ASISTENCIA
             registrar_actividad(
                 usuario=request.user,
                 tipo_accion='ASISTENCIA_REGISTRO',
@@ -70,9 +83,7 @@ def gestionar_asistencia(request):
 
             messages.success(request, f'{registradas} asistencias registradas')
             url = reverse('instructor:gestionar_asistencia')
-            return redirect(f'{url}?ficha={ficha_id}&fecha={fecha}')
-        
-
+            return redirect(f'{url}?ficha={ficha_id}&fecha={fecha}&competencia={competencia.id_competencia if competencia else ""}')
 
         return render(request, 'gestionar_asistencia.html', {
             'ficha': ficha,

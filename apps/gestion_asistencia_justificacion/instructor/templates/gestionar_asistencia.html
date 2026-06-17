@@ -4,6 +4,7 @@
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/gestionar_asistencia.css' %}">
     <link rel="stylesheet" href="{% static 'css/actualizar_aprendiz.css' %}">
+    <link rel="stylesheet" href="{% static 'css/consultar_asistenciaI.css' %}">
 {% endblock %}
 
 {% block title %}Gestionar Asistencia{% endblock %}
@@ -18,10 +19,7 @@
                 <i class="bi bi-clock"></i> {{ ficha.id_jornada.nombre_jornada }}
             </span>
             <span class="badge-aprendices">
-                <i class="bi bi-people"></i> {{ total_aprendices }} Aprendices
-            </span>
-            <span class="badge-competencia">
-                <i class="bi bi-book"></i> {{ competencia.nombre_competencia }}
+                <i class="bi bi-people"></i> {{ aprendices|length }} Aprendices
             </span>
         </div>
     </div>
@@ -29,24 +27,36 @@
     <!-- ========== CONTENEDOR DE ALERTAS ========== -->
     <div id="alertas-container"></div>
 
-    <!-- Selector de fecha -->
-    <div class="fecha-selector" data-ficha-id="{{ ficha.id_ficha }}">
-        <div class="fecha-input-group">
-            <label for="fecha">Fecha:</label>
-            <span class="fecha-texto">{{ fecha_seleccionada }}</span>
-            <!-- <input type="date" id="fecha" name="fecha" class="fecha-input" value="{{ fecha_seleccionada }}">  -->
-        </div>
-        <!--<div class="botones-group">
-            <button type="button" class="btn-actualizar" onclick="actualizarAsistencia()">
-                <i class="bi bi-arrow-clockwise"></i> Actualizar
-            </button> 
-        </div> -->
-    </div>
-
     <!-- Formulario de asistencia -->
-    <form method="post" action="?ficha={{ ficha.id_ficha }}&fecha={{ fecha_seleccionada }}">
+    <form method="post" action="?ficha={{ ficha.id_ficha }}&fecha={{ fecha_seleccionada }}&competencia={{ competencia.id_competencia|default:'' }}">
         {% csrf_token %}
-        
+        <input type="hidden" name="competencia_id" value="{{ competencia.id_competencia|default:'' }}">
+
+        <!-- Filtros unificados -->
+        <div class="filtros-container">
+            <div class="filtro-group">
+                <label for="selectCompetencia"><i class="bi bi-book"></i> Competencia:</label>
+                <select id="selectCompetencia" class="filtro-select" onchange="cambiarCompetencia(this.value)">
+                    {% for c in competencias %}
+                        <option value="{{ c.id_competencia }}" {% if c.id_competencia == competencia.id_competencia %}selected{% endif %}>
+                            {{ c.nombre_competencia }}
+                        </option>
+                    {% empty %}
+                        <option value="">No hay competencias asignadas</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filtro-group">
+                <label><i class="bi bi-calendar"></i> Fecha:</label>
+                <span class="filtro-select" style="display:flex;align-items:center;min-height:46px;">{{ fecha_seleccionada }}</span>
+            </div>
+            <div class="filtro-group botones">
+                <button type="submit" class="btn-filtrar">
+                    <i class="bi bi-check-circle"></i> Registrar Asistencia
+                </button>
+            </div>
+        </div>
+
         <div class="tabla-container">
             <table class="tabla-aprendices">
                 <thead>
@@ -56,7 +66,7 @@
                         <th>Nombre Completo</th>
                         <th>Correo</th>
                         <th>Teléfono</th>
-                        <th>Asistencia.S</th>  <!-- NUEVA COLUMNA -->
+                        <th>Asistencia.S</th>
                         <th>Asistencia.A</th>
                     </tr>
                 </thead>
@@ -64,25 +74,19 @@
                 {% for aprendiz in aprendices %}
                 <tr id="fila-{{ aprendiz.id_usuario }}" class="{% if not aprendiz.tiene_asistencia_sede %}fila-sin-asistencia-sede{% endif %}">
                     <td class="col-numero">
-                        <!-- Icono de 3 inasistencias consecutivas -->
                         {% if aprendiz.tiene_3_consecutivas %}
                         <span class="icono-alerta icono-3" 
                             data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}"
                             data-tipo="3"
                             data-total="{{ aprendiz.total_inasistencias }}"
-                            onclick="mostrarAlerta(this)">
-                            ⚠️
-                        </span>
+                            onclick="mostrarAlerta(this)">⚠️</span>
                         {% endif %}
-                        <!-- Icono de 5 inasistencias totales -->
                         {% if aprendiz.tiene_5_inasistencias %}
                         <span class="icono-alerta icono-5" 
                             data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}"
                             data-tipo="5"
                             data-total="{{ aprendiz.total_inasistencias }}"
-                            onclick="mostrarAlerta(this)">
-                            🚨
-                        </span>
+                            onclick="mostrarAlerta(this)">🚨</span>
                         {% endif %}
                     </td>
                     <td>{{ aprendiz.cedula }}</td>
@@ -97,51 +101,33 @@
                             {{ aprendiz.telefono|default:"-" }}
                         </a>
                     </td>
-
-                     <!-- 🔥 NUEVA CELDA: ASISTENCIA SEDE -->
-        <td class="col-asistencia-sede">
-            {% if aprendiz.tiene_asistencia_sede %}
-                <span class="badge-sede presente">
-                    <i class="bi bi-check-circle-fill"></i> En sede
-                </span>
-            {% else %}
-                <span class="badge-sede ausente">
-                    <i class="bi bi-x-circle-fill"></i> Sin registro
-                </span>
-            {% endif %}
-        </td>
-
-
-                    
+                    <td class="col-asistencia-sede">
+                        {% if aprendiz.tiene_asistencia_sede %}
+                            <span class="badge-sede presente"><i class="bi bi-check-circle-fill"></i> En sede</span>
+                        {% else %}
+                            <span class="badge-sede ausente"><i class="bi bi-x-circle-fill"></i> Sin registro</span>
+                        {% endif %}
+                    </td>
                     <td>
-    <select name="asistencia_{{ aprendiz.id_usuario }}" class="asistencia-select">
-        {% if not aprendiz.tiene_asistencia_sede %}
-            <!-- Si no tiene asistencia sede, solo puede seleccionar Inasistio -->
-            <option value="Inasistio" selected>Inasistio</option>
-        {% else %}
-            <!-- Si tiene asistencia sede, todas las opciones normales -->
-            <option value="">Seleccionar</option>
-            <option value="Asistio" {% if aprendiz.asistencia == 'Asistio' %}selected{% endif %}>Asistio</option>
-            <option value="Inasistio" {% if aprendiz.asistencia == 'Inasistio' %}selected{% endif %}>Inasistio</option>
-            <option value="Retardo" {% if aprendiz.asistencia == 'Retardo' %}selected{% endif %}>Retardo</option>
-        {% endif %}
-    </select>
-</td>
+                        <select name="asistencia_{{ aprendiz.id_usuario }}" class="asistencia-select">
+                            {% if not aprendiz.tiene_asistencia_sede %}
+                                <option value="Inasistio" selected>Inasistio</option>
+                            {% else %}
+                                <option value="">Seleccionar</option>
+                                <option value="Asistio" {% if aprendiz.asistencia == 'Asistio' %}selected{% endif %}>Asistio</option>
+                                <option value="Inasistio" {% if aprendiz.asistencia == 'Inasistio' %}selected{% endif %}>Inasistio</option>
+                                <option value="Retardo" {% if aprendiz.asistencia == 'Retardo' %}selected{% endif %}>Retardo</option>
+                            {% endif %}
+                        </select>
+                    </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center">No hay aprendices en esta ficha</td>
+                    <td colspan="7" class="text-center">No hay aprendices en esta ficha</td>
                 </tr>
                 {% endfor %}
                 </tbody>
             </table>
-        </div>
-
-        <!-- Botón de registrar -->
-        <div class="form-actions">
-            <button type="submit" class="btn-registrar">
-                <i class="bi bi-check-circle"></i> Registrar Asistencia
-            </button>
         </div>
     </form>
 </div>
@@ -151,6 +137,13 @@
 
 <script>
 let alertaActual = null;
+
+function cambiarCompetencia(competenciaId) {
+    if (!competenciaId) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('competencia', competenciaId);
+    window.location.href = url.toString();
+}
 
 function mostrarAlerta(elemento) {
     const nombre = elemento.getAttribute('data-nombre');

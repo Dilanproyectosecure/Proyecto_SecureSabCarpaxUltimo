@@ -22,6 +22,13 @@
             </div>
         </div>
         <div class="stat-card">
+            <div class="stat-icon"><i class="bi bi-check-circle text-success"></i></div>
+            <div class="stat-info">
+                <h3>{{ registros_exitosos }}</h3>
+                <p>Huellas registradas</p>
+            </div>
+        </div>
+        <div class="stat-card">
             <div class="stat-icon"><i class="bi bi-fingerprint"></i></div>
             <div class="stat-info">
                 <h3>{{ fallos_huella }}</h3>
@@ -55,6 +62,7 @@
                 <label><i class="bi bi-tag"></i> Tipo de fallo:</label>
                 <select name="tipo_fallo" class="filtros-selec">
                     <option value="">Todos</option>
+                    <option value="REGISTRO_HUELLA" {% if filtros.tipo_fallo == 'REGISTRO_HUELLA' %}selected{% endif %}>Huella registrada</option>
                     <option value="HUELLA_FALLIDA" {% if filtros.tipo_fallo == 'HUELLA_FALLIDA' %}selected{% endif %}>Huella no coincide</option>
                     <option value="SIN_HUELLA" {% if filtros.tipo_fallo == 'SIN_HUELLA' %}selected{% endif %}>Sin huella registrada</option>
                     <option value="LECTOR_ERROR" {% if filtros.tipo_fallo == 'LECTOR_ERROR' %}selected{% endif %}>Error en lector</option>
@@ -91,8 +99,8 @@
                     <th>Fecha</th>
                     <th>Hora</th>
                     <th>Usuario</th>
-                    <th>Cédula intentada</th>
-                    <th>Tipo de fallo</th>
+                    <th>ID Usuario (employeeNo)</th>
+                    <th>Tipo</th>
                     <th>Detalles</th>
                     <th>IP</th>
                 </tr>
@@ -111,9 +119,13 @@
                             <span class="text-muted">—</span>
                         {% endif %}
                     </td>
-                    <td data-label="Cédula intentada">{{ fallo.cedula_intentada|default:"—" }}</td>
+                    <td data-label="ID Usuario">{{ fallo.cedula_intentada|default:"—" }}</td>
                     <td data-label="Tipo de fallo">
-                        {% if fallo.tipo_fallo == 'HUELLA_FALLIDA' %}
+                        {% if fallo.tipo_fallo == 'REGISTRO_HUELLA' %}
+                            <span class="badge badge-exitoso">
+                                <i class="bi bi-check-circle"></i> Huella registrada
+                            </span>
+                        {% elif fallo.tipo_fallo == 'HUELLA_FALLIDA' %}
                             <span class="badge badge-huella-fallida">
                                 <i class="bi bi-fingerprint"></i> Huella no coincide
                             </span>
@@ -137,7 +149,7 @@
                             <span class="badge">{{ fallo.tipo_fallo }}</span>
                         {% endif %}
                     </td>
-                    <td data-label="Detalles">{{ fallo.detalles|default:"—"|truncatechars:50 }}</td>
+                    <td data-label="Detalles">{{ fallo.detalles|default:"—"|truncatechars:120 }}</td>
                     <td data-label="IP">{{ fallo.ip_address|default:"—" }}</td>
                 </tr>
                 {% empty %}
@@ -145,7 +157,7 @@
                     <td colspan="7" class="text-center">
                         <i class="bi bi-inbox"></i> No hay registros de fallos
                         <br>
-                        <small class="text-muted">Los intentos fallidos de autenticación aparecerán aquí</small>
+                        <small class="text-muted">Los eventos de huella (exitosos y fallidos) aparecerán aquí cuando el dispositivo envíe datos</small>
                     </td>
                 </tr>
                 {% endfor %}

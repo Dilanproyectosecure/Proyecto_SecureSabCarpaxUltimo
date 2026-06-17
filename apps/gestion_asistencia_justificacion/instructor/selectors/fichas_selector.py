@@ -62,7 +62,8 @@ def obtener_datos_ficha(ficha, fecha, instructor_id=None):
             if competencias_ids:
                 competencias = Competencia.objects.filter(id_competencia__in=competencias_ids)
             else:
-                competencias = Competencia.objects.none()
+                # Fallback: si no hay competencias en ficha_instructor, tomar todas las del programa
+                competencias = Competencia.objects.filter(id_programa=ficha.id_programa)
     else:
         # Si no hay instructor, tomar todas las competencias del programa
         competencias = Competencia.objects.filter(id_programa=ficha.id_programa)

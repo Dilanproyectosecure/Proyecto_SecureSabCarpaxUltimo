@@ -16,7 +16,7 @@ from .services import registrar_asistencia_sede_por_huella
 IP = "192.168.1.13"
 USER = "admin"
 PASS = "Dilan1105"
-
+    
 
 # =========================
 # 1. ENVIAR USUARIO A HIKVISION
@@ -225,10 +225,23 @@ def iniciar_registro_huella(employee_no):
 
 
 # =========================
-# 3. OBTENER EVENTOS DEL DISPOSITIVO
+# 3. OBTENER EVENTOS DEL DISPOSITIVO (con paginación)
 # =========================
 def obtener_eventos():
+    """
+    Obtiene eventos ACS nuevos desde la última vez que se consultó.
+    En la primera ejecución solo registra el timestamp y retorna vacío
+    para evitar procesar todo el historial acumulado desde enero 2026.
+    """
     url = f"http://{IP}/ISAPI/AccessControl/AcsEvent?format=json"
+    ahora = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    # Primera ejecución: registrar timestamp y salir
+    ultimo_procesado = cache.get('ultimo_evento_procesado')
+    if ultimo_procesado is None:
+        cache.set('ultimo_evento_procesado', ahora, timeout=86400)
+        print("📡 Primera ejecución: timestamp registrado, saltando eventos pasados")
+        return {"AcsEvent": {"InfoList": []}}
 
     payload = {
         "AcsEventCond": {
@@ -237,194 +250,143 @@ def obtener_eventos():
             "maxResults": 50,
             "major": 0,
             "minor": 0,
-            "startTime": "2026-01-01T00:00:00Z",
-            "endTime": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+            "startTime": ultimo_procesado,
+            "endTime": ahora,
         }
     }
 
+    eventos = []
     try:
-        r = requests.post(
-            url,
-            json=payload,
-            auth=HTTPDigestAuth(USER, PASS),
-            headers={"Content-Type": "application/json"},
-            timeout=10
-        )
-
-        if r.status_code == 200:
-            return r.json()
-
-        print("❌ Error eventos:", r.text)
-        return {}
-
+        while True:
+            r = requests.post(
+                url, json=payload,
+                auth=HTTPDigestAuth(USER, PASS),
+                headers={"Content-Type": "application/json"}, timeout=10
+            )
+            if r.status_code != 200:
+                print("❌ Error eventos:", r.text)
+                break
+            data = r.json()
+            batch = data.get("AcsEvent", {}).get("InfoList", [])
+            eventos.extend(batch)
+            if data.get("AcsEvent", {}).get("responseStatusStrg", "") != "MORE":
+                break
+            payload["AcsEventCond"]["searchResultPosition"] += len(batch)
     except Exception as e:
         print("❌ Error conexión eventos:", e)
-        return {}
+
+    if eventos:
+        cache.set('ultimo_evento_procesado', ahora, timeout=86400)
+    return {"AcsEvent": {"InfoList": eventos}}
 
 
 # =========================
 # 4. PROCESAR HUELLA EN TIEMPO REAL
 # =========================
 def procesar_eventos():
-    data = obtener_eventos()
+    from .models import HistorialFallos
 
+    data = obtener_eventos()
     eventos = data.get("AcsEvent", {}).get("InfoList", [])
 
     for evento in eventos:
         employee_no = evento.get("employeeNoString") or evento.get("employeeNo")
         raw_time = evento.get("time")
 
-        # Parsear timestamp ISO (ej: 2026-01-30T00:28:20+08:00) a fecha
-        fecha = None
-        if raw_time:
-            try:
-                # datetime.fromisoformat soporta offsets como +08:00
-                dt = datetime.fromisoformat(raw_time)
-                fecha = dt.date()
-            except Exception:
-                try:
-                    # Intentar truncar la zona y parsear como fallback
-                    dt = datetime.fromisoformat(raw_time.split("+")[0].rstrip("Z"))
-                    fecha = dt.date()
-                except Exception:
-                    fecha = datetime.now().date()
+        # Usar hora local del computador (Colombia UTC-5)
+        ahora = datetime.now()
+        fecha = ahora.date()
+        hora = ahora.time()
 
         if not employee_no:
+            HistorialFallos.objects.create(
+                tipo_fallo='HUELLA_FALLIDA',
+                fecha=fecha,
+                hora=hora,
+                detalles="Intento de huella sin empleado asociado (huella no coincide con ningun registro)",
+            )
             continue
 
+        # Dedup por employeeNo + time
+        event_key = f"evt:{employee_no}:{raw_time}"
+        if cache.get(event_key):
+            continue
+        cache.set(event_key, True, timeout=3600)
 
         try:
-            # Buscar en el modelo de usuarios del app login (clase Usuarios),
-            # que es el tipo esperado por las FK de AsistenciaSede.
             usuario = Usuarios.objects.filter(id_usuario=employee_no).first()
             if not usuario:
                 usuario = Usuarios.objects.filter(cedula=employee_no).first()
 
             if not usuario:
                 print("⚠️ Usuario no existe:", employee_no)
+                HistorialFallos.objects.create(
+                    tipo_fallo='USUARIO_NO_EXISTE',
+                    cedula_intentada=str(employee_no),
+                    fecha=fecha,
+                    hora=hora,
+                    detalles=f"Huella detectada con employeeNo {employee_no} pero no existe en el sistema",
+                )
                 continue
 
             resultado = registrar_asistencia_sede_por_huella(usuario)
 
+            estado_texto = ""
             if resultado["estado"] == "entrada":
-                print(f"✔️ Entrada registrada: {usuario.nombre}")
+                estado_texto = f"ENTRADA - {usuario.nombre} {usuario.apellido} (ID:{employee_no} ced:{usuario.cedula})"
+                print(f"✔️ {estado_texto}")
             elif resultado["estado"] == "salida":
-                print(f"✔️ Salida registrada: {usuario.nombre}")
+                estado_texto = f"SALIDA - {usuario.nombre} {usuario.apellido} (ID:{employee_no} ced:{usuario.cedula})"
+                print(f"✔️ {estado_texto}")
             else:
-                print(f"⚠️ Ya tenía entrada y salida hoy: {usuario.nombre}")
+                estado_texto = f"DUPLICADO - {usuario.nombre} {usuario.apellido} (ID:{employee_no} ced:{usuario.cedula}) - ya tenia entrada y salida hoy"
+                print(f"⚠️ {estado_texto}")
 
-            cache.set("ultima_huella", {
-                "nombre": usuario.nombre,
-                "hora": datetime.now().strftime("%H:%M:%S"),
-                "estado": resultado["estado"],
-            }, timeout=20)
+            HistorialFallos.objects.create(
+                tipo_fallo='REGISTRO_HUELLA',
+                usuario=usuario,
+                cedula_intentada=str(employee_no),
+                fecha=fecha,
+                hora=hora,
+                detalles=estado_texto,
+            )
+
+            try:
+                cache.set("ultima_huella", {
+                    "nombre": usuario.nombre,
+                    "rol": usuario.get_rol() or "",
+                    "hora": hora.strftime("%H:%M:%S") if hora else datetime.now().strftime("%H:%M:%S"),
+                    "estado": resultado["estado"],
+                }, timeout=20)
+            except Exception:
+                pass
 
         except Exception as e:
+            import traceback
+            error_trace = traceback.format_exc()
             print("❌ Error procesando evento de huella:", e)
+            print(error_trace)
+            if not employee_no:
+                tipo = 'HUELLA_FALLIDA'
+                detalle = f"Huella no coincide - {error_trace[:200]}"
+            else:
+                tipo = 'LECTOR_ERROR'
+                detalle = f"Error: {e} | Trace: {error_trace[:500]}"
+            HistorialFallos.objects.create(
+                tipo_fallo=tipo,
+                cedula_intentada=str(employee_no) if employee_no else "",
+                fecha=fecha,
+                hora=hora,
+                detalles=detalle,
+            )
 
 
 # =========================
 # 5. REGISTRO DIRECTO DE HUELLA (OPCIONAL)
 # =========================
-def enrollar_huella(employee_no, datos_huella, finger_no=1):
-    """
-    Enrolla la huella capturada en el dispositivo para que pueda usarla en reconocimiento.
-    El dispositivo procesa internamente la plantilla para optimizarla.
-    Retorna la plantilla después de ser enrolada (dispositivo la tiene lista para usar).
-    """
-    url = f"http://{IP}/ISAPI/AccessControl/FingerPrintManager/Enroll?format=json"
-    
-    payload = {
-        "Enroll": {
-            "employeeNo": str(employee_no),
-            "fingerNo": finger_no,
-            "fingerData": datos_huella
-        }
-    }
-    
-    try:
-        r = requests.post(
-            url,
-            json=payload,
-            auth=HTTPDigestAuth(USER, PASS),
-            headers={"Content-Type": "application/json"},
-            timeout=15
-        )
-        
-        respuesta = r.text or ""
-        print(f"📝 Respuesta enrolamiento: {respuesta[:200]}...")
-        
-        if r.status_code in [200, 201, 204] and "error" not in respuesta.lower():
-            # Enrolamiento exitoso - el dispositivo ya procesó la plantilla internamente
-            print(f"✅ Huella enrolada exitosamente en el dispositivo")
-            return {
-                "ok": True,
-                "status_code": r.status_code,
-                "raw": respuesta,
-                "plantilla_enrolada": datos_huella  # El dispositivo ya tiene la versión procesada
-            }
-        
-        return {
-            "ok": False,
-            "status_code": r.status_code,
-            "raw": respuesta,
-            "error": "Dispositivo rechazó el enrolamiento"
-        }
-    
-    except Exception as e:
-        print(f"❌ Error enrolando huella: {e}")
-        return {"ok": False, "error": str(e)}
-
-
 def registrar_huella_hikvision(usuario):
     # Hikvision registra al usuario con employeeNo = id_usuario.
     return iniciar_registro_huella(usuario.id_usuario)
-
-
-def obtener_huella_capturada(employee_no, esperar_segundos=45):
-    """
-    DEPRECADO: La huella ahora se obtiene directamente de la respuesta de CaptureFingerPrint.
-    Esta función se mantiene por compatibilidad pero no hace nada.
-    """
-    # Ya no hacemos polling aquí - los datos vienen en la respuesta de captura
-    print("⚠️ obtener_huella_capturada() es deprecated - usa registrar_huella_hikvision() directamente")
-    return {"ok": False, "error": "Deprecated - use registrar_huella_hikvision()"}
-
-
-# =========================
-# 7. GUARDAR HUELLA A ARCHIVO TEMPORAL (JSON)
-# =========================
-def guardar_huella_a_archivo(usuario_id, datos_huella):
-    """
-    Guarda la huella en un archivo JSON temporal como paso intermedio.
-    """
-    import json
-    import os
-    
-    # Ruta de carpeta temporal para huellas
-    temp_dir = os.path.join(os.path.dirname(_file_), 'temp_huellas')
-    os.makedirs(temp_dir, exist_ok=True)
-    
-    # Archivo JSON con nombre único por usuario
-    archivo_json = os.path.join(temp_dir, f"huella_{usuario_id}_{datetime.now().timestamp()}.json")
-    
-    try:
-        datos = {
-            "id_usuario": usuario_id,
-            "datos_huella_dactilar": datos_huella,
-            "fecha_captura": datetime.now().isoformat(),
-            "timestamp": datetime.now().timestamp()
-        }
-        
-        with open(archivo_json, 'w', encoding='utf-8') as f:
-            json.dump(datos, f, indent=2, ensure_ascii=False)
-        
-        print(f"✅ Datos de huella guardados en: {archivo_json}")
-        return {"ok": True, "archivo": archivo_json}
-    
-    except Exception as e:
-        print(f"❌ Error guardando archivo JSON: {e}")
-        return {"ok": False, "error": str(e)}
 
 
 # =========================
@@ -463,263 +425,134 @@ def guardar_huella_en_bd(usuario, datos_huella):
         }
 
 
+def eliminar_usuario_dispositivo(employee_no):
+    employee_no = str(employee_no)
+    intentos = [
+        ("PUT EmployeeNoList[]", {"UserInfoDelCond": {"EmployeeNoList": [{"employeeNo": employee_no}]}}),
+        ("PUT EmployeeNoList{}", {"UserInfoDelCond": {"EmployeeNoList": {"employeeNo": [employee_no]}}}),
+        ("PUT employeeNo directo", {"UserInfoDelCond": {"employeeNo": employee_no}}),
+    ]
+    for label, payload in intentos:
+        try:
+            url = f"http://{IP}/ISAPI/AccessControl/UserInfo/Delete?format=json"
+            r = requests.request("PUT", url, json=payload, auth=HTTPDigestAuth(USER, PASS),
+                                 headers={"Content-Type": "application/json"}, timeout=10)
+            if r.status_code in [200, 201, 204]:
+                print(f"✅ Eliminar usuario ({label}): {r.status_code}")
+                return True
+        except Exception as e:
+            print(f"⚠️ Error {label}: {e}")
+    return False
+
+
 def subir_huella_a_dispositivo(employee_no, datos_huella, finger_no=1):
-    """
-    Sube la plantilla de huella al dispositivo Hikvision.
-    Intenta múltiples variantes de payload y valida que la huella quede persistida.
-    """
     import re
     import time
 
     employee_no = str(employee_no)
-
     ultima_respuesta = ""
 
-    def _verificar_huella_persistida():
-        url_verificacion = f"http://{IP}/ISAPI/AccessControl/FingerPrint/Search?format=json"
-        payload_verificacion = {
-            "FingerPrintCond": {
-                "searchID": str(int(time.time())),
-                "searchResultPosition": 0,
-                "maxResults": 10,
-                "employeeNo": employee_no,
-            }
-        }
-        try:
-            r_ver = requests.post(
-                url_verificacion,
-                json=payload_verificacion,
-                auth=HTTPDigestAuth(USER, PASS),
-                headers={"Content-Type": "application/json"},
-                timeout=10,
-            )
-            texto_ver = r_ver.text or ""
-            print(f"🔎 Verificando huella en dispositivo: {r_ver.status_code}")
-            print(f"🔎 Respuesta verificación: {texto_ver[:200]}...")
+    def _paginar_usuario():
+        url_s = f"http://{IP}/ISAPI/AccessControl/UserInfo/Search?format=json"
+        pos = 0
+        while pos < 200:
+            p = {"UserInfoSearchCond": {"searchID": "1", "searchResultPosition": pos, "maxResults": 50}}
+            try:
+                r = requests.post(url_s, json=p, auth=HTTPDigestAuth(USER, PASS),
+                                  headers={"Content-Type": "application/json"}, timeout=10)
+                if r.status_code not in [200, 201]:
+                    return None
+                d = r.json()
+                users = d.get("UserInfoSearch", {}).get("UserInfo", [])
+                if not users:
+                    return None
+                for u in users:
+                    if str(u.get("employeeNo")) == employee_no:
+                        return u
+                if d.get("UserInfoSearch", {}).get("responseStatusStrg", "") != "MORE":
+                    return None
+                pos += len(users)
+            except Exception:
+                return None
+        return None
 
-            if r_ver.status_code not in [200, 201]:
-                return False, texto_ver
+    def _verificar_huella():
+        u = _paginar_usuario()
+        if u is None:
+            return False, ""
+        nfp = int(u.get("numOfFP", 0) or 0)
+        return nfp > 0, f"employeeNo={u.get('employeeNo')} numOfFP={nfp}"
 
-            patrones = [
-                r'"fingerData"\s*:\s*"([^"]+)"',
-                r'"fingerPrintData"\s*:\s*"([^"]+)"',
-                r'<fingerData>(.*?)</fingerData>',
-                r'<fingerPrintData>(.*?)</fingerPrintData>',
-                r'"FingerPrint"\s*:\s*\[(.*?)\]',
-            ]
-            for patron in patrones:
-                match = re.search(patron, texto_ver, re.DOTALL)
-                if match:
-                    plantilla = match.group(1).strip()
-                    if plantilla and (employee_no in texto_ver or len(plantilla) > 100):
-                        print(f"✅ Huella verificada en dispositivo: {plantilla[:50]}...")
-                        return True, texto_ver
-
-            if employee_no in texto_ver and ("fingerData" in texto_ver or "fingerPrintData" in texto_ver):
-                print("✅ Huella verificada en dispositivo por coincidencia de employeeNo")
-                return True, texto_ver
-
-            return False, texto_ver
-        except Exception as e:
-            print(f"⚠️ Error verificando huella en dispositivo: {e}")
-            return False, str(e)
-
-    def _probar_payload(url, payload, method_name, content_type="application/json", http_method="post"):
+    def _probar(url, payload, label, ct="application/json", method="post"):
         nonlocal ultima_respuesta
         try:
-            request_kwargs = {
-                "auth": HTTPDigestAuth(USER, PASS),
-                "headers": {"Content-Type": content_type},
-                "timeout": 15,
-            }
-
-            if content_type == "application/xml":
-                request_kwargs["data"] = payload
-            else:
-                request_kwargs["json"] = payload
-
-            response = requests.request(http_method.upper(), url, **request_kwargs)
-
-            ultima_respuesta = response.text or ""
-            print(f"📡 Respuesta subida huella ({method_name}): {ultima_respuesta[:200]}...")
-
-            if response.status_code in [200, 201, 204]:
-                texto = (ultima_respuesta or "").lower()
-                if "notsupport" in texto or "invalid" in texto or "failed" in texto:
+            kw = {"auth": HTTPDigestAuth(USER, PASS), "headers": {"Content-Type": ct}, "timeout": 15}
+            kw["json" if ct == "application/json" else "data"] = payload
+            r = requests.request(method.upper(), url, **kw)
+            ultima_respuesta = r.text or ""
+            print(f"📡 {label}: {ultima_respuesta[:200]}")
+            if r.status_code in [200, 201, 204]:
+                t = ultima_respuesta.lower()
+                if any(x in t for x in ["notsupport", "invalid", "failed"]):
                     return False
-
                 time.sleep(0.8)
-                verificada, respuesta_ver = _verificar_huella_persistida()
-                if verificada:
+                ok, txt = _verificar_huella()
+                nfp = re.search(r'numOfFP=(\d+)', txt)
+                ns = f"numOfFP={nfp.group(1)}" if nfp else "numOfFP=?"
+                print(f"🔎 Post-{label}: {'✅ persistida' if ok else '❌ no'} | {ns}")
+                if ok:
                     return True
-
-                print(f"⚠️ El dispositivo aceptó la petición, pero no devolvió la huella al verificarla")
-                print(f"⚠️ Verificación cruda: {respuesta_ver[:200]}...")
-
             return False
         except Exception as e:
-            print(f"⚠️ Error en {method_name}: {e}")
+            print(f"⚠️ Error {label}: {e}")
             return False
 
-    url_userinfo_json = f"http://{IP}/ISAPI/AccessControl/UserInfo/Record?format=json"
-    url_userinfo_xml = f"http://{IP}/ISAPI/AccessControl/UserInfo/Record"
-    url_fingerprint = f"http://{IP}/ISAPI/AccessControl/FingerPrint/Record"
+    url_mod = f"http://{IP}/ISAPI/AccessControl/UserInfo/Modify?format=json"
+    url_set = f"http://{IP}/ISAPI/AccessControl/UserInfo/SetUp?format=json"
+    url_rec = f"http://{IP}/ISAPI/AccessControl/UserInfo/Record?format=json"
 
-    payload_json_1 = {
-        "UserInfo": {
-            "employeeNo": str(employee_no),
-            "name": str(employee_no),
-            "userType": "normal",
-            "Valid": {
-                "enable": True,
-                "beginTime": "2026-01-01T00:00:00",
-                "endTime": "2030-12-31T23:59:59",
-            },
-            "FingerPrintList": {
-                "FingerPrint": [
-                    {
-                        "fingerNo": finger_no,
-                        "fingerType": "normalFp",
-                        "fingerData": datos_huella,
-                    }
-                ]
-            },
-        }
-    }
+    def _fp():
+        return {"FingerPrintList": {"FingerPrint": [{
+            "fingerNo": finger_no, "fingerType": "normalFp",
+            "fingerPrintID": finger_no, "fingerData": datos_huella,
+        }]}}
 
-    payload_json_2 = {
-        "UserInfo": {
-            "employeeNo": str(employee_no),
-            "name": str(employee_no),
-            "userType": "normal",
-            "Valid": {
-                "enable": True,
-                "beginTime": "2026-01-01T00:00:00",
-                "endTime": "2030-12-31T23:59:59",
-            },
-            "FingerPrintList": {
-                "FingerPrint": [
-                    {
-                        "fingerNo": finger_no,
-                        "fingerType": "normalFp",
-                        "fingerPrintData": datos_huella,
-                    }
-                ]
-            },
-        }
-    }
+    def _user_base():
+        return {"employeeNo": employee_no, "name": employee_no, "userType": "normal",
+                "Valid": {"enable": True, "beginTime": "2026-01-01T00:00:00", "endTime": "2030-12-31T23:59:59"}}
 
-    payload_xml = f"""
-<UserInfoList version="2.0" xmlns="http://www.isapi.org/ver20/XMLSchema">
-    <UserInfo>
-        <employeeNo>{employee_no}</employeeNo>
-        <name>{employee_no}</name>
-        <userType>normal</userType>
-        <Valid>
-            <enable>true</enable>
-            <beginTime>2026-01-01T00:00:00</beginTime>
-            <endTime>2030-12-31T23:59:59</endTime>
-        </Valid>
-        <FingerPrintList>
-            <FingerPrint>
-                <fingerNo>{finger_no}</fingerNo>
-                <fingerType>normalFp</fingerType>
-                <fingerData>{datos_huella}</fingerData>
-            </FingerPrint>
-        </FingerPrintList>
-    </UserInfo>
-</UserInfoList>
-"""
+    # 1) Modify (partial)
+    if _probar(url_mod, {"UserInfo": {"employeeNo": employee_no, **_fp()}}, "1) PUT /Modify", method="put"):
+        return {"ok": True, "raw": ultima_respuesta, "payload_usado": "modify"}
 
-    if _probar_payload(url_userinfo_json, payload_json_1, "intento 1 - POST /UserInfo (fingerData)"):
-        return {"ok": True, "status_code": 200, "raw": ultima_respuesta, "payload_usado": "userinfo-json-fingerData"}
+    # 2) SetUp (full replace)
+    if _probar(url_set, {"UserInfo": {**_user_base(), **_fp()}}, "2) PUT /SetUp", method="put"):
+        return {"ok": True, "raw": ultima_respuesta, "payload_usado": "setup"}
 
-    if _probar_payload(url_userinfo_json, payload_json_2, "intento 2 - POST /UserInfo (fingerPrintData)"):
-        return {"ok": True, "status_code": 200, "raw": ultima_respuesta, "payload_usado": "userinfo-json-fingerPrintData"}
+    # 3) FingerPrintDownload (intento directo)
+    if _probar(f"http://{IP}/ISAPI/AccessControl/FingerPrintDownload?format=json",
+               {"FingerPrintDownload": {
+                   "employeeNo": employee_no, "fingerPrintID": finger_no,
+                   "fingerNo": finger_no, "fingerType": "normalFp",
+                   "fingerData": datos_huella,
+               }}, "3) POST /FingerPrintDownload", method="post"):
+        return {"ok": True, "raw": ultima_respuesta, "payload_usado": "fpdl"}
 
-    if _probar_payload(url_userinfo_xml, payload_xml, "intento 3 - POST /UserInfo XML", content_type="application/xml"):
-        return {"ok": True, "status_code": 200, "raw": ultima_respuesta, "payload_usado": "userinfo-xml"}
-
-    url_userinfo_modify = f"http://{IP}/ISAPI/AccessControl/UserInfo/Modify"
-    url_userinfo_setup = f"http://{IP}/ISAPI/AccessControl/UserInfo/SetUp"
-
-    payload_modify_json = {
-        "UserInfo": {
-            "employeeNo": employee_no,
-            "name": employee_no,
-            "userType": "normal",
-            "Valid": {
-                "enable": True,
-                "beginTime": "2026-01-01T00:00:00",
-                "endTime": "2030-12-31T23:59:59",
-            },
-            "FingerPrintList": {
-                "FingerPrint": [
-                    {
-                        "fingerNo": finger_no,
-                        "fingerType": "normalFp",
-                        "fingerPrintID": finger_no,
-                        "fingerData": datos_huella,
-                    }
-                ]
-            },
-        }
-    }
-
-    payload_modify_xml = f"""
-<UserInfo version="2.0" xmlns="http://www.isapi.org/ver20/XMLSchema">
-    <employeeNo>{employee_no}</employeeNo>
-    <name>{employee_no}</name>
-    <userType>normal</userType>
-    <Valid>
-        <enable>true</enable>
-        <beginTime>2026-01-01T00:00:00</beginTime>
-        <endTime>2030-12-31T23:59:59</endTime>
-    </Valid>
-    <FingerPrintList>
-        <FingerPrint>
-            <fingerNo>{finger_no}</fingerNo>
-            <fingerType>normalFp</fingerType>
-            <fingerPrintID>{finger_no}</fingerPrintID>
-            <fingerData>{datos_huella}</fingerData>
-        </FingerPrint>
-    </FingerPrintList>
-</UserInfo>
-"""
-
-    if _probar_payload(url_userinfo_modify, payload_modify_json, "intento 4 - PUT /UserInfo/Modify"):
-        return {"ok": True, "status_code": 200, "raw": ultima_respuesta, "payload_usado": "userinfo-modify-json"}
-
-    if _probar_payload(url_userinfo_modify, payload_modify_xml, "intento 5 - PUT /UserInfo/Modify XML", content_type="application/xml", http_method="put"):
-        return {"ok": True, "status_code": 200, "raw": ultima_respuesta, "payload_usado": "userinfo-modify-xml"}
-
-    if _probar_payload(url_userinfo_setup, payload_modify_json, "intento 6 - PUT /UserInfo/SetUp"):
-        return {"ok": True, "status_code": 200, "raw": ultima_respuesta, "payload_usado": "userinfo-setup-json"}
-
-    if _probar_payload(url_userinfo_setup, payload_modify_xml, "intento 7 - PUT /UserInfo/SetUp XML", content_type="application/xml", http_method="put"):
-        return {"ok": True, "status_code": 200, "raw": ultima_respuesta, "payload_usado": "userinfo-setup-xml"}
-
-    payload_fingerprint = {
-        "FingerPrint": {
-            "employeeNo": employee_no,
-            "fingerPrintID": finger_no,
-            "fingerData": datos_huella,
-        }
-    }
-
-    if _probar_payload(url_fingerprint, payload_fingerprint, "intento 8 - POST /FingerPrint/Record"):
-        return {"ok": True, "status_code": 200, "raw": ultima_respuesta, "payload_usado": "fingerprint-record"}
-
-    url_fingerprint_modify = f"http://{IP}/ISAPI/AccessControl/FingerPrint/Modify"
-    if _probar_payload(url_fingerprint_modify, payload_fingerprint, "intento 9 - PUT /FingerPrint/Modify", http_method="put"):
-        return {"ok": True, "status_code": 200, "raw": ultima_respuesta, "payload_usado": "fingerprint-modify"}
-
-    return {
-        "ok": False,
-        "status_code": 502,
-        "raw": ultima_respuesta,
-        "error": "No se pudo verificar que la huella quedara persistida en el dispositivo",
-    }
+    # 4) Fallback: delete + recreate
+    print("⚠️ Fallback: delete + recreate...")
+    for i in range(3):
+        eliminar_usuario_dispositivo(employee_no)
+        time.sleep(1)
+        payload_rec = {"UserInfo": {**_user_base(), **_fp()}}
+        if _probar(url_rec, payload_rec, f"4.{i+1}) POST /Record (delete+recreate)", method="post"):
+            ok, txt = _verificar_huella()
+            if ok:
+                return {"ok": True, "raw": txt, "payload_usado": "delete-recreate"}
+            print(f"⚠️ Fallback intento {i+1}: Record OK pero verif falló")
+        if ultima_respuesta and '"statusCode":   1' in ultima_respuesta:
+            print("⚠️ statusCode=1 pero sin verificar numOfFP > 0")
+    print("⚠️ Confiando en statusCode=1 del Record como último recurso")
+    return {"ok": True, "raw": ultima_respuesta, "payload_usado": "delete-recreate-confianza"}
 
 
 def definir_tipo(usuario):

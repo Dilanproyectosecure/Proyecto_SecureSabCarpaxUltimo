@@ -114,13 +114,18 @@
                     </select>
                 </div>
                 <div class="col-md-4" id="divFicha" style="display:none;">
-                    <label>Ficha (solo aprendices):</label>
-                    <select name="ficha" class="form-control">
+                    <label>Ficha existente:</label>
+                    <select name="ficha" class="form-control" id="selectFicha" onchange="if(this.value) document.getElementById('nuevaFicha').value=''">
                         <option value="">Seleccione...</option>
                         {% for ficha in fichas %}
                             <option value="{{ ficha.id_ficha }}">{{ ficha.numero_ficha }}</option>
                         {% endfor %}
                     </select>
+                    <div class="mt-2">
+                        <small class="text-muted">ó</small>
+                    </div>
+                    <label>Nueva ficha:</label>
+                    <input type="text" name="nueva_ficha" id="nuevaFicha" class="form-control" placeholder="Escriba número de ficha..." oninput="if(this.value) document.getElementById('selectFicha').value=''">
                 </div>
             </div>
             <div class="formulario-botones mt-3">

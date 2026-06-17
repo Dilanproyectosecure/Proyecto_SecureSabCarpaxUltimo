@@ -25,7 +25,6 @@ from .hikvision_service import (
     procesar_eventos,
     registrar_huella_hikvision,
     guardar_huella_en_bd,
-    guardar_huella_a_archivo,
     subir_huella_a_dispositivo,
 )
 from .models import AsistenciaAmbiente, AsistenciaSede, Ficha, HistorialFallos, Huella, registro_actividad
@@ -119,6 +118,14 @@ def panel_admin(request):
         telefono = request.POST.get('telefono')
         role_id = request.POST.get('role_id') or request.POST.get('rol')
         password = request.POST.get('password') or '123'
+        ficha_id = request.POST.get('ficha')
+        nueva_ficha = request.POST.get('nueva_ficha', '').strip()
+        if nueva_ficha:
+            ficha, created = Ficha.objects.get_or_create(
+                numero_ficha=nueva_ficha,
+                defaults={'estado': 'Activa'}
+            )
+            ficha_id = ficha.id_ficha
 
         _name_re = re.compile(r'^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$')
         _errores = []
@@ -138,18 +145,11 @@ def panel_admin(request):
             messages.error(request, f'Ya existe un usuario con la cédula {cedula}')
             return redirect('gestor_sistema:panel_admin')
         
-        #valida el documento pa que no se repita
-        if Usuarios.objects.filter(documento=tipo_documento).exists():
-            messages.error(request, f'Ya existe un usuario con el documento {tipo_documento}')
-            return redirect('gestor_sistema:panel_admin')
-        
-        #valida el correo pa que no se repita
-        if Usuarios.objects.filter(correo=correo).exists():
+        if correo and Usuarios.objects.filter(correo=correo).exists():
             messages.error(request, f'Ya existe un usuario con el correo {correo}')
             return redirect('gestor_sistema:panel_admin')
         
-        #valida el celular pa que no se repita
-        if Usuarios.objects.filter(telefono=telefono).exists():
+        if telefono and Usuarios.objects.filter(telefono=telefono).exists():
             messages.error(request, f'Ya existe un usuario con el teléfono {telefono}')
             return redirect('gestor_sistema:panel_admin')
         
@@ -173,6 +173,10 @@ def panel_admin(request):
                         "INSERT INTO role_user (id_usuario, role_id) VALUES (%s, %s)",
                         [usuario.id_usuario, role_id],
                     )
+
+            if ficha_id:
+                usuario.id_ficha_id = ficha_id
+                usuario.save(update_fields=['id_ficha_id'])
 
             enviar_usuario_hikvision(usuario)
             messages.success(request, f"Usuario {nombre} creado y sincronizado correctamente.")
@@ -200,6 +204,7 @@ def panel_admin(request):
     return render(request, 'gestor_sistema/panel_admin.html', {
         'usuarios': usuarios_con_roles,
         'roles': roles_disponibles,
+        'fichas': Ficha.objects.filter(estado='Activa'),
     })
     
 
@@ -535,6 +540,16 @@ def crear_usuario_view(request):
             messages.error(request, f'Ya existe un usuario con la cédula {cedula}')
             return redirect('gestor_sistema:gestionar_usuarios')
 
+        ficha_id = request.POST.get('ficha')
+        nueva_ficha = request.POST.get('nueva_ficha', '').strip()
+
+        if nueva_ficha:
+            ficha, created = Ficha.objects.get_or_create(
+                numero_ficha=nueva_ficha,
+                defaults={'estado': 'Activa'}
+            )
+            ficha_id = ficha.id_ficha
+
         datos = {
             'cedula': cedula,
             'nombre': request.POST.get('nombre'),
@@ -543,7 +558,7 @@ def crear_usuario_view(request):
             'telefono': request.POST.get('telefono'),
             'password': request.POST.get('password'),
             'rol_id': request.POST.get('rol'),
-            'ficha_id': request.POST.get('ficha'),
+            'ficha_id': ficha_id,
         }
 
         usuario = crear_usuario_service(request, datos)
@@ -740,9 +755,12 @@ def registro_actividad_view(request):
     
 @login_required
 def historial_fallos(request):
-    fallos = HistorialFallos.objects.select_related('usuario').all()
+    from django.core.paginator import Paginator
+
+    fallos = HistorialFallos.objects.select_related('usuario').all().order_by('-fecha', '-hora')
 
     total_fallos = fallos.count()
+    registros_exitosos = fallos.filter(tipo_fallo='REGISTRO_HUELLA').count()
     fallos_huella = fallos.filter(tipo_fallo='HUELLA_FALLIDA').count()
     fallos_sin_huella = fallos.filter(tipo_fallo='SIN_HUELLA').count()
     fallos_no_existe = fallos.filter(tipo_fallo='USUARIO_NO_EXISTE').count()
@@ -772,9 +790,14 @@ def historial_fallos(request):
     if fecha_hasta:
         fallos = fallos.filter(fecha__lte=fecha_hasta)
 
+    paginator = Paginator(fallos, 50)
+    page = request.GET.get('page', 1)
+    fallos_page = paginator.get_page(page)
+
     context = {
-        'fallos': fallos,
+        'fallos': fallos_page,
         'total_fallos': total_fallos,
+        'registros_exitosos': registros_exitosos,
         'fallos_huella': fallos_huella,
         'fallos_sin_huella': fallos_sin_huella,
         'fallos_no_existe': fallos_no_existe,
@@ -846,6 +869,14 @@ def webhook_huella(request):
 
             except Usuarios.DoesNotExist:
                 print(f"   ❌ Usuario no existe: {cedula}")
+                HistorialFallos.objects.create(
+                    tipo_fallo='USUARIO_NO_EXISTE',
+                    cedula_intentada=cedula,
+                    fecha=timezone.now().date(),
+                    hora=timezone.now().time(),
+                    detalles=f"Webhook: huella detectada con cédula {cedula} pero no existe en el sistema",
+                    ip_address=request.META.get('REMOTE_ADDR'),
+                )
         else:
             print("📌 Evento sin cédula (otro tipo de evento)")
 

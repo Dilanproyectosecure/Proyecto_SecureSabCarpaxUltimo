@@ -157,6 +157,7 @@ class ResultadoAprendizaje(models.Model):
     id_competencia = models.ForeignKey(
     Competencia,
     on_delete=models.CASCADE,
+    db_column='id_competencia',
     null=True,
     blank=True
 )
