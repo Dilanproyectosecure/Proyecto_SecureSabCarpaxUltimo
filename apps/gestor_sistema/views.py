@@ -1,4 +1,4 @@
-import csv
+﻿import csv
 import json
 import random
 import re
@@ -315,17 +315,17 @@ def registrar_huella_view(request, id_usuario):
         subida = subir_huella_a_dispositivo(usuario.id_usuario, datos_huella)
 
         if not subida.get("ok"):
-            print(f"⚠️ Huella en BD pero NO en dispositivo: {subida.get('error')}")
+            print(f"[WARN] Huella en BD pero NO en dispositivo: {subida.get('error')}")
             return JsonResponse({
-                "mensaje": "⚠️ Huella guardada en BD pero no en dispositivo",
+                "mensaje": "[WARN] Huella guardada en BD pero no en dispositivo",
                 "id_huella": resultado_bd.get("id_huella"),
                 "usuario": usuario.nombre,
                 "detalle_subida": subida.get("raw", subida.get("error", ""))
             }, status=207)
 
-        print(f"✅ Proceso completo para {usuario.nombre}")
+        print(f"[OK] Proceso completo para {usuario.nombre}")
         return JsonResponse({
-            "mensaje": "✅ Huella registrada correctamente",
+            "mensaje": "[OK] Huella registrada correctamente",
             "id_huella": resultado_bd.get("id_huella"),
             "usuario": usuario.nombre,
             
@@ -731,7 +731,7 @@ def eliminar_huella_usuario_view(request, id_usuario):
     usuario = get_object_or_404(Usuarios, id_usuario=id_usuario)
 
     if eliminar_huella_service(request, usuario):
-        messages.success(request, f'✅ Huella eliminada para {usuario.nombre} {usuario.apellido}')
+        messages.success(request, f'[OK] Huella eliminada para {usuario.nombre} {usuario.apellido}')
     else:
         messages.warning(request, 'El usuario no tiene huella registrada')
 
@@ -888,7 +888,7 @@ def webhook_huella(request):
 
         if match:
             cedula = match.group(1)
-            print(f"✅ Cédula detectada: {cedula}")
+            print(f"[OK] Cédula detectada: {cedula}")
 
             try:
                 usuario = Usuarios.objects.get(cedula=cedula)
@@ -899,10 +899,10 @@ def webhook_huella(request):
                 elif resultado['estado'] == 'salida':
                     print(f"   🔴 SALIDA: {usuario.nombre} {usuario.apellido} - {timezone.localtime().time()}")
                 else:
-                    print(f"   ⚠️ Ya tiene entrada y salida hoy")
+                    print(f"   [WARN] Ya tiene entrada y salida hoy")
 
             except Usuarios.DoesNotExist:
-                print(f"   ❌ Usuario no existe: {cedula}")
+                print(f"   [ERROR] Usuario no existe: {cedula}")
                 HistorialFallos.objects.create(
                     tipo_fallo='USUARIO_NO_EXISTE',
                     cedula_intentada=cedula,

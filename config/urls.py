@@ -2,7 +2,7 @@
 URL configuration for config project.
 """
 
-print("✅ Cargando URLs principales...")
+print("[URLs] Cargando URLs principales...")
 print("   - Incluyendo instructor URLs")
 
 from django.contrib import admin

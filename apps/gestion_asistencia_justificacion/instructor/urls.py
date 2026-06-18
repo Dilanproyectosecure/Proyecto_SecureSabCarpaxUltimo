@@ -1,6 +1,6 @@
-# apps/gestion_asistencia_justificacion/instructor/urls.py
+﻿# apps/gestion_asistencia_justificacion/instructor/urls.py
 
-print("✅ instructor/urls.py se está cargando correctamente")
+print("[OK] instructor/urls.py se está cargando correctamente")
 print(f"   Namespace: instructor")
 print(f"   URLs registradas: fichas_instructor, gestionar_asistencia")
 

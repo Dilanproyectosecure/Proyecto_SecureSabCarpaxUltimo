@@ -1,4 +1,4 @@
-import requests
+﻿import requests
 from requests.auth import HTTPDigestAuth
 from datetime import datetime
 from django.core.cache import cache
@@ -46,14 +46,14 @@ def enviar_usuario_hikvision(usuario):
         )
 
         if r.status_code in [200, 201] or "deviceUserAlreadyExist" in r.text:
-            print("✅ Usuario enviado o ya existe en dispositivo")
+            print("[OK] Usuario enviado o ya existe en dispositivo")
             return True
 
-        print("❌ Error al enviar usuario:", r.text)
+        print("[ERROR] Error al enviar usuario:", r.text)
         return False
 
     except Exception as e:
-        print("❌ Error conexión Hikvision:", e)
+        print("[ERROR] Error conexión Hikvision:", e)
         return False
 
 
@@ -128,7 +128,7 @@ def obtener_ultima_huella_capturada(employee_no, timeout_segundos=30):
                     if match:
                         plantilla = match.group(1).strip()
                         if plantilla and len(plantilla) > 100:
-                            print(f"✅ Huella capturada encontrada en intento {intento}: {plantilla[:50]}...")
+                            print(f"[OK] Huella capturada encontrada en intento {intento}: {plantilla[:50]}...")
                             return plantilla
         
         except requests.exceptions.Timeout:
@@ -141,7 +141,7 @@ def obtener_ultima_huella_capturada(employee_no, timeout_segundos=30):
         
         time.sleep(0.5)  # Re-intentar cada 0.5s para más rapidez
     
-    print(f"❌ Timeout esperando huella después de {timeout_segundos}s")
+    print(f"[ERROR] Timeout esperando huella después de {timeout_segundos}s")
     return None
 
 
@@ -191,7 +191,7 @@ def iniciar_registro_huella(employee_no):
             print(f"📡 Respuesta dispositivo ({intento['tipo']}): {ultima_respuesta[:150]}...")
 
             if _respuesta_hikvision_ok(r.status_code, ultima_respuesta):
-                print(f"✅ Comando de captura enviado exitosamente")
+                print(f"[OK] Comando de captura enviado exitosamente")
                 # Ahora ESPERAR Y HACER POLLING RE-ENVIANDO el comando para obtener la huella
                 print(f"⏳ Esperando huella... (máx. 20s)")
                 finger_data = obtener_ultima_huella_capturada(employee_no, timeout_segundos=20)
@@ -206,7 +206,7 @@ def iniciar_registro_huella(employee_no):
                     }
                 else:
                     # Continuar intentando con otro payload si no se capturó
-                    print(f"⚠️ No se capturó huella con {intento['tipo']}, intentando siguiente...")
+                    print(f"[WARN] No se capturó huella con {intento['tipo']}, intentando siguiente...")
                     continue
 
         return {
@@ -217,7 +217,7 @@ def iniciar_registro_huella(employee_no):
         }
 
     except Exception as e:
-        print("❌ Error iniciar huella:", e)
+        print("[ERROR] Error iniciar huella:", e)
         return {
             "ok": False,
             "error": f"Error de conexion con Hikvision: {e}"
@@ -264,7 +264,7 @@ def obtener_eventos():
                 headers={"Content-Type": "application/json"}, timeout=10
             )
             if r.status_code != 200:
-                print("❌ Error eventos:", r.text)
+                print("[ERROR] Error eventos:", r.text)
                 break
             data = r.json()
             batch = data.get("AcsEvent", {}).get("InfoList", [])
@@ -273,7 +273,7 @@ def obtener_eventos():
                 break
             payload["AcsEventCond"]["searchResultPosition"] += len(batch)
     except Exception as e:
-        print("❌ Error conexión eventos:", e)
+        print("[ERROR] Error conexión eventos:", e)
 
     if eventos:
         cache.set('ultimo_evento_procesado', ahora, timeout=86400)
@@ -319,7 +319,7 @@ def procesar_eventos():
                 usuario = Usuarios.objects.filter(cedula=employee_no).first()
 
             if not usuario:
-                print("⚠️ Usuario no existe:", employee_no)
+                print("[WARN] Usuario no existe:", employee_no)
                 HistorialFallos.objects.create(
                     tipo_fallo='USUARIO_NO_EXISTE',
                     cedula_intentada=str(employee_no),
@@ -340,7 +340,7 @@ def procesar_eventos():
                 print(f"✔️ {estado_texto}")
             else:
                 estado_texto = f"DUPLICADO - {usuario.nombre} {usuario.apellido} (ID:{employee_no} ced:{usuario.cedula}) - ya tenia entrada y salida hoy"
-                print(f"⚠️ {estado_texto}")
+                print(f"[WARN] {estado_texto}")
 
             HistorialFallos.objects.create(
                 tipo_fallo='REGISTRO_HUELLA',
@@ -364,7 +364,7 @@ def procesar_eventos():
         except Exception as e:
             import traceback
             error_trace = traceback.format_exc()
-            print("❌ Error procesando evento de huella:", e)
+            print("[ERROR] Error procesando evento de huella:", e)
             print(error_trace)
             if not employee_no:
                 tipo = 'HUELLA_FALLIDA'
@@ -407,9 +407,9 @@ def guardar_huella_en_bd(usuario, datos_huella):
         )
         
         if created:
-            print(f"✅ Huella guardada en BD para {usuario.nombre}")
+            print(f"[OK] Huella guardada en BD para {usuario.nombre}")
         else:
-            print(f"✅ Huella actualizada en BD para {usuario.nombre}")
+            print(f"[OK] Huella actualizada en BD para {usuario.nombre}")
         
         return {
             "ok": True,
@@ -418,7 +418,7 @@ def guardar_huella_en_bd(usuario, datos_huella):
         }
     
     except Exception as e:
-        print(f"❌ Error guardando huella: {e}")
+        print(f"[ERROR] Error guardando huella: {e}")
         return {
             "ok": False,
             "error": f"Error al guardar huella: {str(e)}"
@@ -438,10 +438,10 @@ def eliminar_usuario_dispositivo(employee_no):
             r = requests.request("PUT", url, json=payload, auth=HTTPDigestAuth(USER, PASS),
                                  headers={"Content-Type": "application/json"}, timeout=10)
             if r.status_code in [200, 201, 204]:
-                print(f"✅ Eliminar usuario ({label}): {r.status_code}")
+                print(f"[OK] Eliminar usuario ({label}): {r.status_code}")
                 return True
         except Exception as e:
-            print(f"⚠️ Error {label}: {e}")
+            print(f"[WARN] Error {label}: {e}")
     return False
 
 
@@ -499,12 +499,12 @@ def subir_huella_a_dispositivo(employee_no, datos_huella, finger_no=1):
                 ok, txt = _verificar_huella()
                 nfp = re.search(r'numOfFP=(\d+)', txt)
                 ns = f"numOfFP={nfp.group(1)}" if nfp else "numOfFP=?"
-                print(f"🔎 Post-{label}: {'✅ persistida' if ok else '❌ no'} | {ns}")
+                print(f"[DEBUG] Post-{label}: {'[OK] persistida' if ok else '[ERROR] no'} | {ns}")
                 if ok:
                     return True
             return False
         except Exception as e:
-            print(f"⚠️ Error {label}: {e}")
+            print(f"[WARN] Error {label}: {e}")
             return False
 
     url_mod = f"http://{IP}/ISAPI/AccessControl/UserInfo/Modify?format=json"
@@ -539,7 +539,7 @@ def subir_huella_a_dispositivo(employee_no, datos_huella, finger_no=1):
         return {"ok": True, "raw": ultima_respuesta, "payload_usado": "fpdl"}
 
     # 4) Fallback: delete + recreate
-    print("⚠️ Fallback: delete + recreate...")
+    print("[WARN] Fallback: delete + recreate...")
     for i in range(3):
         eliminar_usuario_dispositivo(employee_no)
         time.sleep(1)
@@ -548,10 +548,10 @@ def subir_huella_a_dispositivo(employee_no, datos_huella, finger_no=1):
             ok, txt = _verificar_huella()
             if ok:
                 return {"ok": True, "raw": txt, "payload_usado": "delete-recreate"}
-            print(f"⚠️ Fallback intento {i+1}: Record OK pero verif falló")
+            print(f"[WARN] Fallback intento {i+1}: Record OK pero verif falló")
         if ultima_respuesta and '"statusCode":   1' in ultima_respuesta:
-            print("⚠️ statusCode=1 pero sin verificar numOfFP > 0")
-    print("⚠️ Confiando en statusCode=1 del Record como último recurso")
+            print("[WARN] statusCode=1 pero sin verificar numOfFP > 0")
+    print("[WARN] Confiando en statusCode=1 del Record como último recurso")
     return {"ok": True, "raw": ultima_respuesta, "payload_usado": "delete-recreate-confianza"}
 
 
