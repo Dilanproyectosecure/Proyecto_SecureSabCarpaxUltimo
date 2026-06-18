@@ -38,10 +38,13 @@ echo "8. Sincronizando archivos estaticos..."
 sudo mkdir -p /var/www/securesab-static
 sudo cp -r staticfiles/* /var/www/securesab-static/
 
-echo "9. Reiniciando Gunicorn..."
+echo "9. Renovando certificado SSL (si aplica)..."
+sudo certbot renew --quiet --no-self-upgrade 2>/dev/null || true
+
+echo "10. Reiniciando Gunicorn..."
 sudo systemctl restart gunicorn
 
-echo "10. Verificando deploy..."
+echo "11. Verificando deploy..."
 for i in $(seq 1 10); do
   STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/)
   if [ "$STATUS" = "200" ]; then
