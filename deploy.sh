@@ -4,10 +4,8 @@ set -e
 echo "=== Deploy iniciado ==="
 cd /home/azureuser/securesab_project
 
-# Setup inicial (solo primera vez)
-if [ ! -f /etc/systemd/system/gunicorn.service ]; then
-  bash scripts/setup_server.sh
-fi
+# Ejecutar setup del servidor (nginx, SSL, systemd)
+bash scripts/setup_server.sh
 
 echo "1. Guardando configuracion local..."
 mkdir -p /tmp/deploy_backup
