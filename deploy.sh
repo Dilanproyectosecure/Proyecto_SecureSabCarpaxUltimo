@@ -44,7 +44,7 @@ sudo systemctl restart gunicorn
 
 echo "11. Verificando deploy..."
 for i in $(seq 1 10); do
-  STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/)
+  STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1/)
   if [ "$STATUS" = "200" ]; then
     echo "=== Deploy exitoso! HTTP $STATUS ==="
     git stash drop 2>/dev/null || true

@@ -40,12 +40,24 @@ fi
 sudo tee /etc/nginx/sites-available/securesab > /dev/null <<'NGINXEOF'
 server {
     listen 80;
-    server_name securesab.app www.securesab.app 158.23.17.242;
+    server_name securesab.app www.securesab.app;
 
-    # Redirección permanente a HTTPS (solo para dominios)
-    if ($host != "158.23.17.242") {
+    location /static/ {
+        alias /var/www/securesab-static/;
+    }
+
+    location /media/ {
+        alias /home/azureuser/securesab_project/media/;
+    }
+
+    location / {
         return 301 https://$host$request_uri;
     }
+}
+
+server {
+    listen 80;
+    server_name 158.23.17.242 localhost 127.0.0.1;
 
     location /static/ {
         alias /var/www/securesab-static/;
