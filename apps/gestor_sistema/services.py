@@ -212,20 +212,45 @@ def cambiar_estado_usuario(request, usuario, accion):
     )
 
 
-def procesar_carga_masiva(request, csv_file, password_default):
+def procesar_carga_masiva(request, archivo):
     import csv
+    from .views import generar_password_segura, enviar_password_usuario
 
-    content = csv_file.read().decode('utf-8')
-    if content.startswith('\ufeff'):
-        content = content[1:]
+    filename = getattr(archivo, 'name', '')
 
-    reader = csv.DictReader(content.splitlines())
+    if filename.endswith('.xlsx'):
+        import openpyxl
+        wb = openpyxl.load_workbook(archivo, read_only=True)
+        ws = wb.active
+        raw_headers = [str(c.value).strip().lower() if c.value else '' for c in next(ws.iter_rows(max_row=1))]
+        rows_data = []
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            row_dict = {}
+            for i, raw_h in enumerate(raw_headers):
+                if raw_h:
+                    val = row[i] if i < len(row) else None
+                    row_dict[raw_h] = str(val).strip() if val is not None else ''
+            rows_data.append(row_dict)
+    elif filename.endswith('.csv'):
+        content = archivo.read().decode('utf-8')
+        if content.startswith('\ufeff'):
+            content = content[1:]
+        reader = csv.DictReader(content.splitlines())
+        rows_data = []
+        for row in reader:
+            cleaned = {}
+            for k, v in row.items():
+                if k:
+                    cleaned[k.strip().lower()] = str(v).strip() if v else ''
+            rows_data.append(cleaned)
+    else:
+        return 0, 0, ['Formato no soportado. Use .csv o .xlsx']
 
     creados = 0
-    errores = 0
-    errores_lista = []
+    omitidos = 0
+    errores = []
 
-    for index, row in enumerate(reader, start=2):
+    for index, row in enumerate(rows_data, start=2):
         cedula = row.get('cedula', '').strip()
         nombre = row.get('nombre', '').strip()
         apellido = row.get('apellido', '').strip()
@@ -233,30 +258,31 @@ def procesar_carga_masiva(request, csv_file, password_default):
         telefono = row.get('telefono', '').strip()
         rol_nombre = row.get('rol', '').strip().lower()
         ficha_numero = row.get('ficha', '').strip()
+        tipo_doc = row.get('tipo_documento', '').strip()
 
-        if not cedula or not nombre or not apellido or not correo or not telefono or not rol_nombre:
-            errores += 1
-            errores_lista.append(f'Fila {index}: Faltan campos obligatorios')
+        if not cedula or not nombre:
+            errores.append(f'Fila {index}: Faltan campos obligatorios (cedula, nombre)')
             continue
 
         if Usuarios.objects.filter(cedula=cedula).exists():
-            errores += 1
-            errores_lista.append(f'Cédula {cedula} ya existe')
+            omitidos += 1
             continue
 
         rol = Roles.objects.filter(name=rol_nombre).first()
         if not rol:
-            errores += 1
-            errores_lista.append(f'Rol {rol_nombre} no existe')
+            errores.append(f'Fila {index}: Rol "{rol_nombre}" no existe')
             continue
+
+        password_generada = generar_password_segura(cedula, nombre)
 
         usuario = Usuarios.objects.create_user(
             cedula=cedula,
-            password=password_default,
+            password=password_generada,
             nombre=nombre,
             apellido=apellido,
             correo=correo,
             telefono=telefono,
+            tipo_documento=tipo_doc or 'CC',
             is_active=True,
             is_staff=(rol_nombre == 'gestor'),
             estado='Activo',
@@ -270,6 +296,9 @@ def procesar_carga_masiva(request, csv_file, password_default):
                 usuario.id_ficha = ficha
                 usuario.save()
 
+        if correo:
+            enviar_password_usuario(nombre, apellido, correo, password_generada, cedula)
+
         creados += 1
 
-    return creados, errores, errores_lista
+    return creados, omitidos, errores

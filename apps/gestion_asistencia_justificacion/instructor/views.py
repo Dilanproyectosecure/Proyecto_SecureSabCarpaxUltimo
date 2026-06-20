@@ -4,17 +4,20 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.conf import settings
+from django.http import JsonResponse
 from datetime import date
+import json
 from apps.login.models import Usuarios
 from apps.reporte_monitoreo.coordinador.models import ( Ficha, AsistenciaAmbiente, Competencia, Justificacion, Jornada, AsistenciaSede)
 from .selectors.fichas_selector import obtener_fichas_con_estadisticas
 from .selectors.fichas_selector import obtener_datos_ficha
 from .selectors.asistencia_selector import ( obtener_ficha_con_asistencias, obtener_asistencias_base, buscar_aprendiz, obtener_competencias_programa)
 from .selectors.justificacion_queries import ( obtener_justificaciones, filtrar_justificaciones)
-from .services.inasistencias_service import calcular_inasistencias_aprendiz
+from .services.inasistencias_service import calcular_inasistencias_aprendiz, calcular_retardos_aprendiz
 from .services.asistencia_service import ( registrar_asistencia, generar_reporte, generar_totales)
 from .services.aprendiz_service import actualizar_datos_aprendiz
 from .services.justificacion_action_service import procesar_accion_justificacion
+from .services.email_service import enviar_correos_inasistencia, enviar_correo_retardo
 from .utils.pdf_utils import generate_pdf_response
 from django.urls import reverse  
 from apps.gestor_sistema.services import registrar_actividad
@@ -62,6 +65,29 @@ def gestionar_asistencia(request):
             a.tiene_3_consecutivas = datos["tiene_3"]
             a.tiene_5_inasistencias = datos["tiene_5"]
             a.total_inasistencias = datos["total"]
+            retardos = calcular_retardos_aprendiz(a)
+            a.retardos_consecutivos = retardos["retardos_consecutivos"]
+            a.tiene_retardos_consecutivos = retardos["llamado_atencion"]
+            a.correo_ya_enviado = False
+
+        from apps.gestor_sistema.models import registro_actividad
+        from django.db.models import Q
+        import re
+        correos_enviados = registro_actividad.objects.filter(
+            Q(tipo_accion='EMAIL_INASISTENCIA') & Q(descripcion__contains=f'ficha {ficha.numero_ficha}') & Q(descripcion__contains=f'fecha {fecha}'),
+        )
+        ids_enviados = set()
+        for reg in correos_enviados:
+            match = re.search(r'ids\[([^\]]+)\]', reg.descripcion)
+            if match:
+                for uid in match.group(1).split(','):
+                    try:
+                        ids_enviados.add(int(uid.strip()))
+                    except ValueError:
+                        pass
+        for a in aprendices:
+            if a.id_usuario in ids_enviados:
+                a.correo_ya_enviado = True
 
         if request.method == 'POST':
             post_competencia_id = request.POST.get('competencia_id')
@@ -313,6 +339,92 @@ def procesar_justificacion(request):
         messages.error(request, mensaje)
 
     return redirect('instructor:gestionar_justificaciones')
+
+
+# ==================== ENVIAR CORREOS DE INASISTENCIA ====================
+@login_required
+def enviar_correos_inasistencia_view(request):
+    """Envia correos masivos a aprendices con inasistencia"""
+    if request.method != 'POST':
+        return redirect('instructor:fichas_instructor')
+
+    try:
+        data = json.loads(request.body)
+        aprendices_ids = data.get('aprendices_ids', [])
+        ficha_id = data.get('ficha_id')
+        fecha = data.get('fecha')
+        competencia_id = data.get('competencia_id')
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({'error': 'Datos invalidos'}, status=400)
+
+    if not aprendices_ids or not ficha_id or not fecha:
+        return JsonResponse({'error': 'Faltan campos obligatorios'}, status=400)
+
+    try:
+        ficha = Ficha.objects.get(id_ficha=ficha_id)
+    except Ficha.DoesNotExist:
+        return JsonResponse({'error': 'Ficha no encontrada'}, status=404)
+
+    competencia = None
+    if competencia_id:
+        try:
+            competencia = Competencia.objects.get(id_competencia=competencia_id)
+        except Competencia.DoesNotExist:
+            pass
+
+    aprendices = Usuarios.objects.filter(id_usuario__in=aprendices_ids)
+
+    resultado = enviar_correos_inasistencia(aprendices, ficha, fecha, competencia)
+
+    registrar_actividad(
+        usuario=request.user,
+        tipo_accion='EMAIL_INASISTENCIA',
+        actividad='Envio masivo de correos de inasistencia',
+        descripcion=f'Instructor {request.user.nombre} {request.user.apellido} envio {resultado["enviados"]} correos de inasistencia para ficha {ficha.numero_ficha} en fecha {fecha} ids[{",".join(str(i) for i in aprendices_ids)}]',
+        request=request
+    )
+
+    return JsonResponse(resultado)
+
+
+# ==================== ENVIAR CORREO DE RETARDO ====================
+@login_required
+def enviar_correo_retardo_view(request):
+    """Envia correo de aviso por retardo consecutivo"""
+    if request.method != 'POST':
+        return redirect('instructor:fichas_instructor')
+
+    try:
+        data = json.loads(request.body)
+        aprendiz_id = data.get('aprendiz_id')
+        retardos = data.get('retardos_consecutivos', 3)
+        ficha_id = data.get('ficha_id')
+        fecha = data.get('fecha')
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({'error': 'Datos invalidos'}, status=400)
+
+    if not aprendiz_id or not ficha_id or not fecha:
+        return JsonResponse({'error': 'Faltan campos obligatorios'}, status=400)
+
+    try:
+        aprendiz = Usuarios.objects.get(id_usuario=aprendiz_id)
+        ficha = Ficha.objects.get(id_ficha=ficha_id)
+    except (Usuarios.DoesNotExist, Ficha.DoesNotExist):
+        return JsonResponse({'error': 'Usuario o ficha no encontrado'}, status=404)
+
+    enviado = enviar_correo_retardo(aprendiz, retardos, ficha, fecha)
+
+    if enviado:
+        registrar_actividad(
+            usuario=request.user,
+            tipo_accion='EMAIL_RETARDO',
+            actividad='Envio de correo por retardo consecutivo',
+            descripcion=f'Instructor {request.user.nombre} {request.user.apellido} envio aviso de retardo a {aprendiz.nombre} {aprendiz.apellido} ({retardos} retardos consecutivos)',
+            request=request
+        )
+        return JsonResponse({'enviado': True, 'mensaje': f'Correo enviado a {aprendiz.nombre} {aprendiz.apellido}'})
+    else:
+        return JsonResponse({'enviado': False, 'mensaje': 'No se pudo enviar el correo'}, status=500)
 
 
 

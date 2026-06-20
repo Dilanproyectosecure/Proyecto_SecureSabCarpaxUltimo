@@ -131,6 +131,13 @@
                                         </div>
                                         <div class="aprendiz-info">
                                             <span>{{ asistencia.id_usuario.nombre }} {{ asistencia.id_usuario.apellido }}</span>
+                                            {% if asistencia.id_usuario.id_usuario %}
+                                            <br>
+                                            <a href="{% url 'coordinador:detalle_aprendiz' asistencia.id_usuario.id_usuario %}" 
+                                               style="font-size:11px;color:#667eea;text-decoration:none;font-weight:600;">
+                                               <i class="fas fa-eye"></i> Ver detalle
+                                            </a>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </td>

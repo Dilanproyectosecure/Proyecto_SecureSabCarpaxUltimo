@@ -2,8 +2,6 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.contrib import messages
-from django.views.decorators.http import require_http_methods
-from django.template.loader import render_to_string
 from django.http import HttpResponse
 from io import BytesIO
 import json
@@ -18,7 +16,8 @@ from .selectors.estadistica_selector import (
 )
 from .selectors.asistencia_selector import (
     obtener_asistencias_ambiente_con_filtros, obtener_asistencias_sede_con_filtros,
-    obtener_fichas_activas, obtener_jornadas, obtener_instructores, obtener_roles
+    obtener_fichas_activas, obtener_jornadas, obtener_instructores, obtener_roles,
+    obtener_historial_completo_aprendiz
 )
 from .selectors.justificacion_selector import (
     obtener_justificaciones_con_filtros, obtener_estadisticas_justificaciones
@@ -70,29 +69,70 @@ def inicio(request):
 
 @login_required
 def asistencia_ambiente(request):
-    """Vista para mostrar asistencias en ambiente con filtros"""
-    
-    asistencias = obtener_asistencias_ambiente_con_filtros(request)
-    
-    paginator = Paginator(asistencias, 50)
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
-    
-    context = {
-        'asistencias': page_obj,
-        'fichas': obtener_fichas_activas(),
-        'jornadas': obtener_jornadas(),
-        'instructores': obtener_instructores(),
-        'filtros': {
-            'ficha': request.GET.get('ficha', ''),
-            'documento': request.GET.get('documento', ''),
-            'fecha': request.GET.get('fecha', ''),
-            'estado': request.GET.get('estado', ''),
-            'jornada': request.GET.get('jornada', ''),
-            'instructor': request.GET.get('instructor', ''),
+    """Vista para mostrar asistencias en ambiente - cards de fichas o tabla detallada"""
+    from .selectors.estadistica_selector import obtener_fichas_con_estadisticas_coordinador
+
+    ficha_seleccionada = request.GET.get('ficha', '')
+    fecha_filtro = request.GET.get('fecha', '')
+    instructor_filtro = request.GET.get('instructor', '')
+
+    if ficha_seleccionada:
+        asistencias = obtener_asistencias_ambiente_con_filtros(request)
+        paginator = Paginator(asistencias, 50)
+        page_number = request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_number)
+
+        from apps.reporte_monitoreo.coordinador.models import Ficha
+        try:
+            ficha_obj = Ficha.objects.get(id_ficha=ficha_seleccionada)
+            ficha_numero = ficha_obj.numero_ficha
+            ficha_programa = ficha_obj.id_programa.nombre_programa if ficha_obj.id_programa else 'N/D'
+        except Ficha.DoesNotExist:
+            ficha_numero = ficha_seleccionada
+            ficha_programa = ''
+
+        context = {
+            'vista': 'detalle',
+            'asistencias': page_obj,
+            'fichas': obtener_fichas_activas(),
+            'jornadas': obtener_jornadas(),
+            'instructores': obtener_instructores(),
+            'ficha_seleccionada': ficha_seleccionada,
+            'ficha_numero': ficha_numero,
+            'ficha_programa': ficha_programa,
+            'filtros': {
+                'ficha': ficha_seleccionada,
+                'documento': request.GET.get('documento', ''),
+                'fecha': request.GET.get('fecha', ''),
+                'estado': request.GET.get('estado', ''),
+                'jornada': request.GET.get('jornada', ''),
+                'instructor': instructor_filtro,
+            }
         }
-    }
-    
+    else:
+        from django.utils import timezone
+        fecha_consulta = timezone.localdate() if not fecha_filtro else fecha_filtro
+        instructor_id = instructor_filtro if instructor_filtro else None
+
+        fichas_data = obtener_fichas_con_estadisticas_coordinador(
+            fecha=fecha_consulta,
+            instructor_id=instructor_id,
+        )
+
+        context = {
+            'vista': 'fichas',
+            'fichas_data': fichas_data,
+            'fichas': obtener_fichas_activas(),
+            'instructores': obtener_instructores(),
+            'jornadas': obtener_jornadas(),
+            'fecha_seleccionada': str(fecha_consulta),
+            'instructor_seleccionado': instructor_filtro,
+            'filtros': {
+                'fecha': fecha_filtro,
+                'instructor': instructor_filtro,
+            }
+        }
+
     return render(request, 'asistencia_ambiente.html', context)
 
 
@@ -291,5 +331,39 @@ def justificaciones(request):
     }
     
     return render(request, 'justificaciones.html', context)
+
+
+# ==================== DETALLE POR APRENDIZ ====================
+
+@login_required
+def detalle_aprendiz(request, usuario_id):
+    """Vista detallada del historial de un aprendiz especifico"""
+    try:
+        historial = obtener_historial_completo_aprendiz(usuario_id)
+    except Usuarios.DoesNotExist:
+        messages.error(request, 'Aprendiz no encontrado')
+        return redirect('coordinador:inicio')
+
+    usuario = historial['usuario']
+    estadisticas = historial['estadisticas']
+
+    total = estadisticas['total_ambiente']
+    if total > 0:
+        pct_asistio = round((estadisticas['asistio'] / total) * 100, 1)
+        pct_inasistio = round((estadisticas['inasistio'] / total) * 100, 1)
+        pct_retardo = round((estadisticas['retardo'] / total) * 100, 1)
+    else:
+        pct_asistio = pct_inasistio = pct_retardo = 0
+
+    context = {
+        'usuario': usuario,
+        'historial': historial,
+        'estadisticas': estadisticas,
+        'pct_asistio': pct_asistio,
+        'pct_inasistio': pct_inasistio,
+        'pct_retardo': pct_retardo,
+    }
+
+    return render(request, 'detalle_aprendiz.html', context)
 
 

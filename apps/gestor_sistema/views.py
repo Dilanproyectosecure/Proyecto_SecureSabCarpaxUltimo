@@ -273,6 +273,24 @@ def panel_admin(request):
         'roles': roles_disponibles,
         'fichas': Ficha.objects.filter(estado='Activa'),
     })
+
+
+@login_required
+def carga_masiva_view(request):
+    if request.method == 'POST' and request.FILES.get('archivo'):
+        archivo = request.FILES['archivo']
+        if not archivo.name.endswith(('.csv', '.xlsx')):
+            messages.error(request, 'Formato no soportado. Use .csv o .xlsx')
+            return redirect('gestor_sistema:gestionar_usuarios')
+        from .services import procesar_carga_masiva
+        creados, omitidos, errores = procesar_carga_masiva(request, archivo)
+        if creados:
+            messages.success(request, f'{creados} usuarios creados. Credenciales enviadas por correo.')
+        if omitidos:
+            messages.warning(request, f'{omitidos} usuarios omitidos (ya existían).')
+        for e in errores[:5]:
+            messages.error(request, e)
+    return redirect('gestor_sistema:gestionar_usuarios')
     
 
 @csrf_exempt

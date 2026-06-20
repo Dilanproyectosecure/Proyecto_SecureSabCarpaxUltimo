@@ -16,7 +16,7 @@
         </div>
         <div class="page-header-actions">
             <button class="btn btn-success" id="btnCargaMasiva" data-bs-toggle="modal" data-bs-target="#modalCargaMasiva">
-                <i class="bi bi-file-earmark-spreadsheet"></i> Carga Masiva CSV
+                <i class="bi bi-file-earmark-spreadsheet"></i> Carga Masiva
             </button>
             <button class="btn btn-primary" id="btnMostrarFormulario">
                 <i class="bi bi-person-plus"></i> Crear Usuario
@@ -35,30 +35,30 @@
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> El archivo CSV debe tener las siguientes columnas:
+                        <i class="bi bi-info-circle"></i> El archivo debe tener las siguientes columnas:
                         <ul class="mt-2 mb-0">
-                            <li><strong>cedula</strong> - Número de identificación</li>
-                            <li><strong>nombre</strong> - Nombre del usuario</li>
-                            <li><strong>apellido</strong> - Apellido del usuario</li>
-                            <li><strong>correo</strong> - Correo electrónico</li>
-                            <li><strong>rol</strong> - aprendiz, instructor, vigilante, coordinador</li>
-                            <li><strong>ficha</strong> (opcional) - Número de ficha (solo para aprendices)</li>
+                            <li><strong>tipo_documento</strong> — CC, TI, CE, etc.</li>
+                            <li><strong>cedula</strong> — Número de identificación</li>
+                            <li><strong>nombre</strong> — Nombre del usuario</li>
+                            <li><strong>apellido</strong> — Apellido del usuario</li>
+                            <li><strong>correo</strong> — Correo electrónico</li>
+                            <li><strong>telefono</strong> — Teléfono</li>
+                            <li><strong>rol</strong> — aprendiz, instructor, coordinador, vigilante, gestor</li>
+                            <li><strong>ficha</strong> — Número de ficha (requerido si el rol es <strong>aprendiz</strong>)</li>
                         </ul>
                     </div>
                     <div class="mb-3">
-                        <label>Seleccionar archivo CSV:</label>
-                        <input type="file" name="archivo_csv" class="form-control" accept=".csv" required>
+                        <label>Seleccionar archivo (.csv o .xlsx):</label>
+                        <input type="file" name="archivo" class="form-control" accept=".csv,.xlsx" required>
                     </div>
-                    <div class="mb-3">
-                        <label>Contraseña por defecto:</label>
-                        <input type="text" name="password_default" class="form-control" value="123" placeholder="123">
-                        <small class="text-muted">La contraseña se asignará a todos los usuarios creados</small>
+                    <div class="alert alert-secondary mb-0">
+                        <i class="bi bi-key"></i> La contraseña se genera automáticamente (cédula + inicial + signo) y se envía por correo al usuario.
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-success">
-                        <i class="bi bi-cloud-upload"></i> Cargar Usuarios
+                        <i class="bi bi-cloud-upload"></i> Importar
                     </button>
                 </div>
             </form>

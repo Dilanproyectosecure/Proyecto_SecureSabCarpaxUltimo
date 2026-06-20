@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/asistencia_ambiente.css' %}?v=20260422">
+    <style>
+        .perfil-header {
+            display: flex; align-items: center; gap: 20px; padding: 25px;
+            background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 12px; color: white; margin-bottom: 20px;
+        }
+        .perfil-avatar {
+            width: 80px; height: 80px; border-radius: 50%; background: rgba(255,255,255,0.2);
+            display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: bold;
+        }
+        .perfil-info h1 { margin: 0; font-size: 24px; }
+        .perfil-info p { margin: 4px 0 0; opacity: 0.9; }
+        .perfil-info .badge-ficha {
+            display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 12px;
+            border-radius: 20px; font-size: 13px; margin-top: 8px;
+        }
+        .estadisticas-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px;
+        }
+        .estad-card {
+            background: white; border-radius: 10px; padding: 20px; text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-top: 3px solid #667eea;
+        }
+        .estad-card.asistio { border-top-color: #28a745; }
+        .estad-card.inasistio { border-top-color: #dc3545; }
+        .estad-card.retardo { border-top-color: #e67e22; }
+        .estad-card.justificada { border-top-color: #17a2b8; }
+        .estad-card .numero { font-size: 28px; font-weight: bold; color: #333; }
+        .estad-card .porcentaje { font-size: 14px; color: #888; }
+        .estad-card .label { font-size: 13px; color: #666; margin-top: 5px; }
+        .section-title {
+            font-size: 18px; font-weight: 600; color: #333; margin: 25px 0 15px;
+            padding-bottom: 8px; border-bottom: 2px solid #667eea;
+        }
+        .btn-volver {
+            display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px;
+            background: #667eea; color: white; border-radius: 6px; text-decoration: none;
+            font-size: 14px; margin-bottom: 15px; transition: background 0.3s;
+        }
+        .btn-volver:hover { background: #5a6fd6; color: white; }
+        .badge-estado {
+            display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
+        }
+        .badge-asistio { background: #d4edda; color: #155724; }
+        .badge-inasistio { background: #f8d7da; color: #721c24; }
+        .badge-retardo { background: #fff3cd; color: #856404; }
+        .badge-justificada { background: #d1ecf1; color: #0c5460; }
+        .badge-aprobado { background: #d4edda; color: #155724; }
+        .badge-rechazado { background: #f8d7da; color: #721c24; }
+        .badge-pendiente { background: #fff3cd; color: #856404; }
+    </style>
+{% endblock %}
+
+{% block title %}Detalle Aprendiz - {{ usuario.nombre }} {{ usuario.apellido }}{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <a href="javascript:history.back()" class="btn-volver">
+        <i class="fas fa-arrow-left"></i> Volver
+    </a>
+
+    <!-- Perfil del aprendiz -->
+    <div class="perfil-header">
+        <div class="perfil-avatar">
+            {{ usuario.nombre|first|upper }}{{ usuario.apellido|first|upper }}
+        </div>
+        <div class="perfil-info">
+            <h1>{{ usuario.nombre }} {{ usuario.apellido }}</h1>
+            <p><i class="fas fa-id-card"></i> {{ usuario.cedula }} &nbsp;|&nbsp; {{ usuario.correo|default:"Sin correo" }}</p>
+            <span class="badge-ficha">
+                <i class="fas fa-folder"></i> Ficha {{ usuario.id_ficha.numero_ficha|default:"N/D" }} 
+                &nbsp;-&nbsp; {{ usuario.id_ficha.id_jornada.nombre_jornada|default:"N/D" }}
+                &nbsp;-&nbsp; {{ usuario.id_ficha.id_programa.nombre_programa|default:"N/D" }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Estadisticas -->
+    <div class="estadisticas-grid">
+        <div class="estad-card asistio">
+            <div class="numero">{{ estadisticas.asistio }}</div>
+            <div class="porcentaje">{{ pct_asistio }}%</div>
+            <div class="label"><i class="fas fa-check-circle"></i> Asistencias</div>
+        </div>
+        <div class="estad-card inasistio">
+            <div class="numero">{{ estadisticas.inasistio }}</div>
+            <div class="porcentaje">{{ pct_inasistio }}%</div>
+            <div class="label"><i class="fas fa-times-circle"></i> Inasistencias</div>
+        </div>
+        <div class="estad-card retardo">
+            <div class="numero">{{ estadisticas.retardo }}</div>
+            <div class="porcentaje">{{ pct_retardo }}%</div>
+            <div class="label"><i class="fas fa-hourglass-half"></i> Retardos</div>
+        </div>
+        <div class="estad-card justificada">
+            <div class="numero">{{ estadisticas.justificada }}</div>
+            <div class="label"><i class="fas fa-file-alt"></i> Justificadas</div>
+        </div>
+        <div class="estad-card">
+            <div class="numero">{{ estadisticas.total_sede }}</div>
+            <div class="label"><i class="fas fa-building"></i> Entradas Sede</div>
+        </div>
+    </div>
+
+    <!-- Historial de asistencia en ambiente -->
+    <h2 class="section-title"><i class="fas fa-chalkboard-teacher"></i> Historial de Asistencia en Ambiente</h2>
+    <div class="table-container">
+        <div class="table-scroll">
+            <table class="tabla-asistencias">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-calendar"></i> Fecha</th>
+                        <th><i class="fas fa-book"></i> Competencia</th>
+                        <th><i class="fas fa-chalkboard-teacher"></i> Instructor</th>
+                        <th><i class="fas fa-info-circle"></i> Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in historial.asistencias_ambiente %}
+                    <tr>
+                        <td>{{ a.fecha|date:"Y-m-d" }}</td>
+                        <td>{{ a.id_competencia.nombre_competencia|default:"N/D" }}</td>
+                        <td>
+                            {% if a.id_instructor %}
+                                {{ a.id_instructor.nombre }} {{ a.id_instructor.apellido }}
+                            {% else %}
+                                <span style="color:#888;">No asignado</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if a.estado_asistencia|lower == 'asistio' %}
+                                <span class="badge-estado badge-asistio"><i class="fas fa-check"></i> {{ a.estado_asistencia }}</span>
+                            {% elif a.estado_asistencia|lower == 'inasistio' %}
+                                <span class="badge-estado badge-inasistio"><i class="fas fa-times"></i> {{ a.estado_asistencia }}</span>
+                            {% elif a.estado_asistencia|lower == 'retardo' %}
+                                <span class="badge-estado badge-retardo"><i class="fas fa-hourglass-half"></i> {{ a.estado_asistencia }}</span>
+                            {% elif a.estado_asistencia|lower == 'justificado' or a.estado_asistencia|lower == 'justificada' %}
+                                <span class="badge-estado badge-justificada"><i class="fas fa-file-alt"></i> {{ a.estado_asistencia }}</span>
+                            {% else %}
+                                <span class="badge-estado">{{ a.estado_asistencia|default:"N/D" }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="no-data-message">
+                            <i class="fas fa-folder-open"></i>
+                            <p>No hay registros de asistencia en ambiente</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Historial de asistencia en sede -->
+    <h2 class="section-title"><i class="fas fa-building"></i> Historial de Asistencia en Sede</h2>
+    <div class="table-container">
+        <div class="table-scroll">
+            <table class="tabla-asistencias">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-calendar"></i> Fecha</th>
+                        <th><i class="fas fa-sign-in-alt"></i> Entrada</th>
+                        <th><i class="fas fa-sign-out-alt"></i> Salida</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in historial.asistencias_sede %}
+                    <tr>
+                        <td>{{ s.fecha|date:"Y-m-d" }}</td>
+                        <td>
+                            {% if s.hora_entrada %}
+                                <span class="badge-estado badge-asistio">{{ s.hora_entrada|time:"H:i" }}</span>
+                            {% else %}
+                                <span style="color:#888;">--:--</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.hora_salida %}
+                                <span class="badge-estado badge-retardo">{{ s.hora_salida|time:"H:i" }}</span>
+                            {% else %}
+                                <span style="color:#888;">--:--</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="no-data-message">
+                            <i class="fas fa-folder-open"></i>
+                            <p>No hay registros de asistencia en sede</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Justificaciones -->
+    {% if historial.justificaciones %}
+    <h2 class="section-title"><i class="fas fa-file-alt"></i> Justificaciones</h2>
+    <div class="table-container">
+        <div class="table-scroll">
+            <table class="tabla-asistencias">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-calendar"></i> Fecha</th>
+                        <th>Motivo</th>
+                        <th><i class="fas fa-info-circle"></i> Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for j in historial.justificaciones %}
+                    <tr>
+                        <td>{{ j.fecha|date:"Y-m-d" }}</td>
+                        <td>{{ j.motivo|truncatewords:20 }}</td>
+                        <td>
+                            {% if j.estado|lower == 'aprobado' %}
+                                <span class="badge-estado badge-aprobado"><i class="fas fa-check"></i> {{ j.estado }}</span>
+                            {% elif j.estado|lower == 'rechazado' %}
+                                <span class="badge-estado badge-rechazado"><i class="fas fa-times"></i> {{ j.estado }}</span>
+                            {% else %}
+                                <span class="badge-estado badge-pendiente"><i class="fas fa-clock"></i> {{ j.estado }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
