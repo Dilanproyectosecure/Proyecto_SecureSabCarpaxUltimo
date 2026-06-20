@@ -102,7 +102,7 @@ document.addEventListener('DOMContentLoaded', function () {
             entries.forEach(function (entry) {
                 if (entry.isIntersecting) {
                     var numbers = entry.target.querySelectorAll('.stat-number');
-                    if (numbers[0]) animateCounter(numbers[0], 4, '', 800);
+                    if (numbers[0]) animateCounter(numbers[0], 5, '', 800);
                     if (numbers[1]) animateCounter(numbers[1], 24, '/7', 800);
                     if (numbers[2]) animateCounter(numbers[2], 100, '%', 800);
                     statsObserver.unobserve(entry.target);
