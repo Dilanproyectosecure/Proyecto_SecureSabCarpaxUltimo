@@ -108,11 +108,13 @@ body {
     border-left: 4px solid transparent;
     transition: all 0.3s;
     font-size: 0.95rem;
-    white-space: nowrap;
+    white-space: normal;
     display: flex;
     align-items: center;
     gap: 0.75rem;
     text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .sidebar .nav-link:hover {
@@ -356,6 +358,23 @@ body {
     }
 }
 
+
+/* ===== OVERLAY SIDEBAR ===== */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 70px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {

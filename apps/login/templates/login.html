@@ -52,35 +52,35 @@
 
             <div class="forgot-password">
                 <a href="{% url 'login:recuperar' %}">
-                    <i class="fas fa-key"></i> ¿Olvidaste tu contraseña?
+                    &#128273; &#191;Olvidaste tu contrase&#241;a?
                 </a>
             </div>
         </form>
     </div>
+    <script>
+    // Alternar visibilidad de la contrase&#241;a
+    ;(function(){
+        const pwd = document.getElementById('password');
+        const toggle = document.getElementById('togglePassword');
+        const iconEye = document.getElementById('iconEye');
+        const eyePupil = document.getElementById('eyePupil');
+        if(!pwd || !toggle) return;
+        toggle.addEventListener('click', function(){
+            const type = pwd.getAttribute('type') === 'password' ? 'text' : 'password';
+            pwd.setAttribute('type', type);
+            if(type === 'text'){
+                iconEye.setAttribute('stroke', '#0b5');
+                eyePupil.setAttribute('fill', '#0b5');
+                toggle.setAttribute('title','Ocultar contrase&#241;a');
+                toggle.setAttribute('aria-label','Ocultar contrase&#241;a');
+            } else {
+                iconEye.setAttribute('stroke', '#2f6b2f');
+                eyePupil.setAttribute('fill', '#2f6b2f');
+                toggle.setAttribute('title','Mostrar contrase&#241;a');
+                toggle.setAttribute('aria-label','Mostrar contrase&#241;a');
+            }
+        });
+    })();
+    </script>
 </body>
-<script>
-// Alternar visibilidad de la contraseña
-;(function(){
-    const pwd = document.getElementById('password');
-    const toggle = document.getElementById('togglePassword');
-    const iconEye = document.getElementById('iconEye');
-    const eyePupil = document.getElementById('eyePupil');
-    if(!pwd || !toggle) return;
-    toggle.addEventListener('click', function(){
-        const type = pwd.getAttribute('type') === 'password' ? 'text' : 'password';
-        pwd.setAttribute('type', type);
-        if(type === 'text'){
-            iconEye.setAttribute('stroke', '#0b5');
-            eyePupil.setAttribute('fill', '#0b5');
-            toggle.setAttribute('title','Ocultar contraseña');
-            toggle.setAttribute('aria-label','Ocultar contraseña');
-        } else {
-            iconEye.setAttribute('stroke', '#2f6b2f');
-            eyePupil.setAttribute('fill', '#2f6b2f');
-            toggle.setAttribute('title','Mostrar contraseña');
-            toggle.setAttribute('aria-label','Mostrar contraseña');
-        }
-    });
-})();
-</script>
 </html>

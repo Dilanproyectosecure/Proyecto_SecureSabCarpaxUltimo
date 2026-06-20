@@ -6,8 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SecureSab - Sistema de Control de Asistencia SENA</title>
     
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="{% static 'css/landing.css' %}?v=2">
+    <link rel="stylesheet" href="{% static 'css/landing.css' %}?v=3">
 </head>
 <body>
     <!-- Navbar -->
@@ -39,13 +42,13 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-content">
-            <div class="hero-text">
+            <div class="hero-text" data-animate="fade-left">
                 <h1 class="hero-title">
                     Control de Asistencia <span class="highlight">Inteligente</span> para el SENA
                 </h1>
                 <p class="hero-subtitle">
                     Gestiona la asistencia de aprendices, instructores y visitantes de manera eficiente, 
-                    segura y en tiempo real. La solución integral para centros de formación.
+                    segura y en tiempo real. La solucion integral para centros de formacion.
                 </p>
                 <div class="hero-buttons">
                     <a href="{% url 'login:login' %}" class="btn-primary">
@@ -56,7 +59,7 @@
                     </a>
                 </div>
             </div>
-            <div class="hero-image">
+            <div class="hero-image" data-animate="fade-right">
                 <div class="hero-card">
                     <div class="card-header">
                         <i class="fas fa-shield-alt"></i>
@@ -92,9 +95,9 @@
     <!-- Features Section -->
     <section class="features" id="features">
         <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">Características Principales</h2>
-                <p class="section-subtitle">Todo lo que necesitas para gestionar la asistencia de tu centro de formación</p>
+            <div class="section-header" data-animate="fade-up">
+                <h2 class="section-title">Caracteristicas Principales</h2>
+                <p class="section-subtitle">Todo lo que necesitas para gestionar la asistencia de tu centro de formacion</p>
             </div>
             <div class="features-grid">
                 <div class="feature-card">
@@ -146,9 +149,9 @@
     <!-- Roles Section -->
     <section class="roles" id="roles">
         <div class="container">
-            <div class="section-header">
+            <div class="section-header" data-animate="fade-up">
                 <h2 class="section-title">Roles del Sistema</h2>
-                <p class="section-subtitle">Cada usuario tiene acceso a las funcionalidades según su rol</p>
+                <p class="section-subtitle">Cada usuario tiene acceso a las funcionalidades segun su rol</p>
             </div>
             <div class="roles-grid">
                 <div class="role-card aprendiz">
@@ -183,7 +186,6 @@
                     <ul class="role-features">
                         <li><i class="fas fa-check"></i> Supervisar asistencia general</li>
                         <li><i class="fas fa-check"></i> Revisar justificaciones</li>
-                        <li><i class="fas fa-check"></i> Gestionar novedades</li>
                         <li><i class="fas fa-check"></i> Reportes por sede/ambiente</li>
                     </ul>
                 </div>
@@ -199,6 +201,18 @@
                         <li><i class="fas fa-check"></i> Historial de registros</li>
                     </ul>
                 </div>
+                <div class="role-card gestor">
+                    <div class="role-icon">
+                        <i class="fas fa-user-cog"></i>
+                    </div>
+                    <h3>Gestor del Sistema</h3>
+                    <ul class="role-features">
+                        <li><i class="fas fa-check"></i> Gestionar usuarios</li>
+                        <li><i class="fas fa-check"></i> Ver registros de actividades</li>
+                        <li><i class="fas fa-check"></i> Historial de fallos</li>
+                        <li><i class="fas fa-check"></i> Administrar perfiles</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </section>
@@ -207,7 +221,7 @@
     <section class="about" id="about">
         <div class="container">
             <div class="about-content">
-                <div class="about-text">
+                <div class="about-text" data-animate="fade-left">
                     <h2>Sobre SecureSab</h2>
                     <p>
                         SecureSab es un sistema integral de gestión de asistencia desarrollado específicamente 
@@ -234,7 +248,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="about-image">
+                <div class="about-image" data-animate="fade-right">
                     <div class="sena-badge">
                         <i class="fas fa-graduation-cap"></i>
                         <span>SENA</span>
@@ -248,7 +262,7 @@
     <!-- CTA Section -->
     <section class="cta">
         <div class="container">
-            <div class="cta-content">
+            <div class="cta-content" data-animate="fade-up">
                 <h2>¿Listo para comenzar?</h2>
                 <p>Accede al sistema con tus credenciales institucionales</p>
                 <a href="{% url 'login:login' %}" class="btn-cta">

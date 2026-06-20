@@ -39,3 +39,7 @@ ver_huella.py
 
 # Backups (carpeta local, no subir a git)
 backups/
+
+# Archivos sensibles
+contrasenas_aprendices_servidor.txt
+sync_server.py

@@ -143,3 +143,36 @@ body {
     color: #004d00;
     text-decoration: underline;
 }
+
+/* ===== Responsive Login ===== */
+@media (max-width: 480px) {
+    .login-container {
+        padding: 25px 20px;
+        margin: 15px;
+        border-radius: 12px;
+    }
+
+    .title-secure-login {
+        font-size: 28px;
+    }
+
+    .btn-login {
+        padding: 14px 20px;
+        font-size: 16px;
+    }
+
+    .input-group input[type="text"],
+    .input-group input[type="password"] {
+        padding: 14px 15px;
+    }
+}
+
+@media (max-width: 360px) {
+    .login-container {
+        padding: 20px 15px;
+    }
+
+    .title-secure-login {
+        font-size: 24px;
+    }
+}
