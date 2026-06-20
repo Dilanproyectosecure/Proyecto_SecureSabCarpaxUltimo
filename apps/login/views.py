@@ -30,7 +30,7 @@ def login_view(request):
         
         # Verificar si el usuario existe pero está inactivo
         try:
-            usuario_check = Usuarios.objects.get(cedula=cedula)
+            usuario_check = Usuarios.objects.filter(cedula=cedula).first()
             if not usuario_check.is_active:
                 messages.error(request, 'Usuario inactivo, comuníquese con el gestor')
                 return render(request, 'login.html', {'error': 'Usuario inactivo, comuníquese con el gestor'})
