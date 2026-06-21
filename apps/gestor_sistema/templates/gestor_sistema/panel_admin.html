@@ -148,10 +148,10 @@
                             <label>Cédula <span class="required">*</span></label>
                             <input type="text" name="cedula" required
                                    inputmode="numeric"
-                                   pattern="[0-9]{10}"
+                                   pattern="[0-9]{6,10}"
                                    maxlength="10"
-                                   minlength="10"
-                                   title="La cédula debe tener exactamente 10 dígitos numéricos">
+                                   minlength="6"
+                                   title="La cédula debe tener entre 6 y 10 dígitos numéricos">
                         </div>
                         <div class="form-group-app">
                             <label>Nombre <span class="required">*</span></label>
@@ -294,7 +294,12 @@
                         </div>
                         <div class="form-group-app">
                             <label>Documento</label>
-                            <input type="text" name="cedula" id="edit_cedula" required>
+                            <input type="text" name="cedula" id="edit_cedula" required
+                                   inputmode="numeric"
+                                   pattern="[0-9]{6,10}"
+                                   maxlength="10"
+                                   minlength="6"
+                                   title="La cédula debe tener entre 6 y 10 dígitos numéricos">
                         </div>
                         <div class="form-group-app">
                             <label>Nombre</label>
@@ -407,11 +412,11 @@ document.querySelector('#modalCrearUsuario input[name="cedula"]').addEventListen
 document.querySelector('#modalCrearUsuario input[name="nombre"]').addEventListener('input', generarPassword);
 
 // ===== VALIDACIONES EN TIEMPO REAL (modal Crear Usuario) =====
-// Documento: solo dígitos, máximo 10
+// Documento: solo dígitos, entre 6 y 10
 (function () {
-    var documentoInput = document.querySelector('#modalCrearUsuario input[name="documento"]');
+    var documentoInput = document.querySelector('#modalCrearUsuario input[name="cedula"]');
     if (documentoInput) {
-        documentoInput  .addEventListener('input', function () {
+        documentoInput.addEventListener('input', function () {
             this.value = this.value.replace(/\D/g, '').slice(0, 10);
         });
     }

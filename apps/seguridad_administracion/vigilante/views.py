@@ -381,6 +381,17 @@ def buscar_visitante_por_cedula(request):
     if not cedula:
         return JsonResponse({'encontrado': False, 'error': 'Cédula requerida'}, status=400)
     
+    # PRIMERO: verificar si la cédula pertenece a un usuario del sistema
+    usuario = buscar_usuario_por_cedula(cedula)
+    if usuario:
+        return JsonResponse({
+            'encontrado': False,
+            'es_usuario': True,
+            'nombre': usuario.nombre or '',
+            'apellido': usuario.apellido or '',
+        })
+    
+    # DESPUÉS: verificar si hay visitante registrado
     visitante = obtener_visitante_reciente_por_cedula(cedula)
     
     if visitante:
@@ -394,15 +405,9 @@ def buscar_visitante_por_cedula(request):
             'tipo_documento': visitante.tipo_documento,
             'id_visitante': visitante.id_visitante,
             'en_sede': en_sede,
-        })
-    
-    usuario = buscar_usuario_por_cedula(cedula)
-    if usuario:
-        return JsonResponse({
-            'encontrado': False,
-            'es_usuario': True,
-            'nombre': usuario.nombre or '',
-            'apellido': usuario.apellido or '',
+            'area_id': visitante.id_area_id or '',
+            'area_nombre': visitante.id_area.nombre if visitante.id_area else '',
+            'motivo': visitante.motivo or '',
         })
     
     return JsonResponse({'encontrado': False, 'es_usuario': False})

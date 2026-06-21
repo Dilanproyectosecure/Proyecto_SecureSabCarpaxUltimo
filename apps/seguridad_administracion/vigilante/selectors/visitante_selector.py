@@ -66,7 +66,7 @@ def obtener_visitante_activo_por_cedula(cedula):
 
 def obtener_visitante_reciente_por_cedula(cedula):
     """Obtiene el visitante más reciente por cédula"""
-    return Visitante.objects.filter(cedula=cedula).order_by('-id_visitante').first()
+    return Visitante.objects.filter(cedula=cedula).select_related('id_area').order_by('-id_visitante').first()
 
 
 def buscar_usuario_por_cedula(cedula):

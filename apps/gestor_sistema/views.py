@@ -192,8 +192,8 @@ def panel_admin(request):
 
         _name_re = re.compile(r'^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$')
         _errores = []
-        if not (cedula and cedula.isdigit() and len(cedula) > 4 and len(cedula) <= 10):
-            _errores.append("La cédula debe tener entre 5 y 10 dígitos numéricos.")
+        if not (cedula and cedula.isdigit() and len(cedula) >= 6 and len(cedula) <= 10):
+            _errores.append("La cédula debe tener entre 6 y 10 dígitos numéricos.")
         if not (nombre and 3 <= len(nombre) <= 40 and _name_re.match(nombre)):
             _errores.append("El nombre debe tener entre 3 y 40 letras.")
         if not (apellido and 3 <= len(apellido) <= 40 and _name_re.match(apellido)):

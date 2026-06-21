@@ -68,9 +68,10 @@
                                value="{{ request.POST.cedula|default:'' }}"
                                placeholder="Ingrese el número de documento"
                                inputmode="numeric"
-                               pattern="\d{1,10}"
+                               pattern="\d{6,10}"
+                               minlength="6"
                                maxlength="10"
-                               title="Solo números, máximo 10 dígitos"
+                               title="Solo números, entre 6 y 10 dígitos"
                                required>
                         <small id="error_cedula" style="color:#d9534f; font-size:0.9em; display:none;"></small>
                         <div id="resultado-busqueda" style="margin-top: 10px; padding: 10px; border-radius: 4px; display: none;">
@@ -255,9 +256,9 @@
 
     function validarCedulaCampo(){
         const val = cedula.value.trim();
-        const regex = /^\d{10}$/;
+        const regex = /^\d{6,10}$/;
         if(!regex.test(val)){
-            errCedula.textContent = 'Documento inválido: debe tener exactamente 10 dígitos.';
+            errCedula.textContent = 'Documento inválido: debe tener entre 6 y 10 dígitos.';
             errCedula.style.display = 'block';
             return false;
         }
@@ -286,24 +287,25 @@
             })
             .then(data => {
                 console.log('Datos recibidos:', data);
-                if(data.encontrado){
-                    // Mostrar resultado
-                    datosEncontrados = true;
-                    nombre.value = data.nombre;
-                    apellido.value = data.apellido;
-                    if (tipoDocumento) {
-                        tipoDocumento.value = data.tipo_documento || '';
-                    }
-                    document.getElementById('id_visitante').value = data.id_visitante;
-                    
-                    // Hacer campos de edición solo lectura al principio
-                    nombre.readOnly = true;
-                    apellido.readOnly = true;
-                    btnEditar.style.display = 'block';
 
-                    const btnRegistrar = document.getElementById('btn-registrar');
+                const areaSelect = document.getElementById('area');
+                const motivoInput = document.getElementById('motivo');
+                const btnRegistrar = document.getElementById('btn-registrar');
+
+                if(data.encontrado){
                     if (data.en_sede) {
-                        textResultado.innerHTML = `<strong style="color: #721c24;">✗ Visitante ya está en sede:</strong> ${data.nombre} ${data.apellido}. Debe registrar su salida antes de poder ingresar de nuevo.`;
+                        datosEncontrados = false;
+                        nombre.value = '';
+                        apellido.value = '';
+                        if (tipoDocumento) tipoDocumento.value = '';
+                        if (areaSelect) areaSelect.value = '';
+                        if (motivoInput) motivoInput.value = '';
+                        document.getElementById('id_visitante').value = '';
+                        nombre.readOnly = false;
+                        apellido.readOnly = false;
+                        btnEditar.style.display = 'none';
+
+                        textResultado.innerHTML = '<strong style="color: #721c24;">✗ Visitante ya está en sede:</strong> Debe registrar su salida antes de poder ingresar de nuevo.';
                         resultadoBusqueda.style.backgroundColor = '#f8d7da';
                         resultadoBusqueda.style.borderLeft = '4px solid #dc3545';
                         resultadoBusqueda.style.display = 'block';
@@ -312,32 +314,21 @@
                             btnRegistrar.style.opacity = '0.5';
                             btnRegistrar.style.cursor = 'not-allowed';
                         }
-                } else if (data.es_usuario) {
-                    // La cédula pertenece a un usuario del sistema
-                    datosEncontrados = false;
-                    textResultado.innerHTML = '<strong style="color: #721c24;">&#9888; Esta cédula pertenece a un usuario registrado del sistema:</strong> ' + data.nombre + ' ' + data.apellido + '. No se puede registrar como invitado.';
-                    resultadoBusqueda.style.backgroundColor = '#f8d7da';
-                    resultadoBusqueda.style.borderLeft = '4px solid #dc3545';
-                    resultadoBusqueda.style.display = 'block';
-                    btnEditar.style.display = 'none';
-                    
-                    nombre.value = '';
-                    apellido.value = '';
-                    if (tipoDocumento) {
-                        tipoDocumento.value = '';
-                    }
-                    document.getElementById('id_visitante').value = '';
-                    nombre.readOnly = false;
-                    apellido.readOnly = false;
-                    
-                    const btnRegistrar = document.getElementById('btn-registrar');
-                    if (btnRegistrar) {
-                        btnRegistrar.disabled = true;
-                        btnRegistrar.style.opacity = '0.5';
-                        btnRegistrar.style.cursor = 'not-allowed';
-                    }
-                } else {
-                        textResultado.innerHTML = `<strong style="color: #28a745;">✓ Visitante encontrado:</strong> ${data.nombre} ${data.apellido}`;
+                    } else {
+                        datosEncontrados = true;
+                        nombre.value = data.nombre;
+                        apellido.value = data.apellido;
+                        if (tipoDocumento) tipoDocumento.value = data.tipo_documento || '';
+                        document.getElementById('id_visitante').value = data.id_visitante;
+
+                        if (areaSelect && data.area_id) areaSelect.value = data.area_id;
+                        if (motivoInput && data.motivo) motivoInput.value = data.motivo;
+
+                        nombre.readOnly = true;
+                        apellido.readOnly = true;
+                        btnEditar.style.display = 'block';
+
+                        textResultado.innerHTML = '<strong style="color: #28a745;">✓ Visitante registrado anteriormente:</strong> ' + data.nombre + ' ' + data.apellido;
                         resultadoBusqueda.style.backgroundColor = '#d4edda';
                         resultadoBusqueda.style.borderLeft = '4px solid #28a745';
                         resultadoBusqueda.style.display = 'block';
@@ -346,36 +337,62 @@
                             btnRegistrar.style.opacity = '';
                             btnRegistrar.style.cursor = '';
                         }
+
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'info',
+                            title: 'Visitante registrado anteriormente',
+                            text: 'Se auto-completaron los datos. Verifica y registra la entrada.',
+                            timer: 3000,
+                            showConfirmButton: false,
+                            timerProgressBar: true
+                        });
                     }
-                } else {
-                    // No encontrado
+                } else if (data.es_usuario) {
                     datosEncontrados = false;
-                    textResultado.innerHTML = '<strong style="color: #856404;">&#8493 Nuevo visitante:</strong> Completa los datos';
-                    resultadoBusqueda.style.backgroundColor = '#fff3cd';
-                    resultadoBusqueda.style.borderLeft = '4px solid #ffc107';
+                    textResultado.innerHTML = '<strong style="color: #721c24;">⚠ Esta cédula pertenece a un usuario del sistema:</strong> ' + data.nombre + ' ' + data.apellido + '. No se puede registrar como invitado.';
+                    resultadoBusqueda.style.backgroundColor = '#f8d7da';
+                    resultadoBusqueda.style.borderLeft = '4px solid #dc3545';
                     resultadoBusqueda.style.display = 'block';
                     btnEditar.style.display = 'none';
-                    
-                    // Limpiar y habilitar campos
+
                     nombre.value = '';
                     apellido.value = '';
-                    if (tipoDocumento) {
-                        tipoDocumento.value = '';
-                    }
+                    if (tipoDocumento) tipoDocumento.value = '';
+                    if (areaSelect) areaSelect.value = '';
+                    if (motivoInput) motivoInput.value = '';
                     document.getElementById('id_visitante').value = '';
                     nombre.readOnly = false;
                     apellido.readOnly = false;
 
-                    const btnRegistrar = document.getElementById('btn-registrar');
+                    if (btnRegistrar) {
+                        btnRegistrar.disabled = true;
+                        btnRegistrar.style.opacity = '0.5';
+                        btnRegistrar.style.cursor = 'not-allowed';
+                    }
+                } else {
+                    datosEncontrados = false;
+                    textResultado.innerHTML = '<strong style="color: #856404;"> Nuevo visitante:</strong> Completa los datos';
+                    resultadoBusqueda.style.backgroundColor = '#fff3cd';
+                    resultadoBusqueda.style.borderLeft = '4px solid #ffc107';
+                    resultadoBusqueda.style.display = 'block';
+                    btnEditar.style.display = 'none';
+
+                    nombre.value = '';
+                    apellido.value = '';
+                    if (tipoDocumento) tipoDocumento.value = '';
+                    if (areaSelect) areaSelect.value = '';
+                    if (motivoInput) motivoInput.value = '';
+                    document.getElementById('id_visitante').value = '';
+                    nombre.readOnly = false;
+                    apellido.readOnly = false;
+
                     if (btnRegistrar) {
                         btnRegistrar.disabled = false;
                         btnRegistrar.style.opacity = '';
                         btnRegistrar.style.cursor = '';
                     }
-                }
-                    document.getElementById('id_visitante').value = '';
-                    nombre.readOnly = false;
-                    apellido.readOnly = false;
                 }
             })
             .catch(error => {
@@ -527,6 +544,12 @@ document.addEventListener('DOMContentLoaded', function(){
                 // Resetear select de tipo de documento
                 const tipoDoc = document.getElementById('tipo_documento');
                 if(tipoDoc) tipoDoc.value = '';
+
+                // Resetear área y motivo
+                const areaSel = document.getElementById('area');
+                if(areaSel) areaSel.value = '';
+                const motivoFld = document.getElementById('motivo');
+                if(motivoFld) motivoFld.value = '';
 
                 // Rehabilitar botón registrar
                 const btnRegistrar = document.getElementById('btn-registrar');
