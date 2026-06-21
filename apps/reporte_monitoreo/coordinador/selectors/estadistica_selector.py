@@ -158,13 +158,22 @@ def obtener_tendencia_asistencia_7_dias():
     }
 
 
-def obtener_fichas_con_estadisticas_coordinador(fecha=None, instructor_id=None, jornada_id=None):
+def obtener_fichas_con_estadisticas_coordinador(fecha=None, instructor_id=None, jornada_id=None, programa_id=None, numero_ficha=None):
     fichas = Ficha.objects.filter(
         Q(estado__icontains='activa') | Q(estado__icontains='activo')
     ).select_related('id_programa', 'id_jornada').order_by('numero_ficha')
 
     if not fichas.exists():
         fichas = Ficha.objects.select_related('id_programa', 'id_jornada').order_by('numero_ficha')
+
+    if jornada_id and str(jornada_id).isdigit():
+        fichas = fichas.filter(id_jornada_id=jornada_id)
+
+    if programa_id and str(programa_id).isdigit():
+        fichas = fichas.filter(id_programa_id=programa_id)
+
+    if numero_ficha:
+        fichas = fichas.filter(numero_ficha__icontains=numero_ficha)
 
     if fecha is None:
         fecha = timezone.localdate()
@@ -184,7 +193,7 @@ def obtener_fichas_con_estadisticas_coordinador(fecha=None, instructor_id=None, 
             fecha=fecha
         )
 
-        if instructor_id:
+        if instructor_id and str(instructor_id).isdigit():
             asistencias = asistencias.filter(id_instructor_id=instructor_id)
 
         asistio = asistencias.filter(estado_asistencia__iexact='Asistio').count()

@@ -31,6 +31,7 @@ class Usuarios(AbstractBaseUser):
     nombre = models.CharField(max_length=255, blank=True, null=True)
     apellido = models.CharField(max_length=255, blank=True, null=True)
     id_ficha = models.ForeignKey('coordinador.Ficha', on_delete=models.DO_NOTHING, db_column='id_ficha', blank=True, null=True)
+    id_coordinacion = models.ForeignKey('coordinador.Coordinacion', on_delete=models.DO_NOTHING, db_column='id_coordinacion', blank=True, null=True)
     telefono = models.CharField(max_length=10, blank=True, null=True)
     estado = models.CharField(max_length=255, blank=True, null=True)
     password = models.CharField(max_length=255)

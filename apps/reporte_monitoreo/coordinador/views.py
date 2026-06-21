@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.contrib import messages
@@ -17,16 +18,16 @@ from .selectors.estadistica_selector import (
 from .selectors.asistencia_selector import (
     obtener_asistencias_ambiente_con_filtros, obtener_asistencias_sede_con_filtros,
     obtener_fichas_activas, obtener_jornadas, obtener_instructores, obtener_roles,
-    obtener_historial_completo_aprendiz
+    obtener_programas, obtener_historial_completo_aprendiz
 )
 from .selectors.justificacion_selector import (
-    obtener_justificaciones_con_filtros, obtener_estadisticas_justificaciones
+    obtener_justificaciones_con_filtros, obtener_estadisticas_justificaciones,
+    obtener_fichas_con_estadisticas_justificacion
 )
 from .services.export_service import obtener_logo_pdf, obtener_filtros_display, preparar_registros_pdf, exportar_csv
 from .utils.pdf_utils import generar_pdf_asistencia_ambiente, generar_pdf_asistencia_sede
 from apps.login.models import Usuarios
 from datetime import datetime
-from io import BytesIO
 from xhtml2pdf import pisa
 
 # ==================== DASHBOARD ====================
@@ -75,6 +76,9 @@ def asistencia_ambiente(request):
     ficha_seleccionada = request.GET.get('ficha', '')
     fecha_filtro = request.GET.get('fecha', '')
     instructor_filtro = request.GET.get('instructor', '')
+    jornada_filtro = request.GET.get('jornada', '')
+    programa_filtro = request.GET.get('programa', '')
+    numero_ficha_filtro = request.GET.get('numero_ficha', '')
 
     if ficha_seleccionada:
         asistencias = obtener_asistencias_ambiente_con_filtros(request)
@@ -112,11 +116,16 @@ def asistencia_ambiente(request):
     else:
         from django.utils import timezone
         fecha_consulta = timezone.localdate() if not fecha_filtro else fecha_filtro
-        instructor_id = instructor_filtro if instructor_filtro else None
+        instructor_id = instructor_filtro if instructor_filtro and instructor_filtro.isdigit() else None
+        jornada_id = jornada_filtro if jornada_filtro and jornada_filtro.isdigit() else None
+        programa_id = programa_filtro if programa_filtro and programa_filtro.isdigit() else None
 
         fichas_data = obtener_fichas_con_estadisticas_coordinador(
             fecha=fecha_consulta,
             instructor_id=instructor_id,
+            jornada_id=jornada_id,
+            programa_id=programa_id,
+            numero_ficha=numero_ficha_filtro or None,
         )
 
         context = {
@@ -125,11 +134,15 @@ def asistencia_ambiente(request):
             'fichas': obtener_fichas_activas(),
             'instructores': obtener_instructores(),
             'jornadas': obtener_jornadas(),
+            'programas': obtener_programas(),
             'fecha_seleccionada': str(fecha_consulta),
             'instructor_seleccionado': instructor_filtro,
             'filtros': {
                 'fecha': fecha_filtro,
                 'instructor': instructor_filtro,
+                'jornada': jornada_filtro,
+                'programa': programa_filtro,
+                'numero_ficha': numero_ficha_filtro,
             }
         }
 
@@ -309,27 +322,71 @@ def exportar_asistencia_sede_csv(request):
 
 @login_required
 def justificaciones(request):
-    """Vista para listar justificaciones con filtros"""
-    
-    justificaciones = obtener_justificaciones_con_filtros(request)
-    total, pendientes, aprobadas, rechazadas = obtener_estadisticas_justificaciones(justificaciones)
-    
-    paginator = Paginator(justificaciones, 20)
-    page_number = request.GET.get('page', 1)
-    page_obj = paginator.get_page(page_number)
-    
-    context = {
-        'justificaciones': page_obj,
-        'total': total,
-        'pendientes': pendientes,
-        'aprobadas': aprobadas,
-        'rechazadas': rechazadas,
-        'filtros': {
-            'search': request.GET.get('search', ''),
-            'estado': request.GET.get('estado', 'all'),
+    """Vista para listar justificaciones - grid de fichas o tabla detallada"""
+    from .selectors.asistencia_selector import obtener_fichas_activas, obtener_jornadas, obtener_instructores, obtener_programas
+
+    ficha_seleccionada = request.GET.get('ficha', '')
+
+    if ficha_seleccionada and ficha_seleccionada.isdigit():
+        justificaciones = obtener_justificaciones_con_filtros(request)
+        total, pendientes, aprobadas, rechazadas = obtener_estadisticas_justificaciones(justificaciones)
+
+        paginator = Paginator(justificaciones, 20)
+        page_number = request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_number)
+
+        from apps.reporte_monitoreo.coordinador.models import Ficha
+        try:
+            ficha_obj = Ficha.objects.get(id_ficha=ficha_seleccionada)
+            ficha_numero = ficha_obj.numero_ficha
+            ficha_programa = ficha_obj.id_programa.nombre_programa if ficha_obj.id_programa else 'N/D'
+        except Ficha.DoesNotExist:
+            ficha_numero = ficha_seleccionada
+            ficha_programa = ''
+
+        context = {
+            'vista': 'detalle',
+            'justificaciones': page_obj,
+            'total': total,
+            'pendientes': pendientes,
+            'aprobadas': aprobadas,
+            'rechazadas': rechazadas,
+            'ficha_seleccionada': ficha_seleccionada,
+            'ficha_numero': ficha_numero,
+            'ficha_programa': ficha_programa,
+            'filtros': {
+                'ficha': ficha_seleccionada,
+                'search': request.GET.get('search', ''),
+                'estado': request.GET.get('estado', 'all'),
+            }
         }
-    }
-    
+    else:
+        jornada_id = request.GET.get('jornada', '')
+        programa_id = request.GET.get('programa', '')
+        numero_ficha = request.GET.get('numero_ficha', '').strip()
+
+        fichas_data = obtener_fichas_con_estadisticas_justificacion(
+            jornada_id=jornada_id,
+            programa_id=programa_id,
+            numero_ficha=numero_ficha,
+        )
+
+        context = {
+            'vista': 'fichas',
+            'fichas_data': fichas_data,
+            'fichas': obtener_fichas_activas(),
+            'jornadas': obtener_jornadas(),
+            'instructores': obtener_instructores(),
+            'programas': obtener_programas(),
+            'filtros': {
+                'jornada': jornada_id,
+                'programa': programa_id,
+                'numero_ficha': numero_ficha,
+                'search': '',
+                'estado': 'all',
+            }
+        }
+
     return render(request, 'justificaciones.html', context)
 
 
@@ -365,5 +422,50 @@ def detalle_aprendiz(request, usuario_id):
     }
 
     return render(request, 'detalle_aprendiz.html', context)
+
+
+@login_required
+def exportar_detalle_aprendiz_pdf(request, usuario_id):
+    """Exporta el detalle individual de un aprendiz a PDF"""
+    from datetime import datetime
+    try:
+        historial = obtener_historial_completo_aprendiz(usuario_id)
+    except Usuarios.DoesNotExist:
+        messages.error(request, 'Aprendiz no encontrado')
+        return redirect('coordinador:inicio')
+
+    usuario = historial['usuario']
+    estadisticas = historial['estadisticas']
+
+    total = estadisticas['total_ambiente']
+    if total > 0:
+        pct_asistio = round((estadisticas['asistio'] / total) * 100, 1)
+        pct_inasistio = round((estadisticas['inasistio'] / total) * 100, 1)
+        pct_retardo = round((estadisticas['retardo'] / total) * 100, 1)
+    else:
+        pct_asistio = pct_inasistio = pct_retardo = 0
+
+    usuario_genero = f"{request.user.nombre or ''} {request.user.apellido or ''}".strip() or 'Coordinador'
+
+    context = {
+        'usuario': usuario,
+        'estadisticas': estadisticas,
+        'pct_asistio': pct_asistio,
+        'pct_inasistio': pct_inasistio,
+        'pct_retardo': pct_retardo,
+        'asistencias_ambiente': historial['asistencias_ambiente'],
+        'asistencias_sede': historial['asistencias_sede'],
+        'usuario_genero': usuario_genero,
+        'fecha_actual': datetime.now().strftime('%d/%m/%Y %H:%M'),
+    }
+
+    html_string = render_to_string('detalle_aprendiz_pdf.html', context, request=request)
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="reporte_{usuario.cedula}.pdf"'
+
+    pdf_buffer = BytesIO()
+    pisa.CreatePDF(html_string, dest=pdf_buffer, encoding='utf-8')
+    response.write(pdf_buffer.getvalue())
+    return response
 
 

@@ -1,6 +1,7 @@
 from django.db.models import Q
 from apps.reporte_monitoreo.coordinador.models import AsistenciaAmbiente, AsistenciaSede, Ficha, Jornada, Justificacion
 from apps.login.models import Usuarios, RoleUser
+from apps.reporte_monitoreo.coordinador.models import Programa
 
 def obtener_asistencias_ambiente_con_filtros(request):
     """Construye queryset de asistencia ambiente con filtros"""
@@ -108,6 +109,10 @@ def obtener_jornadas():
 
 def obtener_instructores():
     return Usuarios.objects.filter(roleuser__role__name__icontains='instructor').order_by('nombre', 'apellido').distinct()
+
+
+def obtener_programas():
+    return Programa.objects.all().order_by('nombre_programa')
 
 
 def obtener_roles():

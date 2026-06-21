@@ -41,6 +41,32 @@
                         {% endfor %}
                     </select>
                 </div>
+                <div class="filtros-group">
+                    <label><i class="fas fa-clock"></i> Jornada</label>
+                    <select name="jornada" class="filtros-input">
+                        <option value="">Todas las Jornadas</option>
+                        {% for jornada in jornadas %}
+                        <option value="{{ jornada.id_jornada }}" {% if filtros.jornada == jornada.id_jornada|stringformat:"s" %}selected{% endif %}>
+                            {{ jornada.nombre_jornada }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filtros-group">
+                    <label><i class="fas fa-graduation-cap"></i> Carrera</label>
+                    <select name="programa" class="filtros-input">
+                        <option value="">Todas las Carreras</option>
+                        {% for programa in programas %}
+                        <option value="{{ programa.id_programa }}" {% if filtros.programa == programa.id_programa|stringformat:"s" %}selected{% endif %}>
+                            {{ programa.nombre_programa }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filtros-group">
+                    <label><i class="fas fa-folder"></i> N&uacute;mero de Ficha</label>
+                    <input type="text" name="numero_ficha" class="filtros-input" value="{{ filtros.numero_ficha }}" placeholder="Buscar por n&uacute;mero">
+                </div>
             </div>
             <div class="filtros-buttons">
                 <a href="{% url 'coordinador:asistencia_ambiente' %}" class="btn-limpiar">
@@ -54,7 +80,7 @@
 
         <div class="fichas-grid">
             {% for ficha in fichas_data %}
-            <a href="?ficha={{ ficha.id_ficha }}" class="ficha-card-link">
+            <a href="?ficha={{ ficha.id_ficha }}{% if filtros.fecha %}&fecha={{ filtros.fecha }}{% endif %}{% if filtros.instructor %}&instructor={{ filtros.instructor }}{% endif %}{% if filtros.jornada %}&jornada={{ filtros.jornada }}{% endif %}{% if filtros.programa %}&programa={{ filtros.programa }}{% endif %}{% if filtros.numero_ficha %}&numero_ficha={{ filtros.numero_ficha }}{% endif %}" class="ficha-card-link">
                 <div class="ficha-card nivel-{{ ficha.nivel|lower }}">
                     <div class="ficha-header">
                         <span class="ficha-numero">Ficha {{ ficha.numero_ficha }}</span>
@@ -99,6 +125,7 @@
 
         {% else %}
         <div class="filtros-container">
+            <input type="hidden" name="ficha" value="{{ filtros.ficha }}">
             <div class="filtros-header">
                 <h3><i class="fas fa-filter"></i> Filtros de Busqueda</h3>
             </div>
@@ -134,7 +161,7 @@
                 </div>
             </div>
             <div class="filtros-buttons">
-                <a href="{% url 'coordinador:asistencia_ambiente' %}" class="btn-limpiar">
+                <a href="{% url 'coordinador:asistencia_ambiente' %}{% if filtros.fecha or filtros.instructor %}?{% if filtros.fecha %}fecha={{ filtros.fecha }}{% endif %}{% if filtros.fecha and filtros.instructor %}&{% endif %}{% if filtros.instructor %}instructor={{ filtros.instructor }}{% endif %}{% endif %}" class="btn-limpiar">
                     <i class="fas fa-arrow-left"></i> Volver al grid
                 </a>
                 <button type="submit" class="btn-filtro">

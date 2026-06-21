@@ -52,6 +52,46 @@
         .badge-aprobado { background: #d4edda; color: #155724; }
         .badge-rechazado { background: #f8d7da; color: #721c24; }
         .badge-pendiente { background: #fff3cd; color: #856404; }
+
+        .estad-card { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .estad-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+
+        .detalle-modal-overlay {
+            display: none; position: fixed; z-index: 9999;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center; align-items: center;
+        }
+        .detalle-modal-overlay.active { display: flex; }
+        .detalle-modal {
+            background: white; border-radius: 12px;
+            width: 90%; max-width: 800px; max-height: 85vh;
+            display: flex; flex-direction: column;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            animation: modalIn 0.25s ease;
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: translateY(-20px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .detalle-modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 20px 25px; border-bottom: 1px solid #eee;
+        }
+        .detalle-modal-header h2 { margin: 0; font-size: 20px; color: #333; }
+        .detalle-modal-close {
+            font-size: 30px; cursor: pointer; color: #999; line-height: 1; border: none; background: none;
+        }
+        .detalle-modal-close:hover { color: #333; }
+        .detalle-modal-body {
+            padding: 20px 25px; overflow-y: auto; flex: 1; max-height: 60vh;
+        }
+        .detalle-modal-footer {
+            padding: 15px 25px; border-top: 1px solid #eee; text-align: right;
+        }
+        .detalle-modal-count {
+            font-size: 13px; color: #888; margin-top: 5px;
+        }
     </style>
 {% endblock %}
 
@@ -59,9 +99,14 @@
 
 {% block content %}
 <div class="dashboard-container">
-    <a href="javascript:history.back()" class="btn-volver">
-        <i class="fas fa-arrow-left"></i> Volver
-    </a>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+        <a href="javascript:history.back()" class="btn-volver" style="margin-bottom:0;">
+            <i class="fas fa-arrow-left"></i> Volver
+        </a>
+        <a href="{% url 'coordinador:exportar_detalle_aprendiz_pdf' usuario.id_usuario %}" class="btn-volver" style="margin-bottom:0;background:#dc3545;" title="Exportar PDF">
+            <i class="fas fa-file-pdf"></i> Exportar PDF
+        </a>
+    </div>
 
     <!-- Perfil del aprendiz -->
     <div class="perfil-header">
@@ -81,26 +126,26 @@
 
     <!-- Estadisticas -->
     <div class="estadisticas-grid">
-        <div class="estad-card asistio">
+        <div class="estad-card asistio" onclick="abrirModal('asistio')">
             <div class="numero">{{ estadisticas.asistio }}</div>
             <div class="porcentaje">{{ pct_asistio }}%</div>
             <div class="label"><i class="fas fa-check-circle"></i> Asistencias</div>
         </div>
-        <div class="estad-card inasistio">
+        <div class="estad-card inasistio" onclick="abrirModal('inasistio')">
             <div class="numero">{{ estadisticas.inasistio }}</div>
             <div class="porcentaje">{{ pct_inasistio }}%</div>
             <div class="label"><i class="fas fa-times-circle"></i> Inasistencias</div>
         </div>
-        <div class="estad-card retardo">
+        <div class="estad-card retardo" onclick="abrirModal('retardo')">
             <div class="numero">{{ estadisticas.retardo }}</div>
             <div class="porcentaje">{{ pct_retardo }}%</div>
             <div class="label"><i class="fas fa-hourglass-half"></i> Retardos</div>
         </div>
-        <div class="estad-card justificada">
+        <div class="estad-card justificada" onclick="abrirModal('justificada')">
             <div class="numero">{{ estadisticas.justificada }}</div>
             <div class="label"><i class="fas fa-file-alt"></i> Justificadas</div>
         </div>
-        <div class="estad-card">
+        <div class="estad-card" onclick="abrirModal('sede')">
             <div class="numero">{{ estadisticas.total_sede }}</div>
             <div class="label"><i class="fas fa-building"></i> Entradas Sede</div>
         </div>
@@ -237,4 +282,132 @@
     </div>
     {% endif %}
 </div>
+
+<!-- Modal de detalle -->
+<div id="detalleModalOverlay" class="detalle-modal-overlay" onclick="cerrarModalOutside(event)">
+    <div class="detalle-modal">
+        <div class="detalle-modal-header">
+            <h2 id="detalleModalTitle">Detalle</h2>
+            <button class="detalle-modal-close" onclick="cerrarModal()">&times;</button>
+        </div>
+        <div class="detalle-modal-body">
+            <div class="table-container">
+                <div class="table-scroll">
+                    <table class="tabla-asistencias">
+                        <thead id="detalleModalHead">
+                            <tr>
+                                <th><i class="fas fa-calendar"></i> Fecha</th>
+                                <th><i class="fas fa-book"></i> Competencia</th>
+                                <th><i class="fas fa-chalkboard-teacher"></i> Instructor</th>
+                                <th><i class="fas fa-info-circle"></i> Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detalleModalBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="detalleModalEmpty" class="no-data-message" style="display:none;">
+                <i class="fas fa-folder-open"></i>
+                <p>No hay registros para esta categor&iacute;a</p>
+            </div>
+            <div id="detalleModalCount" class="detalle-modal-count"></div>
+        </div>
+        <div class="detalle-modal-footer">
+            <button class="btn-cancelar" onclick="cerrarModal()">Cerrar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const ambientes = [
+    {% for a in historial.asistencias_ambiente %}
+    {
+        fecha: "{{ a.fecha|date:'Y-m-d' }}",
+        competencia: "{{ a.id_competencia.nombre_competencia|escapejs|default:'N/D' }}",
+        instructor: "{% if a.id_instructor %}{{ a.id_instructor.nombre|escapejs }} {{ a.id_instructor.apellido|escapejs }}{% else %}No asignado{% endif %}",
+        estado: "{{ a.estado_asistencia|escapejs }}"
+    },
+    {% endfor %}
+];
+const sedes = [
+    {% for s in historial.asistencias_sede %}
+    {
+        fecha: "{{ s.fecha|date:'Y-m-d' }}",
+        entrada: "{{ s.hora_entrada|time:'H:i'|default:'--:--' }}",
+        salida: "{{ s.hora_salida|time:'H:i'|default:'--:--' }}"
+    },
+    {% endfor %}
+];
+
+const modalTitles = {
+    asistio: 'Asistencias registradas',
+    inasistio: 'Inasistencias registradas',
+    retardo: 'Retardos registrados',
+    justificada: 'Justificaciones registradas',
+    sede: 'Entradas a Sede'
+};
+
+function abrirModal(tipo) {
+    document.getElementById('detalleModalTitle').textContent = modalTitles[tipo] || 'Detalle';
+    var tbody = document.getElementById('detalleModalBody');
+    var thead = document.getElementById('detalleModalHead');
+    var empty = document.getElementById('detalleModalEmpty');
+    var count = document.getElementById('detalleModalCount');
+    tbody.innerHTML = '';
+    empty.style.display = 'none';
+
+    if (tipo === 'sede') {
+        thead.innerHTML = '<tr><th><i class="fas fa-calendar"></i> Fecha</th><th><i class="fas fa-sign-in-alt"></i> Hora Entrada</th><th><i class="fas fa-sign-out-alt"></i> Hora Salida</th></tr>';
+        if (sedes.length === 0) {
+            empty.style.display = 'block';
+            count.textContent = '';
+        } else {
+            sedes.forEach(function(s) {
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>' + s.fecha + '</td><td>' + s.entrada + '</td><td>' + s.salida + '</td>';
+                tbody.appendChild(tr);
+            });
+            count.textContent = 'Total: ' + sedes.length + ' registro(s)';
+        }
+    } else {
+        thead.innerHTML = '<tr><th><i class="fas fa-calendar"></i> Fecha</th><th><i class="fas fa-book"></i> Competencia</th><th><i class="fas fa-chalkboard-teacher"></i> Instructor</th><th><i class="fas fa-info-circle"></i> Estado</th></tr>';
+        var filtered = ambientes.filter(function(a) {
+            var est = a.estado.toLowerCase();
+            if (tipo === 'justificada') {
+                return est === 'justificado' || est === 'justificada';
+            }
+            return est === tipo;
+        });
+        if (filtered.length === 0) {
+            empty.style.display = 'block';
+            count.textContent = '';
+        } else {
+            filtered.forEach(function(a) {
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>' + a.fecha + '</td><td>' + a.competencia + '</td><td>' + a.instructor + '</td><td>' + a.estado + '</td>';
+                tbody.appendChild(tr);
+            });
+            count.textContent = 'Total: ' + filtered.length + ' registro(s)';
+        }
+    }
+
+    document.getElementById('detalleModalOverlay').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function cerrarModal() {
+    document.getElementById('detalleModalOverlay').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function cerrarModalOutside(e) {
+    if (e.target === document.getElementById('detalleModalOverlay')) {
+        cerrarModal();
+    }
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') cerrarModal();
+});
+</script>
 {% endblock %}

@@ -123,7 +123,7 @@ def mi_perfil(request):
     """
     Vista del perfil de usuario (accesible para todos los roles)
     """
-    usuario = request.user
+    usuario = Usuarios.objects.select_related('id_coordinacion').get(id_usuario=request.user.id_usuario)
 
     if request.method == 'POST':
         action = request.POST.get('action')
