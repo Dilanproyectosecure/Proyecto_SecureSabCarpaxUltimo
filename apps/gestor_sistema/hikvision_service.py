@@ -585,3 +585,6 @@ def definir_tipo(usuario):
     else:
         return "Salida"
     
+    
+    
+    
