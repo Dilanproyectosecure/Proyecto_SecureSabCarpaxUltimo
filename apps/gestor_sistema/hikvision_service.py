@@ -335,6 +335,13 @@ def procesar_eventos():
 
             resultado = registrar_asistencia_sede_por_huella(usuario)
 
+            try:
+                requests.post("http://158.23.17.242:8000/gestor_sistema/webhook/huella/",
+                              json={"employeeNoString": str(employee_no)},
+                              timeout=3)
+            except Exception:
+                pass
+
             estado_texto = ""
             if resultado["estado"] == "entrada":
                 estado_texto = f"ENTRADA - {usuario.nombre} {usuario.apellido} (ID:{employee_no} ced:{usuario.cedula})"
