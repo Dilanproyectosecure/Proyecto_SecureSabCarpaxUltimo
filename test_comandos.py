@@ -1,7 +1,8 @@
 import sys
 sys.path.insert(0, "apps/gestor_sistema")
-from hikvision_sdk import HikvisionSDK, REMOTE_CONFIG_CALLBACK
 
+
+from hikvision_sdk import HikvisionSDK, HikvisionSDKError, REMOTE_CONFIG_CALLBACK
 sdk = HikvisionSDK(r"C:\HCNetSDK_runtime")
 sdk.init()
 user_id = sdk.login("192.168.1.13", 8000, "admin", "Dilan1105")

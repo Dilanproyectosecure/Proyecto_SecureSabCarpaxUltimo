@@ -9,6 +9,56 @@
 
 {% block content %}
 <div class="content-card">
+    {% if llamado_activo or total_inasistencias >= 3 %}
+    {% with llamado=llamado_activo %}
+    {% if llamado %}
+    <div class="llamado-banner llamado-nivel-{{ llamado.nivel }}" id="llamado-banner-{{ llamado.id_llamado }}">
+        <div class="llamado-icono">
+            {% if llamado.nivel == 1 %}
+            <i class="bi bi-exclamation-circle"></i>
+            {% elif llamado.nivel == 2 %}
+            <i class="bi bi-exclamation-triangle"></i>
+            {% else %}
+            <i class="bi bi-bug"></i>
+            {% endif %}
+        </div>
+        <div class="llamado-contenido">
+            <strong>{{ llamado.id_usuario.nombre }} {{ llamado.id_usuario.apellido }}</strong>
+            {% if llamado.nivel == 1 %}
+            <span>— Primer llamado de atención por <strong>{{ llamado.total_inasistencias }} inasistencias</strong>.</span>
+            {% elif llamado.nivel == 2 %}
+            <span>— Segundo llamado de atención por <strong>{{ llamado.total_inasistencias }} inasistencias</strong>.</span>
+            {% else %}
+            <span>— Inicio de proceso de deserción por <strong>{{ llamado.total_inasistencias }} inasistencias</strong>.</span>
+            {% endif %}
+        </div>
+        <div class="llamado-acciones">
+            <button type="button" class="btn btn-sm btn-outline-success btn-notificar-llamado"
+                    data-llamado-id="{{ llamado.id_llamado }}">
+                <i class="bi bi-envelope"></i> Notificar
+            </button>
+        </div>
+    </div>
+    {% else %}
+    <div class="llamado-banner llamado-nivel-1" id="llamado-banner-pendiente">
+        <div class="llamado-icono">
+            <i class="bi bi-exclamation-circle"></i>
+        </div>
+        <div class="llamado-contenido">
+            <strong>{{ aprendiz_encontrado.nombre }} {{ aprendiz_encontrado.apellido }}</strong>
+            <span>ha acumulado <strong>{{ total_inasistencias }} inasistencias injustificadas</strong>. Genere el llamado de atención.</span>
+        </div>
+        <div class="llamado-acciones">
+            <button type="button" class="btn btn-sm btn-outline-success btn-notificar-alerta"
+                    data-aprendiz-id="{{ aprendiz_encontrado.id_usuario }}">
+                <i class="bi bi-envelope"></i> Notificar
+            </button>
+        </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+    {% endif %}
+
     <h1>Consultar Asistencias</h1>
 
     <!-- Información de la ficha seleccionada -->
@@ -232,5 +282,84 @@ function cambiarPagina(numero) {
     url.searchParams.set('page', numero);
     window.location.href = url.toString();
 }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+function notificarClick(boton) {
+    const llamadoId = boton.getAttribute('data-llamado-id');
+    const aprendizId = boton.getAttribute('data-aprendiz-id');
+    let url, text;
+
+    if (llamadoId) {
+        url = '{% url "instructor:reenviar_notificacion_llamado" 0 %}'.replace('0', llamadoId);
+        text = 'Se reenviará el correo al aprendiz.';
+    } else {
+        url = '{% url "instructor:notificar_aprendiz" %}';
+        text = 'Se creará y enviará el llamado de atención.';
+    }
+
+    Swal.fire({
+        title: '¿Enviar llamado de atención?',
+        text: text,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, notificar',
+        cancelButtonText: 'Cancelar'
+    }).then(function (result) {
+        if (!result.isConfirmed) return;
+
+        boton.disabled = true;
+        boton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando...';
+
+        var body;
+        if (aprendizId) {
+            body = 'aprendiz_id=' + aprendizId;
+        }
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: body
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Correo enviado',
+                    text: data.message,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                boton.innerHTML = '<i class="bi bi-envelope-check"></i> Enviado';
+                boton.classList.remove('btn-outline-success');
+                boton.classList.add('btn-outline-secondary');
+                boton.disabled = true;
+            } else {
+                boton.innerHTML = '<i class="bi bi-envelope"></i> Notificar';
+                boton.disabled = false;
+                Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'No se pudo enviar' });
+            }
+        })
+        .catch(function () {
+            boton.innerHTML = '<i class="bi bi-envelope"></i> Notificar';
+            boton.disabled = false;
+            Swal.fire({ icon: 'error', title: 'Error de red', text: 'Error de conexión' });
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.btn-notificar-llamado, .btn-notificar-alerta').forEach(function (btn) {
+        btn.addEventListener('click', function () { notificarClick(this); });
+    });
+});
 </script>
 {% endblock %}

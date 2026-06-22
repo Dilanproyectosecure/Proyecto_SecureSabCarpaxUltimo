@@ -1,5 +1,6 @@
 # ==================== DJANGO CORE ====================
 from django.shortcuts import render, redirect
+from django.http import JsonResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -7,6 +8,7 @@ from django.conf import settings
 from datetime import date
 from apps.login.models import Usuarios
 from apps.reporte_monitoreo.coordinador.models import ( Ficha, AsistenciaAmbiente, Competencia, Justificacion, Jornada, AsistenciaSede)
+from .models import LlamadoAtencion
 from .selectors.fichas_selector import obtener_fichas_con_estadisticas
 from .selectors.fichas_selector import obtener_datos_ficha
 from .selectors.asistencia_selector import ( obtener_ficha_con_asistencias, obtener_asistencias_base, buscar_aprendiz, obtener_competencias_programa)
@@ -15,6 +17,7 @@ from .services.inasistencias_service import calcular_inasistencias_aprendiz
 from .services.asistencia_service import ( registrar_asistencia, generar_reporte, generar_totales)
 from .services.aprendiz_service import actualizar_datos_aprendiz
 from .services.justificacion_action_service import procesar_accion_justificacion
+from .services.llamado_service import verificar_y_procesar_aprendices, obtener_llamados_recientes, reenviar_correo, notificar_aprendiz as servicio_notificar_aprendiz
 from .utils.pdf_utils import generate_pdf_response
 from django.urls import reverse  
 from apps.gestor_sistema.services import registrar_actividad
@@ -73,6 +76,16 @@ def gestionar_asistencia(request):
 
             registradas = registrar_asistencia(aprendices, request, fecha, competencia)
 
+            llamados = verificar_y_procesar_aprendices(aprendices, request.user)
+            if llamados:
+                for ll in llamados:
+                    nivel_nombre = dict(LlamadoAtencion.NIVEL_CHOICES).get(ll.nivel, f'Llamado nivel {ll.nivel}')
+                    messages.warning(
+                        request,
+                        f'{nivel_nombre} generado para {ll.id_usuario.nombre} {ll.id_usuario.apellido} '
+                        f'({ll.total_inasistencias} inasistencias) - Correo enviado.'
+                    )
+
             registrar_actividad(
                 usuario=request.user,
                 tipo_accion='ASISTENCIA_REGISTRO',
@@ -91,6 +104,7 @@ def gestionar_asistencia(request):
             'competencias': competencias,
             'competencia': competencia,
             'fecha_seleccionada': fecha,
+            'llamados_recientes': obtener_llamados_recientes(request.user),
         })
 
     except Ficha.DoesNotExist:
@@ -156,9 +170,10 @@ def consultar_asistenciaI(request):
     ficha_seleccionada_obj = None
     aprendiz_encontrado = None
     asistencias = AsistenciaAmbiente.objects.none()
+    llamado_activo = None
+    total_inasistencias = 0
 
     if ficha_id:
-
         ficha_seleccionada_obj = obtener_ficha_con_asistencias(ficha_id)
         asistencias = obtener_asistencias_base(ficha_seleccionada_obj)
 
@@ -214,6 +229,15 @@ def consultar_asistenciaI(request):
         ficha_seleccionada_obj.id_programa if ficha_seleccionada_obj else None
     ) if ficha_seleccionada_obj else Competencia.objects.none()
 
+    if aprendiz_encontrado:
+        llamado_activo = LlamadoAtencion.objects.filter(
+            id_usuario=aprendiz_encontrado,
+            id_instructor=request.user
+        ).select_related('id_usuario').order_by('-nivel').first()
+
+        datos_asis = calcular_inasistencias_aprendiz(aprendiz_encontrado)
+        total_inasistencias = datos_asis["total"]
+
     return render(request, 'consultar_asistenciaI.html', {
         'asistencias': page_obj,
         'fichas': fichas,
@@ -224,6 +248,8 @@ def consultar_asistenciaI(request):
         'fecha_desde': fecha_desde,
         'fecha_hasta': fecha_hasta,
         'estado': estado,
+        'llamado_activo': llamado_activo,
+        'total_inasistencias': total_inasistencias,
     })
 
 
@@ -313,6 +339,34 @@ def procesar_justificacion(request):
         messages.error(request, mensaje)
 
     return redirect('instructor:gestionar_justificaciones')
+
+
+
+# ==================== LLAMADOS DE ATENCIÓN ====================
+@login_required
+def reenviar_notificacion_llamado(request, llamado_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+    enviado = reenviar_correo(llamado_id)
+    if enviado:
+        return JsonResponse({'success': True, 'message': 'Correo reenviado correctamente'})
+    return JsonResponse({'success': False, 'error': 'No se pudo enviar el correo'}, status=500)
+
+
+@login_required
+def notificar_aprendiz(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+    aprendiz_id = request.POST.get('aprendiz_id')
+    if not aprendiz_id:
+        return JsonResponse({'success': False, 'error': 'aprendiz_id requerido'}, status=400)
+
+    success, mensaje = servicio_notificar_aprendiz(aprendiz_id, request.user)
+    if success:
+        return JsonResponse({'success': True, 'message': mensaje})
+    return JsonResponse({'success': False, 'error': mensaje}, status=400)
 
 
 

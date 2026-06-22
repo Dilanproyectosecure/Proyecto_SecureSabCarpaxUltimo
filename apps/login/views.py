@@ -12,6 +12,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.conf import settings
 import time
 from apps.gestor_sistema.services import registrar_actividad
+from django.http import JsonResponse
 
 
 from .forms import RecuperarForm, ConfirmarCodigoForm, NuevaPasswordForm
@@ -124,6 +125,7 @@ def mi_perfil(request):
     Vista del perfil de usuario (accesible para todos los roles)
     """
     usuario = request.user
+    es_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -150,6 +152,8 @@ def mi_perfil(request):
                     errores.append(f'Ya existe otro usuario con el teléfono {telefono}')
 
             if errores:
+                if es_ajax:
+                    return JsonResponse({'success': False, 'errors': errores})
                 for e in errores:
                     messages.error(request, e)
                 return redirect('login:mi_perfil')
@@ -169,6 +173,8 @@ def mi_perfil(request):
                 request=request,
             )
 
+            if es_ajax:
+                return JsonResponse({'success': True, 'message': 'Perfil actualizado correctamente.'})
             messages.success(request, 'Perfil actualizado correctamente.')
             return redirect('login:mi_perfil')
 
@@ -178,14 +184,20 @@ def mi_perfil(request):
             password_confirm = request.POST.get('password_confirm', '')
 
             if not usuario.check_password(password_actual):
+                if es_ajax:
+                    return JsonResponse({'success': False, 'errors': ['La contraseña actual no es correcta.']})
                 messages.error(request, 'La contraseña actual no es correcta.')
                 return redirect('login:mi_perfil')
 
             if len(password_nueva) < 6:
+                if es_ajax:
+                    return JsonResponse({'success': False, 'errors': ['La nueva contraseña debe tener al menos 6 caracteres.']})
                 messages.error(request, 'La nueva contraseña debe tener al menos 6 caracteres.')
                 return redirect('login:mi_perfil')
 
             if password_nueva != password_confirm:
+                if es_ajax:
+                    return JsonResponse({'success': False, 'errors': ['Las contraseñas nuevas no coinciden.']})
                 messages.error(request, 'Las contraseñas nuevas no coinciden.')
                 return redirect('login:mi_perfil')
 
@@ -200,9 +212,12 @@ def mi_perfil(request):
                 request=request,
             )
 
-            messages.success(request, 'Contraseña cambiada correctamente.')
             from django.contrib.auth import update_session_auth_hash
             update_session_auth_hash(request, usuario)
+
+            if es_ajax:
+                return JsonResponse({'success': True, 'message': 'Contraseña cambiada correctamente.'})
+            messages.success(request, 'Contraseña cambiada correctamente.')
             return redirect('login:mi_perfil')
 
     return render(request, 'mi_perfil.html', {
