@@ -83,15 +83,47 @@
         <i class="bi bi-fingerprint me-2"></i>
         <span>Registrar Huellas</span>
     </a>
-    </a>
     <a href="{% url 'gestor_sistema:historial_fallos' %}" class="nav-link">
         <i class="bi bi-exclamation-triangle-fill me-2"></i>
-    <span>Historial de Fallos</span>
+        <span>Historial de Fallos</span>
     </a>
     <a href="{% url 'gestor_sistema:registro_actividad_view' %}" class="nav-link">
         <i class="bi bi-journal-bookmark-fill me-2"></i>
-    <span>Registro de Actividades</span>
-    
+        <span>Registro de Actividades</span>
+    </a>
+
+    <div class="menu-section-label">COORDINADOR</div>
+    <a href="{% url 'coordinador:asistencia_ambiente' %}" class="nav-link {% if request.resolver_match.url_name == 'asistencia_ambiente' %}active{% endif %}">
+        <i class="bi bi-building me-2"></i>Asistencia Ambiente
+    </a>
+    <a href="{% url 'coordinador:asistencia_sede' %}" class="nav-link {% if request.resolver_match.url_name == 'asistencia_sede' %}active{% endif %}">
+        <i class="bi bi-door-open me-2"></i>Asistencia Sede
+    </a>
+
+    <div class="menu-section-label">INSTRUCTOR</div>
+    <a href="{% url 'instructor:gestionar_asistencia' %}" class="nav-link {% if request.resolver_match.url_name == 'gestionar_asistencia' %}active{% endif %}">
+        <i class="bi bi-pencil-square me-2"></i>Gestionar Asistencia
+    </a>
+    <a href="{% url 'instructor:consultar_asistenciaI' %}" class="nav-link {% if request.resolver_match.url_name == 'consultar_asistenciaI' %}active{% endif %}">
+        <i class="bi bi-calendar-week me-2"></i>Consultar Asistencia
+    </a>
+
+    <div class="menu-section-label">VIGILANTE</div>
+    <a href="{% url 'vigilante:consultar_invitado' %}" class="nav-link {% if request.resolver_match.url_name == 'consultar_invitado' %}active{% endif %}">
+        <i class="bi bi-search me-2"></i>Consultar Invitados
+    </a>
+    <a href="{% url 'vigilante:registro_manual' %}" class="nav-link {% if request.resolver_match.url_name == 'registro_manual' %}active{% endif %}">
+        <i class="bi bi-clipboard-data me-2"></i>Registro Manual
+    </a>
+    <a href="{% url 'vigilante:historial' %}" class="nav-link {% if request.resolver_match.url_name == 'historial' %}active{% endif %}">
+        <i class="bi bi-clock-history me-2"></i>Historial
+    </a>
+
+    <div class="menu-section-label">JUSTIFICACIONES</div>
+    <a href="{% url 'coordinador:justificaciones' %}" class="nav-link {% if request.resolver_match.url_name == 'justificaciones' %}active{% endif %}">
+        <i class="bi bi-file-check me-2"></i>Consultar Justificaciones
+    </a>
+
 {% endif %}
 
 
