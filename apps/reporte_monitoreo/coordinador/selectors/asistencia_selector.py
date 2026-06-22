@@ -1,6 +1,7 @@
 from django.db.models import Q
-from apps.reporte_monitoreo.coordinador.models import AsistenciaAmbiente, AsistenciaSede, Ficha, Jornada
+from apps.reporte_monitoreo.coordinador.models import AsistenciaAmbiente, AsistenciaSede, Ficha, Jornada, Justificacion
 from apps.login.models import Usuarios, RoleUser
+from apps.reporte_monitoreo.coordinador.models import Programa
 
 def obtener_asistencias_ambiente_con_filtros(request):
     """Construye queryset de asistencia ambiente con filtros"""
@@ -110,6 +111,58 @@ def obtener_instructores():
     return Usuarios.objects.filter(roleuser__role__name__icontains='instructor').order_by('nombre', 'apellido').distinct()
 
 
+def obtener_programas():
+    return Programa.objects.all().order_by('nombre_programa')
+
+
 def obtener_roles():
     from apps.login.models import Roles
     return Roles.objects.all().order_by('name')
+
+
+def obtener_historial_completo_aprendiz(usuario_id):
+    usuario = Usuarios.objects.select_related('id_ficha', 'id_ficha__id_jornada', 'id_ficha__id_programa').get(id_usuario=usuario_id)
+
+    asistencias_ambiente = AsistenciaAmbiente.objects.filter(
+        id_usuario=usuario
+    ).select_related(
+        'id_competencia', 'id_instructor'
+    ).order_by('-fecha')
+
+    asistencias_sede = AsistenciaSede.objects.filter(
+        id_usuario=usuario
+    ).order_by('-fecha')
+
+    justificaciones = Justificacion.objects.filter(
+        id_asistencia_ambiente__id_usuario=usuario
+    ).select_related(
+        'id_asistencia_ambiente', 'id_asistencia_ambiente__id_competencia'
+    ).order_by('-fecha')
+
+    total_ambiente = asistencias_ambiente.count()
+    asistio = asistencias_ambiente.filter(estado_asistencia__iexact='Asistio').count()
+    inasistio = asistencias_ambiente.filter(estado_asistencia__iexact='Inasistio').count()
+    retardo = asistencias_ambiente.filter(estado_asistencia__iexact='Retardo').count()
+    justificada = asistencias_ambiente.filter(
+        Q(estado_asistencia__iexact='Justificado') | Q(estado_asistencia__iexact='Justificada')
+    ).count()
+
+    total_sede = asistencias_sede.count()
+    con_salida = asistencias_sede.filter(hora_salida__isnull=False).count()
+
+    return {
+        'usuario': usuario,
+        'asistencias_ambiente': asistencias_ambiente,
+        'asistencias_sede': asistencias_sede,
+        'justificaciones': justificaciones,
+        'estadisticas': {
+            'total_ambiente': total_ambiente,
+            'asistio': asistio,
+            'inasistio': inasistio,
+            'retardo': retardo,
+            'justificada': justificada,
+            'total_sede': total_sede,
+            'con_salida': con_salida,
+            'sin_salida': total_sede - con_salida,
+        }
+    }

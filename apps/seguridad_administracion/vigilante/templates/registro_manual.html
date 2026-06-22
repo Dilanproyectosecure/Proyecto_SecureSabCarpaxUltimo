@@ -63,8 +63,9 @@
                             value="{{ form.documento.value|default:'' }}"
                             placeholder="Ej: 1000123456"
                             inputmode="numeric"
+                            minlength="6"
                             maxlength="10"
-                            pattern="\d{10}"
+                            pattern="\d{6,10}"
                             required
                             autofocus>
                         <small id="error_documento" style="color:#d9534f; font-size:0.9em; display:none;"></small>
@@ -255,7 +256,7 @@
         var usuarioStatus = document.getElementById('usuarioStatus');
         var tipoMovimiento = document.getElementById('tipoMovimiento');
 
-        if (cedula.length !== 10) {
+        if (cedula.length < 6) {
             usuarioInfo.style.display = 'none';
             return;
         }
@@ -342,8 +343,8 @@
             errDocumento.style.display = 'none';
             return false;
         }
-        if(val.length !== 10) {
-            errDocumento.textContent = 'Documento inválido: debe tener exactamente 10 dígitos.';
+        if(val.length < 6 || val.length > 10) {
+            errDocumento.textContent = 'Documento inválido: debe tener entre 6 y 10 dígitos.';
             errDocumento.style.display = 'block';
             return false;
         }
@@ -385,7 +386,7 @@
             
             // Validar documento primero
             if(!validarDocumento()) {
-                Swal.fire('Error', 'Documento inválido: debe tener exactamente 10 dígitos.', 'error');
+                Swal.fire('Error', 'Documento inválido: debe tener entre 6 y 10 dígitos.', 'error');
                 return;
             }
 

@@ -2,7 +2,94 @@
 {% load static %}
 
 {% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/asistencia_ambiente.css' %}?v=20260619">
     <link rel="stylesheet" href="{% static 'css/justificaciones.css' %}">
+    <style>
+        .breadcrumb-separator { color: #94a3b8; margin: 0 0.5rem; font-weight: 400; }
+        .breadcrumb-ficha { color: #667eea; font-weight: 500; font-size: 1.2rem; }
+        .kpi-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem; margin-bottom: 1.5rem;
+        }
+        .kpi-card {
+            background: white; border-radius: 10px; padding: 20px; text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-top: 3px solid #667eea;
+        }
+        .kpi-card.total { border-top-color: #667eea; }
+        .kpi-card.pendiente { border-top-color: #e67e22; }
+        .kpi-card.aprobada { border-top-color: #28a745; }
+        .kpi-card.rechazada { border-top-color: #dc3545; }
+        .kpi-card .numero { font-size: 28px; font-weight: bold; color: #333; }
+        .kpi-card .label { font-size: 13px; color: #666; margin-top: 5px; }
+
+        .fichas-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 1.5rem; margin-top: 1.5rem;
+        }
+        .ficha-card-link { text-decoration: none; color: inherit; }
+        .ficha-card {
+            background: white; border-radius: 16px; padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: all 0.3s ease;
+            border: 2px solid #e9ecef; height: 100%; display: flex; flex-direction: column;
+        }
+        .ficha-card:hover {
+            transform: translateY(-5px); box-shadow: 0 8px 25px rgba(102,126,234,0.2);
+            border-color: #667eea;
+        }
+        .ficha-card.nivel-alta { border-left: 5px solid #e53e3e; }
+        .ficha-card.nivel-media { border-left: 5px solid #ed8936; }
+        .ficha-card.nivel-baja { border-left: 5px solid #48bb78; }
+        .ficha-card .ficha-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;
+        }
+        .ficha-card .ficha-numero { font-size: 1.3rem; font-weight: 700; color: #333; }
+        .ficha-nivel {
+            padding: 0.3rem 0.8rem; border-radius: 50px; font-size: 0.75rem;
+            font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .nivel-badge-alta { background: #fed7d7; color: #c53030; }
+        .nivel-badge-media { background: #feebc8; color: #c05621; }
+        .nivel-badge-baja { background: #c6f6d5; color: #276749; }
+        .ficha-programa { font-size: 0.9rem; color: #4a5568; margin-bottom: 0.4rem; font-weight: 500; }
+        .ficha-jornada { font-size: 0.85rem; color: #718096; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 0.4rem; }
+        .ficha-jornada i { color: #667eea; }
+        .ficha-stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-bottom: 1.2rem; }
+        .stat-box { padding: 0.6rem 0.8rem; border-radius: 10px; text-align: center; }
+        .stat-box .stat-number { display: block; font-size: 1.4rem; font-weight: 700; line-height: 1.2; }
+        .stat-box .stat-label { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-top: 2px; }
+        .stat-total { background: #f0f4ff; }
+        .stat-total .stat-number { color: #4a5568; }
+        .stat-total .stat-label { color: #667eea; }
+        .stat-pendiente { background: #fffaf0; }
+        .stat-pendiente .stat-number { color: #c05621; }
+        .stat-pendiente .stat-label { color: #ed8936; }
+        .stat-aprobada { background: #f0fff4; }
+        .stat-aprobada .stat-number { color: #276749; }
+        .stat-aprobada .stat-label { color: #48bb78; }
+        .stat-rechazada { background: #fff5f5; }
+        .stat-rechazada .stat-number { color: #c53030; }
+        .stat-rechazada .stat-label { color: #e53e3e; }
+        .ficha-card .ficha-footer { margin-top: auto; text-align: right; padding-top: 0.75rem; border-top: 1px solid #f0f0f0; }
+        .ficha-card .btn-ver-mas { display: inline-flex; align-items: center; gap: 0.5rem; color: #667eea; font-weight: 600; font-size: 0.9rem; transition: gap 0.3s; }
+        .ficha-card:hover .btn-ver-mas { gap: 0.8rem; }
+        .no-fichas { grid-column: 1 / -1; text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 12px; color: #6c757d; }
+        .no-fichas i { font-size: 3rem; margin-bottom: 1rem; }
+
+        .btn-exportar-pdf {
+            background: linear-gradient(135deg, #e53e3e, #c53030); color: white;
+            border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 0.95rem;
+            font-weight: 500; cursor: pointer; transition: all 0.3s;
+            text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;
+        }
+        .btn-exportar-pdf:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(229,62,62,0.4); color: white; }
+        .btn-exportar-csv {
+            background: linear-gradient(135deg, #28a745, #20c997); color: white;
+            border: none; padding: 0.75rem 1.5rem; border-radius: 8px; font-size: 0.95rem;
+            font-weight: 500; cursor: pointer; transition: all 0.3s;
+            text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem;
+        }
+        .btn-exportar-csv:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(40,167,69,0.4); color: white; }
+    </style>
 {% endblock %}
 
 {% block title %}Justificaciones - Coordinador{% endblock %}
@@ -10,242 +97,272 @@
 {% block content %}
 <div class="dashboard-container">
     <form method="get" class="dashboard-form">
-            <div class="section-header">
-                <h1>Gestión de Justificaciones</h1>
-                <p class="text-muted">Revisa, aprueba o rechaza las justificaciones de los aprendices</p>
-            </div>
+        <div class="section-header">
+            <h1>
+                <i class="fas fa-file-alt"></i> Gesti&oacute;n de Justificaciones
+                {% if vista == 'detalle' %}
+                    <span class="breadcrumb-separator">/</span>
+                    <span class="breadcrumb-ficha">Ficha {{ ficha_numero }}</span>
+                {% endif %}
+            </h1>
+            {% if vista == 'fichas' %}
+                <p class="text-muted">Selecciona una ficha para ver sus justificaciones</p>
+            {% endif %}
+        </div>
 
-            <!-- Botón Exportar CSV -->
-            <div class="just-header-actions" style="display: flex; justify-content: flex-end; margin-bottom: 1rem;">
-                <a href="?export=csv" class="btn-filtro" style="background: linear-gradient(135deg, #28a745, #20c997);">
-                    <i class="fas fa-download"></i> Exportar CSV
+        {% if vista == 'fichas' %}
+        <!-- FASE 1: GRID DE FICHAS -->
+        <form method="GET" action="{% url 'coordinador:justificaciones' %}">
+        <div class="filtros-container">
+            <div class="filtros-header">
+                <h3><i class="fas fa-filter"></i> Filtros</h3>
+            </div>
+            <div class="filtros-grid">
+                <div class="filtros-group">
+                    <label><i class="fas fa-clock"></i> Jornada</label>
+                    <select name="jornada" class="filtros-input">
+                        <option value="">Todas las Jornadas</option>
+                        {% for jornada in jornadas %}
+                        <option value="{{ jornada.id_jornada }}" {% if filtros.jornada|stringformat:"s" == jornada.id_jornada|stringformat:"s" %}selected{% endif %}>{{ jornada.nombre_jornada }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filtros-group">
+                    <label><i class="fas fa-graduation-cap"></i> Carrera</label>
+                    <select name="programa" class="filtros-input">
+                        <option value="">Todas las Carreras</option>
+                        {% for programa in programas %}
+                        <option value="{{ programa.id_programa }}" {% if filtros.programa|stringformat:"s" == programa.id_programa|stringformat:"s" %}selected{% endif %}>{{ programa.nombre_programa }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filtros-group">
+                    <label><i class="fas fa-folder"></i> N&uacute;mero de Ficha</label>
+                    <input type="text" name="numero_ficha" class="filtros-input" value="{{ filtros.numero_ficha }}" placeholder="Buscar por n&uacute;mero">
+                </div>
+            </div>
+            <div class="filtros-buttons">
+                <a href="{% url 'coordinador:justificaciones' %}" class="btn-limpiar">
+                    <i class="fas fa-times"></i> Limpiar
                 </a>
+                <button type="submit" class="btn-filtro">
+                    <i class="fas fa-filter"></i> Aplicar
+                </button>
             </div>
+        </div>
+        </form>
 
-            <!-- KPI Cards -->
-            <div class="dash-kpi-grid">
-                <div class="dash-kpi-card total">
-                    <div class="dash-kpi-icon">
-                        <i class="fas fa-clipboard-list"></i>
+        <div class="fichas-grid">
+            {% for ficha in fichas_data %}
+            <a href="?ficha={{ ficha.id_ficha }}{% if filtros.jornada %}&jornada={{ filtros.jornada }}{% endif %}{% if filtros.programa %}&programa={{ filtros.programa }}{% endif %}{% if filtros.numero_ficha %}&numero_ficha={{ filtros.numero_ficha }}{% endif %}" class="ficha-card-link">
+                <div class="ficha-card nivel-{{ ficha.nivel|lower }}">
+                    <div class="ficha-header">
+                        <span class="ficha-numero">Ficha {{ ficha.numero_ficha }}</span>
+                        <span class="ficha-nivel nivel-badge-{{ ficha.nivel|lower }}">{{ ficha.nivel }}</span>
                     </div>
-                    <div class="dash-kpi-info">
-                        <span class="dash-kpi-value">{{ total_justificaciones }}</span>
-                        <span class="dash-kpi-label">Total Justificaciones</span>
+                    <div class="ficha-programa">{{ ficha.programa }}</div>
+                    <div class="ficha-jornada">
+                        <i class="fas fa-clock"></i> {{ ficha.jornada }}
                     </div>
-                </div>
-                <div class="dash-kpi-card pendiente">
-                    <div class="dash-kpi-icon">
-                        <i class="fas fa-hourglass-half"></i>
-                    </div>
-                    <div class="dash-kpi-info">
-                        <span class="dash-kpi-value">{{ pendientes }}</span>
-                        <span class="dash-kpi-label">Pendientes</span>
-                    </div>
-                </div>
-                <div class="dash-kpi-card aprobada">
-                    <div class="dash-kpi-icon">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div class="dash-kpi-info">
-                        <span class="dash-kpi-value">{{ aprobadas }}</span>
-                        <span class="dash-kpi-label">Aprobadas</span>
-                    </div>
-                </div>
-                <div class="dash-kpi-card rechazada">
-                    <div class="dash-kpi-icon">
-                        <i class="fas fa-times-circle"></i>
-                    </div>
-                    <div class="dash-kpi-info">
-                        <span class="dash-kpi-value">{{ rechazadas }}</span>
-                        <span class="dash-kpi-label">Rechazadas</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Filtros y Búsqueda -->
-            <div class="filtros-container">
-                <div class="filtros-header">
-                    <h3><i class="fas fa-filter"></i> Filtros de Búsqueda</h3>
-                </div>
-
-                <div class="filtros-grid">
-                    <!-- Búsqueda por nombre o documento -->
-                    <div class="filtros-group" style="grid-column: span 2;">
-                        <label for="search">
-                            <i class="fas fa-search"></i> Buscar:
-                        </label>
-                        <input type="text" 
-                               name="search"
-                               id="search"
-                               class="filtros-input"
-                               value="{{ request.GET.search }}"
-                               placeholder="Buscar por nombre, documento o motivo...">
-                    </div>
-
-                    <!-- Filtros por estado (chips) -->
-                    <div class="filtros-group" style="grid-column: span 3;">
-                        <label><i class="fas fa-tag"></i> Estado:</label>
-                        <div class="filter-chips">
-                            <button type="submit" name="estado" value="all" class="btn-chip {% if not request.GET.estado or request.GET.estado == 'all' %}active{% endif %}">
-                                <i class="fas fa-list"></i> Todos
-                            </button>
-                            <button type="submit" name="estado" value="Pendiente" class="btn-chip {% if request.GET.estado == 'Pendiente' %}active{% endif %}">
-                                <i class="fas fa-clock"></i> Pendientes
-                            </button>
-                            <button type="submit" name="estado" value="Aprobado" class="btn-chip {% if request.GET.estado == 'Aprobado' %}active{% endif %}">
-                                <i class="fas fa-check"></i> Aprobadas
-                            </button>
-                            <button type="submit" name="estado" value="Rechazado" class="btn-chip {% if request.GET.estado == 'Rechazado' %}active{% endif %}">
-                                <i class="fas fa-times"></i> Rechazadas
-                            </button>
+                    <div class="ficha-stats-grid">
+                        <div class="stat-box stat-total">
+                            <span class="stat-number">{{ ficha.total }}</span>
+                            <span class="stat-label">Total</span>
+                        </div>
+                        <div class="stat-box stat-pendiente">
+                            <span class="stat-number">{{ ficha.pendientes }}</span>
+                            <span class="stat-label">Pendientes</span>
+                        </div>
+                        <div class="stat-box stat-aprobada">
+                            <span class="stat-number">{{ ficha.aprobadas }}</span>
+                            <span class="stat-label">Aprobadas</span>
+                        </div>
+                        <div class="stat-box stat-rechazada">
+                            <span class="stat-number">{{ ficha.rechazadas }}</span>
+                            <span class="stat-label">Rechazadas</span>
                         </div>
                     </div>
+                    <div class="ficha-footer">
+                        <span class="btn-ver-mas">
+                            Ver detalle <i class="fas fa-arrow-right"></i>
+                        </span>
+                    </div>
                 </div>
+            </a>
+            {% empty %}
+            <div class="no-fichas">
+                <i class="fas fa-folder-x"></i>
+                <p>No hay fichas con justificaciones registradas</p>
+            </div>
+            {% endfor %}
+        </div>
 
-                <!-- Botones de acción -->
-                <div class="filtros-buttons">
-                    <a href="{% url 'coordinador:justificaciones' %}" class="btn-limpiar">
-                        <i class="fas fa-times"></i> Limpiar filtros
-                    </a>
-                    <button type="submit" class="btn-filtro">
-                        <i class="fas fa-filter"></i> Aplicar filtros
-                    </button>
+        {% else %}
+        <!-- FASE 2: DETALLE DE JUSTIFICACIONES POR FICHA -->
+        <input type="hidden" name="ficha" value="{{ filtros.ficha }}">
+
+        <!-- KPIs -->
+        <div class="kpi-grid">
+            <div class="kpi-card total">
+                <div class="numero">{{ total }}</div>
+                <div class="label"><i class="fas fa-clipboard-list"></i> Total Justificaciones</div>
+            </div>
+            <div class="kpi-card pendiente">
+                <div class="numero">{{ pendientes }}</div>
+                <div class="label"><i class="fas fa-hourglass-half"></i> Pendientes</div>
+            </div>
+            <div class="kpi-card aprobada">
+                <div class="numero">{{ aprobadas }}</div>
+                <div class="label"><i class="fas fa-check-circle"></i> Aprobadas</div>
+            </div>
+            <div class="kpi-card rechazada">
+                <div class="numero">{{ rechazadas }}</div>
+                <div class="label"><i class="fas fa-times-circle"></i> Rechazadas</div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filtros-container">
+            <div class="filtros-header">
+                <h3><i class="fas fa-filter"></i> Filtros de B&uacute;squeda</h3>
+            </div>
+            <div class="filtros-grid">
+                <div class="filtros-group" style="grid-column: span 2;">
+                    <label for="search"><i class="fas fa-search"></i> Buscar:</label>
+                    <input type="text" name="search" id="search" class="filtros-input"
+                           value="{{ filtros.search }}" placeholder="Buscar por nombre, documento o motivo...">
+                </div>
+                <div class="filtros-group" style="grid-column: span 3;">
+                    <label><i class="fas fa-tag"></i> Estado:</label>
+                    <div class="filter-chips" style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                        <button type="submit" name="estado" value="all" class="btn-chip" style="padding:0.5rem 1rem;border-radius:50px;border:2px solid #e1e1e1;background:{% if filtros.estado == 'all' or not filtros.estado %}#667eea;color:white;border-color:#667eea{% else %}#f8f9fa;color:#495057{% endif %};cursor:pointer;font-size:0.85rem;font-weight:600;">
+                            <i class="fas fa-list"></i> Todos
+                        </button>
+                        <button type="submit" name="estado" value="Pendiente" class="btn-chip" style="padding:0.5rem 1rem;border-radius:50px;border:2px solid #e1e1e1;background:{% if filtros.estado == 'Pendiente' %}#e67e22;color:white;border-color:#e67e22{% else %}#f8f9fa;color:#495057{% endif %};cursor:pointer;font-size:0.85rem;font-weight:600;">
+                            <i class="fas fa-clock"></i> Pendientes
+                        </button>
+                        <button type="submit" name="estado" value="Aprobado" class="btn-chip" style="padding:0.5rem 1rem;border-radius:50px;border:2px solid #e1e1e1;background:{% if filtros.estado == 'Aprobado' %}#28a745;color:white;border-color:#28a745{% else %}#f8f9fa;color:#495057{% endif %};cursor:pointer;font-size:0.85rem;font-weight:600;">
+                            <i class="fas fa-check"></i> Aprobadas
+                        </button>
+                        <button type="submit" name="estado" value="Rechazado" class="btn-chip" style="padding:0.5rem 1rem;border-radius:50px;border:2px solid #e1e1e1;background:{% if filtros.estado == 'Rechazado' %}#dc3545;color:white;border-color:#dc3545{% else %}#f8f9fa;color:#495057{% endif %};cursor:pointer;font-size:0.85rem;font-weight:600;">
+                            <i class="fas fa-times"></i> Rechazadas
+                        </button>
+                    </div>
                 </div>
             </div>
-
-            <!-- Tabla de Justificaciones -->
-            <div class="table-container">
-                <div class="table-header">
-                    <h3><i class="fas fa-table"></i> Listado de Justificaciones</h3>
-                </div>
-                <div class="table-scroll">
-                    <table class="tabla-asistencias">
-                        <thead>
-                            <tr>
-                                <th>Aprendiz</th>
-                                <th>Motivo</th>
-                                <th>Soporte</th>
-                                <th>Fecha</th>
-                                <th>Estado</th>
-                                <th>Observación</th>
-                            </thead>
-                        <tbody>
-                            {% for just in justificaciones %}
-                            <tr>
-                                <td>
-                                    <strong>{{ just.id_asistencia_ambiente.id_usuario.nombre }} {{ just.id_asistencia_ambiente.id_usuario.apellido }}</strong>
-                                    <br>
-                                    <small class="text-muted">{{ just.id_asistencia_ambiente.id_usuario.cedula }}</small>
-                                </td>
-                                <td>{{ just.motivo }}</td>
-                                <td>
-                                    {% if just.soporte %}
-                                    <a href="/media/{{ just.soporte }}" target="_blank" class="btn-ver-soporte">
-                                        <i class="fas fa-file-pdf"></i> Ver
-                                    </a>
-                                    {% else %}
-                                    <span class="badge-pendiente">Sin soporte</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <span class="date-cell">
-                                        <i class="fas fa-calendar-day"></i> {{ just.fecha|date:"Y-m-d" }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="badge badge-{{ just.estado|lower }}">
-                                        {% if just.estado == 'Pendiente' %}
-                                            <i class="fas fa-clock"></i> Pendiente
-                                        {% elif just.estado == 'Aprobado' %}
-                                            <i class="fas fa-check-circle"></i> Aprobada
-                                        {% elif just.estado == 'Rechazado' %}
-                                            <i class="fas fa-times-circle"></i> Rechazada
-                                        {% else %}
-                                            {{ just.estado }}
-                                        {% endif %}
-                                    </span>
-                                </td>
-                                <td>
-                                    {% if just.observaciones %}
-                                    <div class="observacion-cell">
-                                        <i class="fas fa-comment-dots"></i>
-                                        {{ just.observaciones|truncatechars:50 }}
-                                    </div>
-                                    {% else %}
-                                    <span class="badge-pendiente">
-                                        <i class="fas fa-minus-circle"></i> Sin observación
-                                    </span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="6" class="no-data-message">
-                                    <i class="fas fa-folder-open"></i>
-                                    <p>No hay justificaciones registradas</p>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+            <div class="filtros-buttons">
+                <a href="{% url 'coordinador:justificaciones' %}" class="btn-limpiar">
+                    <i class="fas fa-arrow-left"></i> Volver al grid
+                </a>
+                <button type="submit" class="btn-filtro">
+                    <i class="fas fa-filter"></i> Aplicar filtros
+                </button>
             </div>
+        </div>
 
-            <!-- Paginación -->
-            {% if justificaciones.has_other_pages %}
-            <div class="paginacion">
-                <div class="paginacion-info">
-                    Mostrando {{ justificaciones.start_index }} - {{ justificaciones.end_index }} de {{ justificaciones.paginator.count }} justificaciones
-                </div>
-                <div class="paginacion-buttons">
-                    {% if justificaciones.has_previous %}
-                    <a href="?page={{ justificaciones.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}" class="page-link">
-                        <i class="fas fa-angle-left"></i>
-                    </a>
-                    {% endif %}
-                    
-                    {% for i in justificaciones.paginator.page_range %}
-                        {% if justificaciones.number == i %}
-                        <span class="page-current">{{ i }}</span>
-                        {% elif i > justificaciones.number|add:'-3' and i < justificaciones.number|add:'3' %}
-                        <a href="?page={{ i }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}" class="page-link">{{ i }}</a>
-                        {% endif %}
-                    {% endfor %}
-                    
-                    {% if justificaciones.has_next %}
-                    <a href="?page={{ justificaciones.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.estado %}&estado={{ request.GET.estado }}{% endif %}" class="page-link">
-                        <i class="fas fa-angle-right"></i>
-                    </a>
-                    {% endif %}
-                </div>
+        <!-- Tabla de Justificaciones -->
+        <div class="table-container">
+            <div class="table-header" style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid #e9ecef;">
+                <h3 style="margin:0;font-size:1rem;"><i class="fas fa-table"></i> Listado de Justificaciones</h3>
             </div>
-            {% endif %}
+            <div class="table-scroll">
+                <table class="tabla-asistencias">
+                    <thead>
+                        <tr>
+                            <th>Aprendiz</th>
+                            <th>Motivo</th>
+                            <th>Soporte</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                            <th>Observaci&oacute;n</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for just in justificaciones %}
+                        <tr>
+                            <td>
+                                <strong>{{ just.id_asistencia_ambiente.id_usuario.nombre }} {{ just.id_asistencia_ambiente.id_usuario.apellido }}</strong>
+                                <br>
+                                <small style="color:#888;">{{ just.id_asistencia_ambiente.id_usuario.cedula }}</small>
+                            </td>
+                            <td>{{ just.motivo }}</td>
+                            <td>
+                                {% if just.soporte %}
+                                <a href="/media/{{ just.soporte }}" target="_blank" style="color:#667eea;font-weight:600;text-decoration:none;font-size:0.85rem;">
+                                    <i class="fas fa-file-pdf"></i> Ver
+                                </a>
+                                {% else %}
+                                <span style="color:#94a3b8;font-style:italic;">Sin soporte</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span style="display:inline-flex;align-items:center;gap:0.5rem;color:#495057;">
+                                    <i class="fas fa-calendar-day" style="color:#667eea;"></i> {{ just.fecha|date:"Y-m-d" }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if just.estado == 'Pendiente' %}
+                                    <span class="badge-estado badge-pendiente"><i class="fas fa-clock"></i> Pendiente</span>
+                                {% elif just.estado == 'Aprobado' %}
+                                    <span class="badge-estado badge-aprobado"><i class="fas fa-check-circle"></i> Aprobada</span>
+                                {% elif just.estado == 'Rechazado' %}
+                                    <span class="badge-estado badge-rechazado"><i class="fas fa-times-circle"></i> Rechazada</span>
+                                {% else %}
+                                    <span class="badge-estado">{{ just.estado }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if just.observaciones %}
+                                <div style="font-size:0.85rem;color:#495057;">
+                                    <i class="fas fa-comment-dots" style="color:#667eea;"></i>
+                                    {{ just.observaciones|truncatechars:50 }}
+                                </div>
+                                {% else %}
+                                <span style="color:#94a3b8;font-style:italic;">
+                                    <i class="fas fa-minus-circle"></i> Sin observaci&oacute;n
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="no-data-message">
+                                <i class="fas fa-folder-open"></i>
+                                <p>No hay justificaciones para esta ficha</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Paginación -->
+        {% if justificaciones.has_other_pages %}
+        <div class="paginacion">
+            <div class="paginacion-info">
+                Mostrando {{ justificaciones.start_index }} - {{ justificaciones.end_index }} de {{ justificaciones.paginator.count }} justificaciones
+            </div>
+            <div class="paginacion-buttons">
+                {% if justificaciones.has_previous %}
+                <a href="?page={{ justificaciones.previous_page_number }}&ficha={{ filtros.ficha }}{% if filtros.search %}&search={{ filtros.search }}{% endif %}{% if filtros.estado and filtros.estado != 'all' %}&estado={{ filtros.estado }}{% endif %}" class="page-link">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+                {% endif %}
+                <span class="page-current">P&aacute;gina {{ justificaciones.number }} de {{ justificaciones.paginator.num_pages }}</span>
+                {% if justificaciones.has_next %}
+                <a href="?page={{ justificaciones.next_page_number }}&ficha={{ filtros.ficha }}{% if filtros.search %}&search={{ filtros.search }}{% endif %}{% if filtros.estado and filtros.estado != 'all' %}&estado={{ filtros.estado }}{% endif %}" class="page-link">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
     </form>
 </div>
-
-<!-- Modal de Detalle -->
-<div id="justModal" class="just-modal">
-    <div class="just-modal-content">
-        <div class="just-modal-header">
-            <h3><i class="fas fa-file-alt"></i> Detalle de Justificación</h3>
-            <button class="just-modal-close" id="justModalClose">&times;</button>
-        </div>
-        <div class="just-modal-body">
-            <div class="just-detail-grid" id="modalContent">
-                <!-- Se llena con JS -->
-            </div>
-        </div>
-        <div class="just-modal-footer">
-            <button class="just-modal-btn secondary" id="justModalCancel">
-                <i class="fas fa-times"></i> Cerrar
-            </button>
-        </div>
-    </div>
-</div>
-
-<script></script>
 {% endblock %}
 
 {% block extra_js %}
-    <script src="{% static 'js/coordinador/justificaciones.js' %}"></script>
+<script src="{% static 'js/coordinador/justificaciones.js' %}"></script>
 {% endblock %}

@@ -1,4 +1,4 @@
-import time
+﻿import time
 from .hikvision_service import obtener_eventos
 from apps.login.models import Usuarios as Usuario
 from .models import Huella
@@ -36,6 +36,6 @@ def worker_huellas():
                 print("✔ Huella guardada:", usuario.nombre)
 
             except Exception as e:
-                print("❌ Error guardando huella en worker:", e)
+                print("[ERROR] Error guardando huella en worker:", e)
 
         time.sleep(2)

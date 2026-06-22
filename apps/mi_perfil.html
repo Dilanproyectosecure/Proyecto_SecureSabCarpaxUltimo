@@ -32,6 +32,13 @@
                 <label>Teléfono:</label>
                 <span id="info-telefono">{{ usuario.telefono|default:"No registrado" }}</span>
             </div>
+
+            {% if usuario.id_coordinacion %}
+            <div class="info-item">
+                <label>Coordinación:</label>
+                <span>{{ usuario.id_coordinacion.nombre_coordinacion }}</span>
+            </div>
+            {% endif %}
         </div>
     </div>
 

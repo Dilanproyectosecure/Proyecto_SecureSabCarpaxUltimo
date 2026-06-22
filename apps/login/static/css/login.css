@@ -143,3 +143,57 @@ body {
     color: #004d00;
     text-decoration: underline;
 }
+
+.back-home {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.back-home a {
+    color: #006400 !important;
+    text-decoration: none !important;
+    font-size: 12px;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.back-home a:hover,
+.back-home a:visited,
+.back-home a:focus {
+    color: #004d00 !important;
+    text-decoration: underline !important;
+    background: transparent;
+}
+
+/* ===== Responsive Login ===== */
+@media (max-width: 480px) {
+    .login-container {
+        padding: 25px 20px;
+        margin: 15px;
+        border-radius: 12px;
+    }
+
+    .title-secure-login {
+        font-size: 28px;
+    }
+
+    .btn-login {
+        padding: 14px 20px;
+        font-size: 16px;
+    }
+
+    .input-group input[type="text"],
+    .input-group input[type="password"] {
+        padding: 14px 15px;
+    }
+}
+
+@media (max-width: 360px) {
+    .login-container {
+        padding: 20px 15px;
+    }
+
+    .title-secure-login {
+        font-size: 24px;
+    }
+}

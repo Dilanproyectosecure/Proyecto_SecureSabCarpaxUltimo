@@ -4,7 +4,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.conf import settings
+from django.http import JsonResponse
 from datetime import date
+import json
 from apps.login.models import Usuarios
 from apps.reporte_monitoreo.coordinador.models import ( Ficha, AsistenciaAmbiente, Competencia, Justificacion, Jornada, AsistenciaSede)
 from .models import LlamadoAtencion
@@ -12,11 +14,10 @@ from .selectors.fichas_selector import obtener_fichas_con_estadisticas
 from .selectors.fichas_selector import obtener_datos_ficha
 from .selectors.asistencia_selector import ( obtener_ficha_con_asistencias, obtener_asistencias_base, buscar_aprendiz, obtener_competencias_programa)
 from .selectors.justificacion_queries import ( obtener_justificaciones, filtrar_justificaciones)
-from .services.inasistencias_service import calcular_inasistencias_aprendiz
+from .services.inasistencias_service import calcular_inasistencias_aprendiz, calcular_retardos_aprendiz
 from .services.asistencia_service import ( registrar_asistencia, generar_reporte, generar_totales)
 from .services.aprendiz_service import actualizar_datos_aprendiz
 from .services.justificacion_action_service import procesar_accion_justificacion
-from .services.llamado_service import verificar_y_procesar_aprendices, obtener_llamados_recientes, reenviar_correo, notificar_aprendiz as servicio_notificar_aprendiz
 from .utils.pdf_utils import generate_pdf_response
 from django.urls import reverse  
 from apps.gestor_sistema.services import registrar_actividad
@@ -64,6 +65,29 @@ def gestionar_asistencia(request):
             a.tiene_3_consecutivas = datos["tiene_3"]
             a.tiene_5_inasistencias = datos["tiene_5"]
             a.total_inasistencias = datos["total"]
+            retardos = calcular_retardos_aprendiz(a)
+            a.retardos_consecutivos = retardos["retardos_consecutivos"]
+            a.tiene_retardos_consecutivos = retardos["llamado_atencion"]
+            a.correo_ya_enviado = False
+
+        from apps.gestor_sistema.models import registro_actividad
+        from django.db.models import Q
+        import re
+        correos_enviados = registro_actividad.objects.filter(
+            Q(tipo_accion='EMAIL_INASISTENCIA') & Q(descripcion__contains=f'ficha {ficha.numero_ficha}') & Q(descripcion__contains=f'fecha {fecha}'),
+        )
+        ids_enviados = set()
+        for reg in correos_enviados:
+            match = re.search(r'ids\[([^\]]+)\]', reg.descripcion)
+            if match:
+                for uid in match.group(1).split(','):
+                    try:
+                        ids_enviados.add(int(uid.strip()))
+                    except ValueError:
+                        pass
+        for a in aprendices:
+            if a.id_usuario in ids_enviados:
+                a.correo_ya_enviado = True
 
         if request.method == 'POST':
             post_competencia_id = request.POST.get('competencia_id')
@@ -338,34 +362,6 @@ def procesar_justificacion(request):
         messages.error(request, mensaje)
 
     return redirect('instructor:gestionar_justificaciones')
-
-
-
-# ==================== LLAMADOS DE ATENCIÓN ====================
-@login_required
-def reenviar_notificacion_llamado(request, llamado_id):
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
-
-    enviado = reenviar_correo(llamado_id)
-    if enviado:
-        return JsonResponse({'success': True, 'message': 'Correo reenviado correctamente'})
-    return JsonResponse({'success': False, 'error': 'No se pudo enviar el correo'}, status=500)
-
-
-@login_required
-def notificar_aprendiz(request):
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
-
-    aprendiz_id = request.POST.get('aprendiz_id')
-    if not aprendiz_id:
-        return JsonResponse({'success': False, 'error': 'aprendiz_id requerido'}, status=400)
-
-    success, mensaje = servicio_notificar_aprendiz(aprendiz_id, request.user)
-    if success:
-        return JsonResponse({'success': True, 'message': mensaje})
-    return JsonResponse({'success': False, 'error': mensaje}, status=400)
 
 
 

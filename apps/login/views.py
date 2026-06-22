@@ -31,8 +31,8 @@ def login_view(request):
         
         # Verificar si el usuario existe pero está inactivo
         try:
-            usuario_check = Usuarios.objects.get(cedula=cedula)
-            if not usuario_check.is_active:
+            usuario_check = Usuarios.objects.filter(cedula=cedula).first()
+            if usuario_check and not usuario_check.is_active:
                 messages.error(request, 'Usuario inactivo, comuníquese con el gestor')
                 return render(request, 'login.html', {'error': 'Usuario inactivo, comuníquese con el gestor'})
         except Usuarios.DoesNotExist:
@@ -125,7 +125,7 @@ def mi_perfil(request):
     Vista del perfil de usuario (accesible para todos los roles)
     """
     usuario = request.user
-    es_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
 
     if request.method == 'POST':
         action = request.POST.get('action')

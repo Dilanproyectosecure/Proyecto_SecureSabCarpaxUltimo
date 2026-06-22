@@ -156,3 +156,81 @@ def obtener_tendencia_asistencia_7_dias():
         'labels': labels,
         'valores': valores,
     }
+
+
+def obtener_fichas_con_estadisticas_coordinador(fecha=None, instructor_id=None, jornada_id=None, programa_id=None, numero_ficha=None):
+    fichas = Ficha.objects.filter(
+        Q(estado__icontains='activa') | Q(estado__icontains='activo')
+    ).select_related('id_programa', 'id_jornada').order_by('numero_ficha')
+
+    if not fichas.exists():
+        fichas = Ficha.objects.select_related('id_programa', 'id_jornada').order_by('numero_ficha')
+
+    if jornada_id and str(jornada_id).isdigit():
+        fichas = fichas.filter(id_jornada_id=jornada_id)
+
+    if programa_id and str(programa_id).isdigit():
+        fichas = fichas.filter(id_programa_id=programa_id)
+
+    if numero_ficha:
+        fichas = fichas.filter(numero_ficha__icontains=numero_ficha)
+
+    if fecha is None:
+        fecha = timezone.localdate()
+
+    fichas_data = []
+
+    for ficha in fichas:
+        total_aprendices = Usuarios.objects.filter(
+            id_ficha=ficha
+        ).exclude(
+            Q(nombre__icontains='instructor') | Q(nombre__icontains='coordinador') |
+            Q(apellido__icontains='instructor') | Q(apellido__icontains='coordinador')
+        ).count()
+
+        asistencias = AsistenciaAmbiente.objects.filter(
+            id_usuario__id_ficha=ficha,
+            fecha=fecha
+        )
+
+        if instructor_id and str(instructor_id).isdigit():
+            asistencias = asistencias.filter(id_instructor_id=instructor_id)
+
+        asistio = asistencias.filter(estado_asistencia__iexact='Asistio').count()
+        inasistio = asistencias.filter(estado_asistencia__iexact='Inasistio').count()
+        retardo = asistencias.filter(estado_asistencia__iexact='Retardo').count()
+        justificada = asistencias.filter(
+            Q(estado_asistencia__iexact='Justificado') | Q(estado_asistencia__iexact='Justificada')
+        ).count()
+
+        total_registros = asistencias.count()
+
+        if total_aprendices > 0:
+            pct_inasistencia = round((inasistio / total_aprendices) * 100, 1)
+        else:
+            pct_inasistencia = 0
+
+        if inasistio >= 5 or pct_inasistencia >= 40:
+            nivel = 'Alta'
+        elif inasistio >= 2 or pct_inasistencia >= 20:
+            nivel = 'Media'
+        else:
+            nivel = 'Baja'
+
+        fichas_data.append({
+            'id_ficha': ficha.id_ficha,
+            'numero_ficha': ficha.numero_ficha,
+            'estado': ficha.estado,
+            'programa': ficha.id_programa.nombre_programa if ficha.id_programa else 'N/D',
+            'jornada': ficha.id_jornada.nombre_jornada if ficha.id_jornada else 'N/D',
+            'total_aprendices': total_aprendices,
+            'asistio': asistio,
+            'inasistio': inasistio,
+            'retardo': retardo,
+            'justificada': justificada,
+            'total_registros': total_registros,
+            'pct_inasistencia': pct_inasistencia,
+            'nivel': nivel,
+        })
+
+    return fichas_data

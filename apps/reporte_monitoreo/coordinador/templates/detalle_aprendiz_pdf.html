@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+{% load i18n %}
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte Individual - {{ usuario.nombre }} {{ usuario.apellido }}</title>
+    <style>
+        @page { size: letter; margin: 10mm; }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 8pt;
+            color: #1a2332;
+            margin: 0;
+            padding: 0;
+        }
+        .top-bar { height: 5px; background: #1b6b3a; margin-bottom: 8px; }
+        .hdr-table { width: 100%; border-collapse: collapse; border-bottom: 2px solid #1b6b3a; margin-bottom: 8px; }
+        .hdr-table td { border: none; vertical-align: middle; }
+        .sena-lbl { font-size: 8pt; font-weight: 900; color: #1b6b3a; letter-spacing: 2px; text-align: center; }
+        .title { font-size: 15pt; font-weight: 900; color: #1b6b3a; text-transform: uppercase; text-align: center; margin: 0; }
+        .subtitle { font-size: 8pt; color: #4a5568; text-align: center; margin: 0; }
+        .meta { font-size: 7pt; margin-bottom: 8px; color: #4a5568; text-align: right; line-height: 1.6; }
+        .box { border: 1px solid #d8e4d8; margin-bottom: 8px; }
+        .box-title { background: #1b6b3a; color: #fff; font-size: 7pt; font-weight: 700; text-transform: uppercase; padding: 5px 7px; }
+        .box-body { padding: 6px 7px; }
+        .line { margin-bottom: 3px; font-size: 7pt; color: #334155; }
+        .line b { color: #1b6b3a; }
+        .kpi-table, .reg-table { width: 100%; border-collapse: collapse; }
+        .kpi-table td {
+            border: 1px solid #d8e4d8; padding: 6px; width: 20%;
+            vertical-align: top; background: #f6fbf8;
+        }
+        .kpi-label { font-size: 6pt; color: #1b6b3a; text-transform: uppercase; font-weight: 700; }
+        .kpi-value { font-size: 10pt; font-weight: 700; color: #1a2332; margin-top: 2px; }
+        .reg-table th {
+            background: #1b6b3a; color: #fff; padding: 5px 4px;
+            border: 1px solid #155a30; font-size: 6.5pt;
+            text-transform: uppercase; text-align: left;
+        }
+        .reg-table td { border: 1px solid #dde8dd; padding: 4px; font-size: 7pt; vertical-align: middle; }
+        .badge { display: inline-block; padding: 2px 6px; border-radius: 9px; font-size: 6pt; font-weight: 700; }
+        .b-green { background: #e2f5ea; color: #1b6b3a; border: 1px solid #a2d9b3; }
+        .b-red { background: #fdf2f2; color: #a93226; border: 1px solid #e6b0aa; }
+        .b-orange { background: #fef9e7; color: #7d6608; border: 1px solid #f9e79f; }
+    </style>
+</head>
+<body>
+    <div class="top-bar"></div>
+    <table class="hdr-table">
+        <tr>
+            <td style="width:15%; text-align:center;">
+                <div class="sena-lbl">SENA</div>
+            </td>
+            <td style="width:55%;">
+                <p class="title">Reporte Individual del Aprendiz</p>
+                <p class="subtitle">Coordinación Académica - SENA</p>
+            </td>
+            <td style="width:30%;">
+                <div class="meta">
+                    <strong>Fecha generación:</strong><br>
+                    {{ fecha_actual }}<br>
+                    <strong>Generado por:</strong><br>
+                    {{ usuario_genero }}
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="box">
+        <div class="box-title">Información del Aprendiz</div>
+        <div class="box-body">
+            <div class="line"><b>Documento:</b> {{ usuario.cedula }}</div>
+            <div class="line"><b>Nombre:</b> {{ usuario.nombre }} {{ usuario.apellido }}</div>
+            <div class="line"><b>Correo:</b> {{ usuario.correo|default:"Sin correo" }}</div>
+            <div class="line"><b>Ficha:</b> {{ usuario.id_ficha.numero_ficha|default:"N/D" }}</div>
+            <div class="line"><b>Programa:</b> {{ usuario.id_ficha.id_programa.nombre_programa|default:"N/D" }}</div>
+            <div class="line"><b>Jornada:</b> {{ usuario.id_ficha.id_jornada.nombre_jornada|default:"N/D" }}</div>
+        </div>
+    </div>
+
+    <table class="kpi-table" style="margin-bottom:8px;">
+        <tr>
+            <td>
+                <div class="kpi-label">Asistencias</div>
+                <div class="kpi-value">{{ estadisticas.asistio }} ({{ pct_asistio }}%)</div>
+            </td>
+            <td>
+                <div class="kpi-label">Inasistencias</div>
+                <div class="kpi-value">{{ estadisticas.inasistio }} ({{ pct_inasistio }}%)</div>
+            </td>
+            <td>
+                <div class="kpi-label">Retardos</div>
+                <div class="kpi-value">{{ estadisticas.retardo }} ({{ pct_retardo }}%)</div>
+            </td>
+            <td>
+                <div class="kpi-label">Justificadas</div>
+                <div class="kpi-value">{{ estadisticas.justificada }}</div>
+            </td>
+            <td>
+                <div class="kpi-label">Entradas Sede</div>
+                <div class="kpi-value">{{ estadisticas.total_sede }}</div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="box">
+        <div class="box-title">Historial de Asistencia en Ambiente</div>
+        <div class="box-body" style="padding:0;">
+            <table class="reg-table">
+                <thead>
+                    <tr>
+                        <th style="width:18%;">Fecha</th>
+                        <th style="width:34%;">Competencia</th>
+                        <th style="width:30%;">Instructor</th>
+                        <th style="width:18%; text-align:center;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in asistencias_ambiente %}
+                    <tr>
+                        <td>{{ a.fecha|date:"Y-m-d" }}</td>
+                        <td>{{ a.id_competencia.nombre_competencia|default:"N/D" }}</td>
+                        <td>
+                            {% if a.id_instructor %}
+                                {{ a.id_instructor.nombre }} {{ a.id_instructor.apellido }}
+                            {% else %}
+                                No asignado
+                            {% endif %}
+                        </td>
+                        <td style="text-align:center;">
+                            {% if a.estado_asistencia|lower == 'asistio' %}
+                                <span class="badge b-green">Asistió</span>
+                            {% elif a.estado_asistencia|lower == 'inasistio' %}
+                                <span class="badge b-red">Inasistió</span>
+                            {% elif a.estado_asistencia|lower == 'retardo' %}
+                                <span class="badge b-orange">Retardo</span>
+                            {% elif a.estado_asistencia|lower == 'justificado' or a.estado_asistencia|lower == 'justificada' %}
+                                <span class="badge b-orange">Justificada</span>
+                            {% else %}
+                                <span class="badge">{{ a.estado_asistencia }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align:center; padding:9px; color:#64748b;">No hay registros de asistencia en ambiente.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="box">
+        <div class="box-title">Historial de Asistencia en Sede</div>
+        <div class="box-body" style="padding:0;">
+            <table class="reg-table">
+                <thead>
+                    <tr>
+                        <th style="width:34%;">Fecha</th>
+                        <th style="width:33%;">Hora Entrada</th>
+                        <th style="width:33%;">Hora Salida</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in asistencias_sede %}
+                    <tr>
+                        <td>{{ s.fecha|date:"Y-m-d" }}</td>
+                        <td>{{ s.hora_entrada|time:"H:i"|default:"--:--" }}</td>
+                        <td>{{ s.hora_salida|time:"H:i"|default:"--:--" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" style="text-align:center; padding:9px; color:#64748b;">No hay registros de asistencia en sede.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</body>
+</html>

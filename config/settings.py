@@ -20,13 +20,6 @@ except Exception:
     # Si no está disponible, seguimos sin bloquear el inicio; la conexión a BD
     # fallará en tiempo de ejecución si se requiere MySQL y la librería no está.
     pymysql = None
-STATIC_URL = 'static/'
-STATICFILES_FINDERS = [
-    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-    'django.contrib.staticfiles.finders.FileSystemFinder',
-]
-pymysql.version_info = (2, 2, 1, "final", 0)
-pymysql.install_as_MySQLdb()
 from pathlib import Path
 
 # Build paths
@@ -102,8 +95,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'secure11',
-        'USER': 'root',
-        'PASSWORD': '',
+        'USER': env_vars.get('DATABASE_USER', 'root'),
+        'PASSWORD': env_vars.get('DATABASE_PASSWORD', ''),
         'HOST': 'localhost',
         'PORT': '3306',
         'OPTIONS': {
@@ -111,6 +104,8 @@ DATABASES = {
         },
     }
 }
+
+
 
 if 'test' in sys.argv:
     DATABASES = {
@@ -172,7 +167,6 @@ STATICFILES_FINDERS = [
 ]
 
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
     BASE_DIR / 'apps' / 'static',
 ]
 

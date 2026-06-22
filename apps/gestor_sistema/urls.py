@@ -4,6 +4,7 @@ from . import views
 app_name = 'gestor_sistema' 
 urlpatterns = [
     path('', views.panel_admin, name='panel_admin'),
+    path('carga-masiva/', views.carga_masiva_view, name='carga_masiva'),
     path('huellas/', views.gestion_huellas, name='gestion_huellas'),
     path('huellas/eliminar/<int:id_usuario>/', views.eliminar_huella_usuario_view, name='eliminar_huella_usuario_view'),
     path('historial-fallos/', views.historial_fallos, name='historial_fallos'),

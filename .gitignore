@@ -26,3 +26,20 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Archivos temporales / scripts de fix
+*.sh
+*.csv
+*.sql
+!backups/*.sql
+
+# Archivos de prueba
+script_prueba.txt
+ver_huella.py
+
+# Backups (carpeta local, no subir a git)
+backups/
+
+# Archivos sensibles
+contrasenas_aprendices_servidor.txt
+sync_server.py
