@@ -264,7 +264,9 @@ def obtener_eventos():
                 headers={"Content-Type": "application/json"}, timeout=10
             )
             if r.status_code != 200:
-                print("[ERROR] Error eventos:", r.text)
+                if not cache.get('_err_cooldown'):
+                    print("[ERROR] Error eventos:", r.text)
+                    cache.set('_err_cooldown', True, timeout=60)
                 break
             data = r.json()
             batch = data.get("AcsEvent", {}).get("InfoList", [])
@@ -273,7 +275,9 @@ def obtener_eventos():
                 break
             payload["AcsEventCond"]["searchResultPosition"] += len(batch)
     except Exception as e:
-        print("[ERROR] Error conexión eventos:", e)
+        if not cache.get('_err_cooldown'):
+            print("[ERROR] Error conexión eventos:", e)
+            cache.set('_err_cooldown', True, timeout=60)
 
     if eventos:
         cache.set('ultimo_evento_procesado', ahora, timeout=86400)

@@ -18,6 +18,7 @@ from .services.inasistencias_service import calcular_inasistencias_aprendiz, cal
 from .services.asistencia_service import ( registrar_asistencia, generar_reporte, generar_totales)
 from .services.aprendiz_service import actualizar_datos_aprendiz
 from .services.justificacion_action_service import procesar_accion_justificacion
+from .services.llamado_service import verificar_y_procesar_aprendices, obtener_llamados_recientes, reenviar_correo, notificar_aprendiz as servicio_notificar_aprendiz
 from .utils.pdf_utils import generate_pdf_response
 from django.urls import reverse  
 from apps.gestor_sistema.services import registrar_actividad
@@ -362,6 +363,32 @@ def procesar_justificacion(request):
         messages.error(request, mensaje)
 
     return redirect('instructor:gestionar_justificaciones')
+
+
+# ==================== REENVIAR NOTIFICACIÓN LLAMADO (AJAX) ====================
+@login_required
+def reenviar_notificacion_llamado(request, llamado_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    enviado = reenviar_correo(llamado_id)
+    if enviado:
+        return JsonResponse({'success': True, 'message': 'Correo reenviado correctamente'})
+    return JsonResponse({'success': False, 'error': 'No se pudo reenviar el correo'}, status=400)
+
+
+# ==================== NOTIFICAR APRENDIZ (AJAX) ====================
+@login_required
+def notificar_aprendiz(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    aprendiz_id = request.POST.get('aprendiz_id')
+    if not aprendiz_id:
+        return JsonResponse({'success': False, 'error': 'aprendiz_id requerido'}, status=400)
+    success, mensaje = servicio_notificar_aprendiz(aprendiz_id, request.user)
+    if success:
+        return JsonResponse({'success': True, 'message': mensaje})
+    return JsonResponse({'success': False, 'error': mensaje}, status=400)
+
 
 
 
