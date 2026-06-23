@@ -434,7 +434,6 @@ def detalle_aprendiz(request, usuario_id):
 @login_required
 def exportar_detalle_aprendiz_pdf(request, usuario_id):
     """Exporta el detalle individual de un aprendiz a PDF"""
-from datetime import datetime, timedelta
     try:
         historial = obtener_historial_completo_aprendiz(usuario_id)
     except Usuarios.DoesNotExist:
