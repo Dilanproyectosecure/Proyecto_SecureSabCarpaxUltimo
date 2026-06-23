@@ -151,7 +151,8 @@ def verificar_y_procesar_aprendices(aprendices, instructor):
 def obtener_llamados_recientes(instructor, dias=7):
     return LlamadoAtencion.objects.filter(
         id_instructor=instructor,
-        fecha_creacion__gte=timezone.now() - timedelta(days=dias)
+        fecha_creacion__gte=timezone.now() - timedelta(days=dias),
+        notificado=False,
     ).select_related('id_usuario').order_by('-fecha_creacion')
 
 

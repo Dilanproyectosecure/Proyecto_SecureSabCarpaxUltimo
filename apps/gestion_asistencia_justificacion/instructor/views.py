@@ -401,6 +401,20 @@ def notificar_aprendiz(request):
     return JsonResponse({'success': False, 'error': mensaje}, status=400)
 
 
+# ==================== DESCARTAR NOTIFICACION (AJAX) ====================
+@login_required
+def dismiss_llamado(request, llamado_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False}, status=405)
+    try:
+        llamado = LlamadoAtencion.objects.get(id_llamado=llamado_id, id_instructor=request.user)
+        llamado.notificado = True
+        llamado.save(update_fields=['notificado'])
+        return JsonResponse({'success': True})
+    except LlamadoAtencion.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'No encontrado'}, status=404)
+
+
 # ==================== ENVIAR CORREOS INASISTENCIA (AJAX) ====================
 @login_required
 def enviar_correos_inasistencia_view(request):

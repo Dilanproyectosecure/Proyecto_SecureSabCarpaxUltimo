@@ -32,6 +32,9 @@ from .hikvision_service import (
     registrar_huella_hikvision,
     guardar_huella_en_bd,
     subir_huella_a_dispositivo,
+    iniciar_registro_huella,
+    eliminar_usuario_dispositivo,
+    definir_tipo,
 )
 from .models import HistorialFallos, Huella, registro_actividad
 from apps.login.models import Roles, RoleUser
@@ -950,3 +953,71 @@ def webhook_huella(request):
     except Exception as e:
         print(f"Error: {e}")
         return JsonResponse({'status': 'error'}, status=500)
+
+
+from django.views.decorators.csrf import csrf_exempt
+from apps.login.models import Usuarios
+import json
+
+
+@csrf_exempt
+def proxy_hikvision(request):
+    """Proxy local que Azure llama para ejecutar comandos en el Hikvision (192.168.1.13)"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Solo POST'}, status=405)
+
+    try:
+        data = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+
+    action = data.get('action')
+    if not action:
+        return JsonResponse({'error': 'Falta action'}, status=400)
+
+    try:
+        if action == 'enviar_usuario':
+            usuario_id = data.get('usuario_id')
+            if not usuario_id:
+                return JsonResponse({'error': 'Falta usuario_id'}, status=400)
+            usuario = Usuarios.objects.get(id_usuario=usuario_id)
+            ok = enviar_usuario_hikvision(usuario)
+            return JsonResponse({'ok': ok})
+
+        elif action == 'iniciar_registro':
+            employee_no = data.get('employee_no')
+            if not employee_no:
+                return JsonResponse({'error': 'Falta employee_no'}, status=400)
+            resultado = iniciar_registro_huella(employee_no)
+            return JsonResponse(resultado)
+
+        elif action == 'subir_huella':
+            employee_no = data.get('employee_no')
+            huella = data.get('huella')
+            if not employee_no or not huella:
+                return JsonResponse({'error': 'Falta employee_no o huella'}, status=400)
+            resultado = subir_huella_a_dispositivo(employee_no, huella)
+            return JsonResponse(resultado)
+
+        elif action == 'eliminar_usuario':
+            employee_no = data.get('employee_no')
+            if not employee_no:
+                return JsonResponse({'error': 'Falta employee_no'}, status=400)
+            ok = eliminar_usuario_dispositivo(employee_no)
+            return JsonResponse({'ok': ok})
+
+        elif action == 'definir_tipo':
+            usuario_id = data.get('usuario_id')
+            if not usuario_id:
+                return JsonResponse({'error': 'Falta usuario_id'}, status=400)
+            usuario = Usuarios.objects.get(id_usuario=usuario_id)
+            tipo = definir_tipo(usuario)
+            return JsonResponse({'tipo': tipo})
+
+        else:
+            return JsonResponse({'error': f'Acción desconocida: {action}'}, status=400)
+
+    except Usuarios.DoesNotExist:
+        return JsonResponse({'error': 'Usuario no existe'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

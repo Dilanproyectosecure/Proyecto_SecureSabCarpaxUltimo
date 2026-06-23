@@ -265,7 +265,7 @@
                         <td class="checkbox-col">
                             {% if aprendiz.correo_ya_enviado %}
                             <span class="correo-enviado-badge">✅ Correo enviado</span>
-                            {% elif aprendiz.tiene_retardos_consecutivos %}
+                            {% else %}
                             <input type="checkbox" class="check-inasistente" data-id="{{ aprendiz.id_usuario }}" data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}" data-correo="{{ aprendiz.correo|default:'' }}" data-tiene-retardos="{{ aprendiz.tiene_retardos_consecutivos|yesno:'true,false' }}" data-retardos="{{ aprendiz.retardos_consecutivos|default:'0' }}" onchange="actualizarSeleccion()">
                             {% endif %}
                         </td>
@@ -468,10 +468,6 @@ function mostrarAlerta(elemento) {
         <div class="alert ${alertClass}" role="alert" id="alerta-temporal" data-aprendiz-id="${aprendizId}" data-cedula="${cedula}">
             <div class="alerta-contenido">
                 <strong>${icono} ¡Atención!</strong> ${mensaje}
-        html = `
-            <div class="alert alert-warning alert-3-inasistencias" role="alert" id="alerta-temporal">
-                <strong>⚠️ ¡Atencion!</strong> El aprendiz ${nombre} presenta 3 inasistencias sin justificar en el sistema. 
-                solicite que justifique dichas inasistencias, se encuentra proximo a una cancelacion de matricula.
                 <button type="button" class="btn-cerrar-alerta" onclick="cerrarAlerta()">×</button>
             </div>
             <div class="alerta-acciones">
@@ -482,20 +478,9 @@ function mostrarAlerta(elemento) {
                         data-aprendiz-id="${aprendizId}" data-cedula="${cedula}">
                     <i class="bi bi-envelope"></i> Notificar
                 </button>
-        `;
-    } else if (tipo === '5') {
-        html = `
-            <div class="alert alert-danger alert-5-inasistencias" role="alert" id="alerta-temporal">
-                <strong>🚨 ¡Atencion!</strong> El aprendiz ${nombre} ha acumulado ${total} dias de inasistencia sin justificar en el trimestre. 
-                Esto excede el limite permitido (5 faltas), proceda con la cancelacion de matricula segun normativa SENA.
-                <button type="button" class="btn-cerrar-alerta" onclick="cerrarAlerta()">×</button>
             </div>
         </div>
     `;
-
-            </div>
-        `;
-    }
     
     if (alertaActual) {
         alertaActual.remove();
