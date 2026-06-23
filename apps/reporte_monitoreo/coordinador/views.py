@@ -27,7 +27,9 @@ from .selectors.justificacion_selector import (
 from .services.export_service import obtener_logo_pdf, obtener_filtros_display, preparar_registros_pdf, exportar_csv
 from .utils.pdf_utils import generar_pdf_asistencia_ambiente, generar_pdf_asistencia_sede
 from apps.login.models import Usuarios
+from apps.gestion_asistencia_justificacion.instructor.models import LlamadoAtencion
 from datetime import datetime
+from django.utils import timezone
 from xhtml2pdf import pisa
 
 # ==================== DASHBOARD ====================
@@ -41,11 +43,15 @@ def inicio(request):
     ambientes = obtener_asistencia_por_ambiente_hoy()
     tendencia = obtener_tendencia_asistencia_7_dias()
     
-    from django.utils import timezone
     hoy = timezone.localdate()
     meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
              'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
     fecha_hoy = f"{hoy.day} de {meses[hoy.month - 1]} de {hoy.year}"
+
+    llamados_desercion = LlamadoAtencion.objects.filter(
+        nivel=3,
+        fecha_creacion__gte=timezone.now() - timedelta(days=30)
+    ).select_related('id_usuario', 'id_instructor').order_by('-fecha_creacion')
 
     context = {
         'coordinador_nombre': f"{coordinador.nombre or ''} {coordinador.apellido or ''}".strip() or 'Coordinador',
@@ -61,6 +67,7 @@ def inicio(request):
         'porcentaje_justificados': distribucion['pct_justificados'],
         'datos_ambientes_json': json.dumps(ambientes),
         'datos_tendencia_json': json.dumps(tendencia),
+        'llamados_desercion': llamados_desercion,
     }
     
     return render(request, 'inicio.html', context)
@@ -427,7 +434,7 @@ def detalle_aprendiz(request, usuario_id):
 @login_required
 def exportar_detalle_aprendiz_pdf(request, usuario_id):
     """Exporta el detalle individual de un aprendiz a PDF"""
-    from datetime import datetime
+from datetime import datetime, timedelta
     try:
         historial = obtener_historial_completo_aprendiz(usuario_id)
     except Usuarios.DoesNotExist:

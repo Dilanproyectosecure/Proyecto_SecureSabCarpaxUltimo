@@ -72,6 +72,52 @@
         </div>
     </div>
 
+    <!-- LLAMADOS DE ATENCION - PROCESO DE DESERCION -->
+    {% if llamados_desercion %}
+    <div class="dash-chart-card dash-chart-full" style="border-left: 4px solid #dc3545;">
+        <div class="dash-chart-header">
+            <div>
+                <h3 style="color: #dc3545;"><i class="bi bi-exclamation-triangle-fill me-2"></i>Procesos de Deserción Activos</h3>
+                <span class="dash-chart-subtitle">Aprendices con 5+ inasistencias injustificadas — Requieren atención urgente</span>
+            </div>
+            <span class="badge bg-danger" style="font-size: 0.9rem;">{{ llamados_desercion|length }}</span>
+        </div>
+        <div class="dash-chart-body" style="padding: 0;">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr style="background: #f8f9fa;">
+                        <th>Aprendiz</th>
+                        <th>Instructor</th>
+                        <th>Inasistencias</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for llamado in llamados_desercion %}
+                    <tr>
+                        <td>
+                            <strong>{{ llamado.id_usuario.nombre }} {{ llamado.id_usuario.apellido }}</strong>
+                            <br><small class="text-muted">CC: {{ llamado.id_usuario.cedula }}</small>
+                        </td>
+                        <td>{{ llamado.id_instructor.nombre }} {{ llamado.id_instructor.apellido }}</td>
+                        <td><span class="badge bg-danger">{{ llamado.total_inasistencias }} inasistencias</span></td>
+                        <td>{{ llamado.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            {% if llamado.notificado %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Notificado</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-clock"></i> Pendiente</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- CHARTS ROW -->
     <div class="dash-charts-row">
         <div class="dash-chart-card">
