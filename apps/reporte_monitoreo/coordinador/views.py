@@ -28,7 +28,7 @@ from .services.export_service import obtener_logo_pdf, obtener_filtros_display, 
 from .utils.pdf_utils import generar_pdf_asistencia_ambiente, generar_pdf_asistencia_sede
 from apps.login.models import Usuarios
 from apps.gestion_asistencia_justificacion.instructor.models import LlamadoAtencion
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.utils import timezone
 from xhtml2pdf import pisa
 
