@@ -39,16 +39,22 @@
         </div>
         <div class="collapse" id="collapseTotal">
             <div style="background:#f8f9fa; border-radius:8px; padding:1rem; margin-bottom:1rem;">
-                <h6 class="text-muted mb-2"><i class="bi bi-grid me-1"></i>Fichas activas</h6>
-                <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                <h6 class="text-muted mb-2"><i class="bi bi-grid me-1"></i>Fichas con aprendices activos</h6>
+                <table class="table table-sm table-borderless mb-0" style="font-size:0.85rem;">
+                    <thead><tr><th>Ficha</th><th class="text-end">Aprendices</th></tr></thead>
+                    <tbody>
                     {% for f in fichas_resumen %}
-                    <span class="badge bg-success bg-opacity-10 text-success" style="font-size:0.85rem;">
-                        {{ f.numero_ficha }} <span class="ms-1">{{ f.total_aprendices }} ap.</span>
-                    </span>
+                        {% if f.total_aprendices > 0 %}
+                        <tr style="border-bottom:1px solid #e9ecef;">
+                            <td><span class="badge bg-success">{{ f.numero_ficha }}</span></td>
+                            <td class="text-end"><strong>{{ f.total_aprendices }}</strong></td>
+                        </tr>
+                        {% endif %}
                     {% empty %}
-                    <span class="text-muted">Sin datos de fichas</span>
+                        <tr><td colspan="2" class="text-muted">Sin datos</td></tr>
                     {% endfor %}
-                </div>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -64,17 +70,17 @@
         </div>
         <div class="collapse" id="collapsePresentes">
             <div style="background:#f0fdf4; border-radius:8px; padding:1rem; margin-bottom:1rem;">
-                <h6 class="text-success mb-2"><i class="bi bi-check-circle me-1"></i>Presentes hoy</h6>
-                <div style="max-height:150px; overflow-y:auto;">
-                {% for p in presentes_hoy_list %}
-                    <div class="d-flex justify-content-between align-items-center py-1" style="border-bottom:1px solid #e0e0e0;">
-                        <span>{{ p.nombre }} {{ p.apellido }}</span>
-                        <span class="badge bg-success bg-opacity-10 text-success">{{ p.id_ficha__numero_ficha }}</span>
-                    </div>
-                {% empty %}
-                    <span class="text-muted">Ningún aprendiz registrado presente hoy</span>
-                {% endfor %}
-                </div>
+                <h6 class="text-success mb-2"><i class="bi bi-check-circle me-1"></i>Presentes hoy ({{ presentes_hoy }})</h6>
+                <table class="table table-sm table-borderless mb-0" style="font-size:0.85rem; max-height:160px; overflow-y:auto;">
+                    <thead><tr><th>Aprendiz</th><th class="text-end">Ficha</th></tr></thead>
+                    <tbody>
+                    {% for p in presentes_hoy_list %}
+                        <tr style="border-bottom:1px solid #d1e7dd;"><td>{{ p.nombre }} {{ p.apellido }}</td><td class="text-end"><span class="badge bg-success bg-opacity-10 text-success">{{ p.id_ficha__numero_ficha }}</span></td></tr>
+                    {% empty %}
+                        <tr><td colspan="2" class="text-muted">Ninguno registrado hoy</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -90,17 +96,17 @@
         </div>
         <div class="collapse" id="collapseAusentes">
             <div style="background:#fef2f2; border-radius:8px; padding:1rem; margin-bottom:1rem;">
-                <h6 class="text-danger mb-2"><i class="bi bi-x-circle me-1"></i>Ausentes hoy</h6>
-                <div style="max-height:150px; overflow-y:auto;">
-                {% for a in ausentes_hoy_list %}
-                    <div class="d-flex justify-content-between align-items-center py-1" style="border-bottom:1px solid #e0e0e0;">
-                        <span>{{ a.nombre }} {{ a.apellido }}</span>
-                        <span class="badge bg-danger bg-opacity-10 text-danger">{{ a.id_ficha__numero_ficha }}</span>
-                    </div>
-                {% empty %}
-                    <span class="text-muted">Todos los aprendices están presentes</span>
-                {% endfor %}
-                </div>
+                <h6 class="text-danger mb-2"><i class="bi bi-x-circle me-1"></i>Ausentes hoy ({{ ausentes_hoy }})</h6>
+                <table class="table table-sm table-borderless mb-0" style="font-size:0.85rem; max-height:160px; overflow-y:auto;">
+                    <thead><tr><th>Aprendiz</th><th class="text-end">Ficha</th></tr></thead>
+                    <tbody>
+                    {% for a in ausentes_hoy_list %}
+                        <tr style="border-bottom:1px solid #fecaca;"><td>{{ a.nombre }} {{ a.apellido }}</td><td class="text-end"><span class="badge bg-danger bg-opacity-10 text-danger">{{ a.id_ficha__numero_ficha }}</span></td></tr>
+                    {% empty %}
+                        <tr><td colspan="2" class="text-muted">Todos presentes</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -116,17 +122,17 @@
         </div>
         <div class="collapse" id="collapseJustificados">
             <div style="background:#fffbeb; border-radius:8px; padding:1rem; margin-bottom:1rem;">
-                <h6 class="text-warning mb-2"><i class="bi bi-file-check me-1"></i>Justificaciones aprobadas hoy</h6>
-                <div style="max-height:150px; overflow-y:auto;">
-                {% for j in justificados_list %}
-                    <div class="d-flex justify-content-between align-items-center py-1" style="border-bottom:1px solid #e0e0e0;">
-                        <span>{{ j.id_asistencia_ambiente__id_usuario__nombre }} {{ j.id_asistencia_ambiente__id_usuario__apellido }}</span>
-                        <span class="badge bg-warning bg-opacity-10 text-warning">{{ j.id_asistencia_ambiente__id_usuario__id_ficha__numero_ficha }}</span>
-                    </div>
-                {% empty %}
-                    <span class="text-muted">Sin justificaciones aprobadas hoy</span>
-                {% endfor %}
-                </div>
+                <h6 class="text-warning mb-2"><i class="bi bi-file-check me-1"></i>Justificaciones aprobadas hoy ({{ justificados_hoy }})</h6>
+                <table class="table table-sm table-borderless mb-0" style="font-size:0.85rem; max-height:160px; overflow-y:auto;">
+                    <thead><tr><th>Aprendiz</th><th class="text-end">Ficha</th></tr></thead>
+                    <tbody>
+                    {% for j in justificados_list %}
+                        <tr style="border-bottom:1px solid #fde68a;"><td>{{ j.id_asistencia_ambiente__id_usuario__nombre }} {{ j.id_asistencia_ambiente__id_usuario__apellido }}</td><td class="text-end"><span class="badge bg-warning bg-opacity-10 text-warning">{{ j.id_asistencia_ambiente__id_usuario__id_ficha__numero_ficha }}</span></td></tr>
+                    {% empty %}
+                        <tr><td colspan="2" class="text-muted">Sin justificaciones hoy</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
