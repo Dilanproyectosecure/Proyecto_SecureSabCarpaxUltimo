@@ -264,7 +264,9 @@ def obtener_eventos():
                 headers={"Content-Type": "application/json"}, timeout=10
             )
             if r.status_code != 200:
-                print("[ERROR] Error eventos:", r.text)
+                if not cache.get('_err_cooldown'):
+                    print("[ERROR] Error eventos:", r.text)
+                    cache.set('_err_cooldown', True, timeout=60)
                 break
             data = r.json()
             batch = data.get("AcsEvent", {}).get("InfoList", [])
@@ -273,7 +275,9 @@ def obtener_eventos():
                 break
             payload["AcsEventCond"]["searchResultPosition"] += len(batch)
     except Exception as e:
-        print("[ERROR] Error conexión eventos:", e)
+        if not cache.get('_err_cooldown'):
+            print("[ERROR] Error conexión eventos:", e)
+            cache.set('_err_cooldown', True, timeout=60)
 
     if eventos:
         cache.set('ultimo_evento_procesado', ahora, timeout=86400)
@@ -330,6 +334,13 @@ def procesar_eventos():
                 continue
 
             resultado = registrar_asistencia_sede_por_huella(usuario)
+
+            try:
+                requests.post("http://158.23.17.242:8000/gestor_sistema/webhook/huella/",
+                              json={"employeeNoString": str(employee_no)},
+                              timeout=3)
+            except Exception:
+                pass
 
             estado_texto = ""
             if resultado["estado"] == "entrada":
@@ -573,4 +584,7 @@ def definir_tipo(usuario):
         return "Entrada"
     else:
         return "Salida"
+    
+    
+    
     

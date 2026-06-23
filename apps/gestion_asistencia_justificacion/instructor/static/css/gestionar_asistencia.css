@@ -396,4 +396,134 @@
 }
 
 
+/* ===== NOTIFICACIONES DE LLAMADOS ===== */
+.llamados-notificaciones {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
 
+.llamado-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-radius: 10px;
+    border-left: 5px solid;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    position: relative;
+}
+
+.llamado-cerrar {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.5rem;
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    cursor: pointer;
+    color: #999;
+    line-height: 1;
+    padding: 0.25rem;
+}
+.llamado-cerrar:hover { color: #333; }
+
+.llamado-nivel-1 {
+    border-left-color: #ffc107;
+    background: #fffef5;
+}
+
+.llamado-nivel-2 {
+    border-left-color: #fd7e14;
+    background: #fff8f0;
+}
+
+.llamado-nivel-3 {
+    border-left-color: #dc3545;
+    background: #fff5f5;
+}
+
+.llamado-icono {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.llamado-nivel-1 .llamado-icono { color: #ffc107; }
+.llamado-nivel-2 .llamado-icono { color: #fd7e14; }
+.llamado-nivel-3 .llamado-icono { color: #dc3545; }
+
+.llamado-contenido {
+    flex: 1;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #333;
+}
+
+.llamado-contenido strong { color: #000; }
+
+.llamado-fecha {
+    display: block;
+    color: #999;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.llamado-acciones {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    align-items: center;
+}
+
+/* Asegurar que icono-3 e icono-4 tengan el mismo estilo base que icono-5 */
+.icono-alerta {
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: transform 0.2s;
+}
+.icono-alerta:hover { transform: scale(1.2); }
+
+/* Alerta para 4 inasistencias */
+.alert-4-inasistencias {
+    background-color: #fff3e0;
+    border-color: #ff9800;
+    color: #e65100;
+}
+
+/* Alertas con botones de acción */
+#alertas-container .alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+#alertas-container .alerta-contenido {
+    flex: 1;
+    min-width: 200px;
+}
+
+#alertas-container .alerta-acciones {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.btn-cerrar-alerta {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.5;
+    line-height: 1;
+    padding: 0 0.25rem;
+}
+
+.btn-cerrar-alerta:hover {
+    opacity: 1;
+}

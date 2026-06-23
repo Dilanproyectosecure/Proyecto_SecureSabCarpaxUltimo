@@ -58,17 +58,8 @@ def obtener_asistencias_ambiente_con_filtros(request):
 
 
 def obtener_asistencias_sede_con_filtros(request):
-    """Construye queryset de asistencia sede con filtros (solo aprendices e instructores)"""
+    """Construye queryset de asistencia sede con filtros (todos los roles)"""
     asistencias = AsistenciaSede.objects.select_related('id_usuario__id_ficha__id_jornada').all()
-    
-    # Excluir roles que no son aprendices ni instructores
-    roles_excluir = ['gestor', 'coordinador', 'vigilante']
-    
-    usuarios_excluir = RoleUser.objects.filter(
-        role__name__in=roles_excluir
-    ).values_list('id_usuario', flat=True)
-    
-    asistencias = asistencias.exclude(id_usuario__id_usuario__in=usuarios_excluir)
     
     ficha_id = request.GET.get('ficha')
     documento = request.GET.get('documento')

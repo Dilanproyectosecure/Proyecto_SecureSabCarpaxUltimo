@@ -95,7 +95,7 @@
                             {% endif %}
                         </td>
                         <td data-label="Acción" class="col-acciones">
-                            <button type="button" class="btn-action btn-action-edit" onclick="abrirModalEditar('{{ u.id_usuario }}', '{{ u.tipo_documento }}', '{{ u.cedula }}', '{{ u.nombre }}', '{{ u.apellido }}', '{{ u.correo }}')" title="Editar">
+                            <button type="button" class="btn-action btn-action-edit" onclick="abrirModalEditar('{{ u.id_usuario }}', '{{ u.tipo_documento }}', '{{ u.cedula }}', '{{ u.nombre }}', '{{ u.apellido }}', '{{ u.correo }}', '{{ u.nombre_rol }}', '{{ u.id_ficha_id|default:'' }}')" title="Editar">
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button type="button" class="btn-action btn-action-fingerprint" onclick="registrarHuella('{{ u.id_usuario }}')" title="Registrar huella">
@@ -187,14 +187,26 @@
                             </div>
                         </div>
 
-                        <div class="form-group-app full">
-                            <label>Rol <span class="required">*</span></label>
-                            <select name="role_id" id="selectRolCrear" required>
-                                <option value="" disabled selected>Seleccione un rol</option>
-                                {% for role in roles %}
-                                    <option value="{{ role.id }}" data-rol-name="{{ role.name }}">{{ role.name|capfirst }}</option>
-                                {% endfor %}
-                            </select>
+                        <div class="form-group-app">
+                            <label>Roles <span class="required">*</span></label>
+                            <div class="dropdown-roles-wrapper" style="position:relative; width:100%;">
+                                <div class="dropdown-roles-trigger" id="rolesTriggerText" onclick="toggleRolesDropdown()">
+                                    <span id="rolesLabel">Seleccione roles</span>
+                                </div>
+                                <div class="dropdown-roles-menu" id="rolesMenu">
+                                    {% for role in roles %}
+                                    <div class="dropdown-roles-item" data-value="{{ role.id }}" data-rol-name="{{ role.name }}">
+                                        <input type="checkbox" name="role_id" value="{{ role.id }}" data-rol-name="{{ role.name }}">
+                                        <span class="check-indicator">✓</span>
+                                        <span>{{ role.name|capfirst }}</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group-app">
+                            <label>Cantidad de roles</label>
+                            <input type="text" id="cantidadRoles" class="form-control" value="0" readonly style="text-align:center; font-weight:bold;">
                         </div>
 
                         <div class="form-group-app full" id="divFichaCrear" style="display:none;">
@@ -209,6 +221,7 @@
                             <label>Nueva ficha:</label>
                             <input type="text" name="nueva_ficha" id="nuevaFicha" class="form-control" placeholder="Escriba número de ficha..." oninput="if(this.value) document.querySelector('[name=ficha]').value=''">
                         </div>
+                        
                     </div>
                 </div>
                 <div class="modal-footer-app">
@@ -315,12 +328,23 @@
                         </div>
                         <div class="form-group-app">
                             <label>Rol</label>
-                            <select name="role_id" id="edit_selectRol" required>
+                            <select name="role_id" id="edit_selectRol" required onchange="toggleFichaEdit()">
                                 <option value="" disabled>Seleccione un rol</option>
                                 {% for role in roles %}
                                     <option value="{{ role.id }}" data-rol-name="{{ role.name }}">{{ role.name|capfirst }}</option>
                                 {% endfor %}
                             </select>
+                        </div>
+                        <div class="form-group-app full" id="divFichaEdit" style="display:none;">
+                            <label>Ficha existente:</label>
+                            <select name="ficha" class="form-control" onchange="if(this.value) document.getElementById('nuevaFichaEdit').value=''">
+                                <option value="">Seleccione una ficha</option>
+                                {% for ficha in fichas %}
+                                    <option value="{{ ficha.id_ficha }}">{{ ficha.numero_ficha }}</option>
+                                {% endfor %}
+                            </select>
+                            <label style="margin-top:8px;">Nueva ficha:</label>
+                            <input type="text" name="nueva_ficha" id="nuevaFichaEdit" class="form-control" placeholder="Escriba número de ficha..." oninput="if(this.value) document.querySelector('#divFichaEdit select').value=''">
                         </div>
                     </div>
                 </div>
@@ -345,7 +369,7 @@
 
 <script>
 // FUNCIONES DE MODAL (Bootstrap)
-function abrirModalEditar(id, tipoDocumento, cedula, nombre, apellido, correo) {
+function abrirModalEditar(id, tipoDocumento, cedula, nombre, apellido, correo, rolNombre, fichaId) {
     document.getElementById('edit_id_usuario').value = id;
     document.getElementById('edit_tipo_documento').value = tipoDocumento || 'Cédula';
     document.getElementById('edit_cedula').value = cedula;
@@ -353,11 +377,41 @@ function abrirModalEditar(id, tipoDocumento, cedula, nombre, apellido, correo) {
     document.getElementById('edit_apellido').value = apellido;
     document.getElementById('edit_correo').value = correo;
 
+    // Setear rol
+    var selectRol = document.getElementById('edit_selectRol');
+    for (var i = 0; i < selectRol.options.length; i++) {
+        if (selectRol.options[i].getAttribute('data-rol-name') === rolNombre) {
+            selectRol.value = selectRol.options[i].value;
+            break;
+        }
+    }
+
+    // Setear ficha si existe
+    var divFicha = document.getElementById('divFichaEdit');
+    var fichaSelect = divFicha.querySelector('select');
+    if (fichaId && fichaSelect) {
+        fichaSelect.value = fichaId;
+    } else if (fichaSelect) {
+        fichaSelect.value = '';
+    }
+    document.getElementById('nuevaFichaEdit').value = '';
+
     // Seteamos la URL dinámicamente incluyendo el ID
     document.getElementById('formEditar').action = `/gestor_sistema/editar-usuario/${id}/`;
 
     var modal = new bootstrap.Modal(document.getElementById('modalEditarUsuario'));
     modal.show();
+    // Mostrar/ocultar ficha según rol
+    setTimeout(toggleFichaEdit, 50);
+}
+
+function toggleFichaEdit() {
+    var selectRol = document.getElementById('edit_selectRol');
+    var divFicha = document.getElementById('divFichaEdit');
+    if (!selectRol || !divFicha) return;
+    var selectedOption = selectRol.options[selectRol.selectedIndex];
+    var esAprendiz = selectedOption && selectedOption.getAttribute('data-rol-name') === 'aprendiz';
+    divFicha.style.display = esAprendiz ? 'block' : 'none';
 }
 
 // Cierra el modal de edición cuando termina el éxito
@@ -431,21 +485,64 @@ document.querySelector('#modalCrearUsuario input[name="nombre"]').addEventListen
 
 })();
 
-// Mostrar/ocultar campo ficha según rol
-(function() {
-    var selectRol = document.getElementById('selectRolCrear');
+function toggleRolesDropdown() {
+    var wrapper = document.querySelector('.dropdown-roles-wrapper');
+    var menu = document.getElementById('rolesMenu');
+    var abierto = wrapper.classList.toggle('abierto');
+    menu.style.display = abierto ? 'block' : 'none';
+}
+
+function actualizarRolesDropdown() {
+    var items = document.querySelectorAll('#rolesMenu .dropdown-roles-item');
+    var count = 0;
+    var labels = [];
+    items.forEach(function(item) {
+        var cb = item.querySelector('input[type="checkbox"]');
+        if (cb && cb.checked) {
+            item.classList.add('seleccionado');
+            count++;
+            labels.push(item.textContent.trim());
+        } else {
+            item.classList.remove('seleccionado');
+        }
+    });
+    document.getElementById('cantidadRoles').value = count;
+    document.getElementById('rolesLabel').textContent = count > 0 ? labels.join(', ') : 'Seleccione roles';
+    toggleFicha();
+}
+
+function toggleFicha() {
     var divFicha = document.getElementById('divFichaCrear');
-    function toggleFicha() {
-        if (!selectRol || !divFicha) return;
-        var opt = selectRol.options[selectRol.selectedIndex];
-        var esAprendiz = opt && opt.text && opt.text.toLowerCase() === 'aprendiz';
-        divFicha.style.display = esAprendiz ? 'block' : 'none';
+    if (!divFicha) return;
+    var items = document.querySelectorAll('#rolesMenu .dropdown-roles-item');
+    var esAprendiz = false;
+    items.forEach(function(item) {
+        var cb = item.querySelector('input[type="checkbox"]');
+        if (cb && cb.checked && cb.getAttribute('data-rol-name') === 'aprendiz') {
+            esAprendiz = true;
+        }
+    });
+    divFicha.style.display = esAprendiz ? 'block' : 'none';
+}
+
+document.addEventListener('click', function(e) {
+    var wrapper = document.querySelector('.dropdown-roles-wrapper');
+    if (wrapper && !wrapper.contains(e.target)) {
+        wrapper.classList.remove('abierto');
+        document.getElementById('rolesMenu').style.display = 'none';
     }
-    if (selectRol) {
-        selectRol.addEventListener('change', toggleFicha);
-        setTimeout(toggleFicha, 100);
-    }
-})();
+});
+
+document.querySelectorAll('#rolesMenu .dropdown-roles-item').forEach(function(item) {
+    item.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var cb = this.querySelector('input[type="checkbox"]');
+        cb.checked = !cb.checked;
+        actualizarRolesDropdown();
+        var evt = new Event('change');
+        cb.dispatchEvent(evt);
+    });
+});
 
 $(document).ready(function() {
     var table = $('#tablaUsuarios').DataTable({
@@ -471,6 +568,10 @@ $(document).ready(function() {
             $('#btnFiltrarPanel').click();
         }
     });
+});
+
+$('#modalCrearUsuario').on('shown.bs.modal', function() {
+    actualizarRolesDropdown();
 });
 
 function registrarHuella(idUsuario) {

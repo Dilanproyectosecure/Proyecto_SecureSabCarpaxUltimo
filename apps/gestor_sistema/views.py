@@ -187,7 +187,7 @@ def panel_admin(request):
         apellido = request.POST.get('apellido')
         correo = request.POST.get('correo')
         telefono = request.POST.get('telefono')
-        role_id = request.POST.get('role_id') or request.POST.get('rol')
+        role_ids = request.POST.getlist('role_id')
         password = request.POST.get('password') or '123'
 
         _name_re = re.compile(r'^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$')
@@ -233,7 +233,7 @@ def panel_admin(request):
                 is_active=True,
             )
 
-            if role_id:
+            for role_id in role_ids:
                 with connections['default'].cursor() as cursor:
                     cursor.execute(
                         "INSERT INTO role_user (id_usuario, role_id) VALUES (%s, %s)",
@@ -573,6 +573,17 @@ def editar_usuario(request, id_usuario):
                     "UPDATE role_user SET role_id = %s WHERE id_usuario = %s",
                     [role_id, id_usuario]
                 )
+
+        ficha_id = request.POST.get('ficha')
+        nueva_ficha = request.POST.get('nueva_ficha')
+        if nueva_ficha:
+            ficha, _ = Ficha.objects.get_or_create(numero_ficha=nueva_ficha)
+            ficha_id = ficha.id_ficha
+        if ficha_id:
+            usuario.id_ficha_id = ficha_id
+        else:
+            usuario.id_ficha_id = None
+        usuario.save(update_fields=['id_ficha_id'])
 
         messages.success(request, "Usuario actualizado correctamente.")
         return redirect('gestor_sistema:panel_admin')

@@ -112,6 +112,49 @@
     <!-- ========== CONTENEDOR DE ALERTAS ========== -->
     <div id="alertas-container"></div>
 
+    <!-- ========== NOTIFICACIONES DE LLAMADOS ========== -->
+    {% if llamados_recientes %}
+    <div class="llamados-notificaciones">
+        {% for llamado in llamados_recientes %}
+        <div class="llamado-card llamado-nivel-{{ llamado.nivel }}" id="llamado-{{ llamado.id_llamado }}">
+            <button type="button" class="llamado-cerrar" onclick="cerrarLlamado(this)" data-llamado-id="{{ llamado.id_llamado }}">×</button>
+            <div class="llamado-icono">
+                {% if llamado.nivel == 1 %}
+                <i class="bi bi-exclamation-circle"></i>
+                {% elif llamado.nivel == 2 %}
+                <i class="bi bi-exclamation-triangle"></i>
+                {% else %}
+                <i class="bi bi-bug"></i>
+                {% endif %}
+            </div>
+            <div class="llamado-contenido">
+                <strong>{{ llamado.id_usuario.nombre }} {{ llamado.id_usuario.apellido }}</strong>
+                {% if llamado.nivel == 1 %}
+                <span>ha acumulado <strong>{{ llamado.total_inasistencias }} inasistencias injustificadas</strong> — Primer llamado de atención generado.</span>
+                {% elif llamado.nivel == 2 %}
+                <span>ha acumulado <strong>{{ llamado.total_inasistencias }} inasistencias injustificadas</strong> — Segundo llamado de atención.</span>
+                {% else %}
+                <span>ha acumulado <strong>{{ llamado.total_inasistencias }} inasistencias injustificadas</strong> — Inicio de proceso de deserción.</span>
+                {% endif %}
+                <small class="llamado-fecha">{{ llamado.fecha_creacion|date:"d/m/Y H:i" }}</small>
+            </div>
+            <div class="llamado-acciones">
+                <a href="{% url 'instructor:consultar_asistenciaI' %}?ficha={{ ficha.id_ficha }}&aprendiz={{ llamado.id_usuario.cedula }}" 
+                   class="btn btn-sm btn-outline-primary" title="Ver aprendiz">
+                    <i class="bi bi-eye"></i> Ver
+                </a>
+                <button type="button" class="btn btn-sm btn-outline-success btn-notificar-llamado"
+                        data-llamado-id="{{ llamado.id_llamado }}">
+                    <i class="bi bi-envelope"></i> Notificar
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+
+
     <!-- Barra de acciones de correo -->
     <div class="acciones-email-bar" id="emailBar">
         <span class="seleccion-info">
@@ -187,18 +230,31 @@
                         {% endif %}
                     </td>
                     <td class="col-numero">
-                        {% if aprendiz.tiene_3_consecutivas %}
+                        {% if aprendiz.total_inasistencias >= 3 and not aprendiz.tiene_5_inasistencias %}
                         <span class="icono-alerta icono-3" 
                             data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}"
                             data-tipo="3"
                             data-total="{{ aprendiz.total_inasistencias }}"
+                            data-aprendiz-id="{{ aprendiz.id_usuario }}"
+                            data-cedula="{{ aprendiz.cedula }}"
                             onclick="mostrarAlerta(this)">⚠️</span>
+                        {% endif %}
+                        {% if aprendiz.total_inasistencias >= 4 and not aprendiz.tiene_5_inasistencias %}
+                        <span class="icono-alerta icono-4" 
+                            data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}"
+                            data-tipo="4"
+                            data-total="{{ aprendiz.total_inasistencias }}"
+                            data-aprendiz-id="{{ aprendiz.id_usuario }}"
+                            data-cedula="{{ aprendiz.cedula }}"
+                            onclick="mostrarAlerta(this)">🔶</span>
                         {% endif %}
                         {% if aprendiz.tiene_5_inasistencias %}
                         <span class="icono-alerta icono-5" 
                             data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}"
                             data-tipo="5"
                             data-total="{{ aprendiz.total_inasistencias }}"
+                            data-aprendiz-id="{{ aprendiz.id_usuario }}"
+                            data-cedula="{{ aprendiz.cedula }}"
                             onclick="mostrarAlerta(this)">🚨</span>
                         {% endif %}
                         {% if aprendiz.tiene_retardos_consecutivos %}
@@ -270,6 +326,7 @@
 <!-- INCLUIR EL MODAL -->
 {% include 'actualizar_aprendiz.html' %}
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 const FICHA_ID = '{{ ficha.id_ficha }}';
 const FECHA = '{{ fecha_seleccionada }}';
@@ -393,16 +450,45 @@ function mostrarAlerta(elemento) {
     const nombre = elemento.getAttribute('data-nombre');
     const tipo = elemento.getAttribute('data-tipo');
     const total = elemento.getAttribute('data-total');
+    const aprendizId = elemento.getAttribute('data-aprendiz-id');
+    const cedula = elemento.getAttribute('data-cedula');
     
-    let html = '';
+    const verUrl = '{% url "instructor:consultar_asistenciaI" %}?ficha={{ ficha.id_ficha }}&aprendiz=' + cedula;
+    
+    let alertClass, icono, mensaje;
     
     if (tipo === '3') {
+        alertClass = 'alert-warning alert-3-inasistencias';
+        icono = '⚠️';
+        mensaje = `El aprendiz ${nombre} presenta ${total} inasistencias sin justificar en el sistema. Solicite que justifique dichas inasistencias, se encuentra próximo a una cancelación de matrícula.`;
+    } else if (tipo === '4') {
+        alertClass = 'alert-4-inasistencias';
+        icono = '🔶';
+        mensaje = `El aprendiz ${nombre} ha acumulado ${total} inasistencias injustificadas — Segundo llamado de atención. De no justificar, se procederá con medidas disciplinarias.`;
+    } else {
+        alertClass = 'alert-danger alert-5-inasistencias';
+        icono = '🚨';
+        mensaje = `El aprendiz ${nombre} ha acumulado ${total} días de inasistencia sin justificar en el trimestre. Esto excede el límite permitido (5 faltas), proceda con la cancelación de matrícula según normativa SENA.`;
+    }
+
+    const html = `
+        <div class="alert ${alertClass}" role="alert" id="alerta-temporal" data-aprendiz-id="${aprendizId}" data-cedula="${cedula}">
+            <div class="alerta-contenido">
+                <strong>${icono} ¡Atención!</strong> ${mensaje}
         html = `
             <div class="alert alert-warning alert-3-inasistencias" role="alert" id="alerta-temporal">
                 <strong>⚠️ ¡Atencion!</strong> El aprendiz ${nombre} presenta 3 inasistencias sin justificar en el sistema. 
                 solicite que justifique dichas inasistencias, se encuentra proximo a una cancelacion de matricula.
                 <button type="button" class="btn-cerrar-alerta" onclick="cerrarAlerta()">×</button>
             </div>
+            <div class="alerta-acciones">
+                <a href="${verUrl}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-eye"></i> Ver
+                </a>
+                <button type="button" class="btn btn-sm btn-outline-success btn-notificar-alerta"
+                        data-aprendiz-id="${aprendizId}" data-cedula="${cedula}">
+                    <i class="bi bi-envelope"></i> Notificar
+                </button>
         `;
     } else if (tipo === '5') {
         html = `
@@ -411,16 +497,24 @@ function mostrarAlerta(elemento) {
                 Esto excede el limite permitido (5 faltas), proceda con la cancelacion de matricula segun normativa SENA.
                 <button type="button" class="btn-cerrar-alerta" onclick="cerrarAlerta()">×</button>
             </div>
+        </div>
+    `;
+
+            </div>
         `;
     }
     
     if (alertaActual) {
         alertaActual.remove();
     }
+
     
     const container = document.getElementById('alertas-container');
     container.innerHTML = html;
     alertaActual = document.getElementById('alerta-temporal');
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
     
     window.scrollTo({
         top: 0,
@@ -443,6 +537,78 @@ function cerrarAlerta() {
         alertaActual = null;
     }
 }
+
+function cerrarLlamado(elemento) {
+    const card = elemento.closest('.llamado-card');
+    if (card) {
+        card.style.transition = 'opacity 0.3s';
+        card.style.opacity = '0';
+        setTimeout(function () { card.remove(); }, 300);
+    }
+}
+
+function notificarClick(boton) {
+    const aprendizId = boton.getAttribute('data-aprendiz-id');
+
+    Swal.fire({
+        title: '¿Enviar llamado de atención?',
+        text: 'Se enviará un correo al aprendiz con el llamado correspondiente.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, notificar',
+        cancelButtonText: 'Cancelar'
+    }).then(function (result) {
+        if (!result.isConfirmed) return;
+
+        boton.disabled = true;
+        boton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando...';
+
+        fetch('{% url "instructor:notificar_aprendiz" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: 'aprendiz_id=' + aprendizId
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Correo enviado',
+                    text: data.message,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                boton.innerHTML = '<i class="bi bi-envelope-check"></i> Enviado';
+                boton.classList.remove('btn-outline-success');
+                boton.classList.add('btn-outline-secondary');
+                boton.disabled = true;
+            } else {
+                boton.innerHTML = '<i class="bi bi-envelope"></i> Notificar';
+                boton.disabled = false;
+                Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'No se pudo enviar' });
+            }
+        })
+        .catch(function () {
+            boton.innerHTML = '<i class="bi bi-envelope"></i> Notificar';
+            boton.disabled = false;
+            Swal.fire({ icon: 'error', title: 'Error de red', text: 'No se pudo conectar con el servidor' });
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.btn-notificar-alerta, .btn-notificar-llamado').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            notificarClick(this);
+        });
+    });
+});
 </script>
 
 <script src="{% static 'js/gestionar_asistencia.js' %}"></script>
