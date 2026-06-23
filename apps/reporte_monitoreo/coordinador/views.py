@@ -75,8 +75,8 @@ def inicio(request):
 
     justificados_list = list(Justificacion.objects.filter(
         fecha=hoy, estado__icontains='aprobado'
-    ).select_related('id_usuario', 'id_usuario__id_ficha').values(
-        'id_usuario__nombre', 'id_usuario__apellido', 'id_usuario__id_ficha__numero_ficha'
+    ).select_related('id_asistencia_ambiente', 'id_asistencia_ambiente__id_usuario', 'id_asistencia_ambiente__id_usuario__id_ficha').values(
+        'id_asistencia_ambiente__id_usuario__nombre', 'id_asistencia_ambiente__id_usuario__apellido', 'id_asistencia_ambiente__id_usuario__id_ficha__numero_ficha'
     )[:10])
 
     from .selectors.estadistica_selector import obtener_fichas_con_estadisticas_coordinador
