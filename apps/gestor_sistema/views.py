@@ -920,7 +920,9 @@ def webhook_huella(request):
             print(f"[OK] Cédula detectada: {cedula}")
 
             try:
-                usuario = Usuarios.objects.get(cedula=cedula)
+                usuario = Usuarios.objects.filter(id_usuario=cedula).first()
+                if not usuario:
+                    usuario = Usuarios.objects.get(cedula=cedula)
                 resultado = registrar_asistencia_sede_por_huella(usuario, request=request)
 
                 if resultado['estado'] == 'entrada':
