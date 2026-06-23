@@ -16,7 +16,7 @@
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     {% block extra_css %}{% endblock %}  <!-- ← BLOQUE PARA CSS ESPECÍFICO -->
 </head>
-<body class="rol-{{ user.get_rol }}">
+<body class="rol-{{ request.session.user_rol|default:'' }}">
     <header class="top-bar">
     <div class="top-bar-container">
         <button class="menu-icono" id="menuIcono">
@@ -33,6 +33,20 @@
         
         <!-- Dropdown DENTRO de user-info -->
         <div class="user-dropdown" id="userDropdown">
+            {% if request.session.roles_usuario|length > 1 %}
+            <div class="dropdown-section">
+                <strong style="padding:4px 16px;display:block;font-size:11px;color:#888;">CAMBIAR ROL</strong>
+                {% for r in request.session.roles_usuario %}
+                    {% if r != request.session.user_rol %}
+                    <a href="{% url 'login:switch_rol' r %}" class="dropdown-item">
+                        <i class="bi bi-arrow-repeat"></i>
+                        <span>{{ r|capfirst }}</span>
+                    </a>
+                    {% endif %}
+                {% endfor %}
+                <hr style="margin:4px 0;">
+            </div>
+            {% endif %}
             <a href="{% url 'login:logout' %}" class="dropdown-item logout">
                 <i class="bi bi-box-arrow-right"></i>
                 <span>Cerrar Sesión</span>

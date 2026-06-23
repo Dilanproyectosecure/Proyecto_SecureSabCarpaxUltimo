@@ -11,6 +11,8 @@ urlpatterns = [
     path('perfil/', views.mi_perfil, name='mi_perfil'),
 
 
+    path('switch-rol/<str:role_name>/', views.switch_role_view, name='switch_rol'),
+
     # Rutas de recuperación de contraseña
     path('recuperar/', views.recuperar, name='recuperar'),
     path('recuperar/confirmar/<str:email>/', views.recuperar_confirmar, name='recuperar_confirmar'),

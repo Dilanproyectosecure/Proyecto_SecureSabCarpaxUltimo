@@ -3,7 +3,7 @@ from django.utils import timezone
 from apps.login.models import Usuarios
 from ..models import LlamadoAtencion
 from apps.email_service import enviar_correo_seguro
-from .inasistencias_service import calcular_inasistencias_aprendiz
+from .inasistencias_service import calcular_inasistencias_aprendiz, calcular_retardos_aprendiz
 
 
 def _obtener_coordinadores():
@@ -190,3 +190,59 @@ def notificar_aprendiz(aprendiz_id, instructor):
         return False, 'No se pudo enviar el correo'
 
     return False, 'No se encontraron inasistencias suficientes para generar un llamado'
+
+
+def verificar_retardos_aprendices(aprendices, instructor):
+    llamados_creados = []
+
+    for aprendiz in aprendices:
+        retardos = calcular_retardos_aprendiz(aprendiz)
+        if not retardos["llamado_atencion"]:
+            continue
+
+        existe = LlamadoAtencion.objects.filter(
+            id_usuario=aprendiz,
+            id_instructor=instructor,
+            total_inasistencias=-retardos["retardos_consecutivos"],
+        ).exists()
+
+        if not existe:
+            llamado = LlamadoAtencion.objects.create(
+                id_usuario=aprendiz,
+                id_instructor=instructor,
+                nivel=1,
+                total_inasistencias=0,
+            )
+            llamado.total_inasistencias = -retardos["retardos_consecutivos"]
+            llamado.save(update_fields=['total_inasistencias'])
+
+            asunto = 'SecureSab - Llamado de atención por retardos consecutivos'
+            mensaje_texto = (
+                f'Cordial saludo {aprendiz.nombre} {aprendiz.apellido},\n\n'
+                f'Se le informa que ha acumulado {retardos["retardos_consecutivos"]} retardos consecutivos '
+                f'en el seguimiento académico.\n\n'
+                f'De acuerdo con el reglamento del aprendiz SENA, 3 o más retardos consecutivos '
+                f'constituyen un LLAMADO DE ATENCIÓN.\n\n'
+                f'Le solicitamos puntualidad en sus próximas sesiones de formación.\n\n'
+                f'Atentamente,\nSistema SecureSab - SENA'
+            )
+            mensaje_html = (
+                f'<h2>Llamado de Atención por Retardos</h2>'
+                f'<p>Cordial saludo <strong>{aprendiz.nombre} {aprendiz.apellido}</strong>,</p>'
+                f'<p>Ha acumulado <strong>{retardos["retardos_consecutivos"]} retardos consecutivos</strong> '
+                f'en el seguimiento académico.</p>'
+                f'<p>Según el reglamento del aprendiz SENA, 3 o más retardos consecutivos '
+                f'constituyen un <strong>LLAMADO DE ATENCIÓN</strong>.</p>'
+                f'<p>Le solicitamos puntualidad en sus próximas sesiones de formación.</p>'
+                f'<hr><p><em>Atentamente,<br>Sistema SecureSab - SENA</em></p>'
+            )
+
+            enviado = enviar_correo_seguro(asunto, aprendiz.correo, mensaje_texto, mensaje_html)
+            if enviado:
+                llamado.notificado = True
+                llamado.fecha_notificacion = timezone.now()
+                llamado.save(update_fields=['notificado', 'fecha_notificacion'])
+
+            llamados_creados.append(llamado)
+
+    return llamados_creados

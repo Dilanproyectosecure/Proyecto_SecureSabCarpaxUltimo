@@ -1,17 +1,23 @@
 from django.core.management.base import BaseCommand
 import time
+import traceback
 from apps.gestor_sistema.hikvision_service import procesar_eventos
 
 class Command(BaseCommand):
-    help = 'Escucha eventos del Hikvision cada 10 segundos'
+    help = 'Escucha eventos del Hikvision cada 30s'
 
     def handle(self, *args, **kwargs):
-        self.stdout.write(self.style.SUCCESS("📡 Escuchando huellas del dispositivo Hikvision..."))
-        self.stdout.write(self.style.WARNING("Presiona Ctrl+C para detener"))
+        self.stdout.write(self.style.SUCCESS("SecureSab - Escuchando huellas"))
 
-        try:
-            while True:
+        errores_seguidos = 0
+        while True:
+            try:
                 procesar_eventos()
-                time.sleep(10)
-        except KeyboardInterrupt:
-            self.stdout.write(self.style.SUCCESS("\n✅ Escucha de huellas detenida"))
+                errores_seguidos = 0
+            except Exception:
+                errores_seguidos += 1
+                if errores_seguidos <= 3:
+                    traceback.print_exc()
+                else:
+                    print(f"[ERROR] {errores_seguidos} errores seguidos, suprimiendo tracebacks...")
+            time.sleep(30)

@@ -1,13 +1,14 @@
 {% load static %}
 
-<div class="menu-encabezado">Bienvenido {{ user.get_rol|upper }}</div>
+<div class="menu-encabezado">Bienvenido {{ request.session.user_rol|default:user.get_rol|upper }}</div>
 
 
 
 <hr class="my-2 bg-white bg-opacity-25">
 
 <!-- OPCIONES SEGÚN ROL -->
-{% if user.get_rol == 'aprendiz' %}
+{% with current_rol=request.session.user_rol|default:user.get_rol %}
+{% if current_rol == 'aprendiz' %}
     <a href="{% url 'aprendiz:consultar_asistencia' %}" class="nav-link {% if request.resolver_match.url_name == 'consultar_asistencia' %}active{% endif %}">
         <i class="bi bi-calendar-check me-2"></i>Consultar Asistencia
     </a>
@@ -17,7 +18,7 @@
     
 
 
-{% elif user.get_rol == 'instructor' %}
+{% elif current_rol == 'instructor' %}
     <a href="{% url 'instructor:gestionar_asistencia' %}" class="nav-link {% if request.resolver_match.url_name == 'gestionar_asistencia' %}active{% endif %}">
         <i class="bi bi-pencil-square me-2"></i>Gestionar Asistencia
     </a>
@@ -29,7 +30,7 @@
     </a>    
 
 
-{% elif user.get_rol == 'coordinador' %}
+{% elif current_rol == 'coordinador' %}
     <a href="{% url 'coordinador:inicio' %}" class="nav-link {% if request.resolver_match.url_name == 'inicio' %}active{% endif %}">
         <i class="bi bi-house-door me-2"></i>Inicio
     </a>
@@ -46,7 +47,7 @@
 
 
 
-{% elif user.get_rol == 'vigilante' %}
+{% elif current_rol == 'vigilante' %}
     <a href="{% url 'vigilante:iniciov' %}" class="nav-link {% if request.resolver_match.url_name == 'iniciov' %}active{% endif %}">
         <i class="bi bi-house-door me-2"></i>
         <span>Inicio</span>
@@ -73,7 +74,7 @@
     </a>
 
 
-{% elif user.get_rol == 'gestor' %}
+{% elif current_rol == 'gestor' %}
     
     <a href="{% url 'gestor_sistema:panel_admin' %}" class="nav-link {% if request.resolver_match.url_name == 'panel_admin' %}active{% endif %}">
         <i class="bi bi-person-plus me-2"></i>
@@ -125,8 +126,7 @@
     </a>
 
 {% endif %}
-
-
+{% endwith %}
 
 <hr class="my-2 bg-white bg-opacity-25">
 

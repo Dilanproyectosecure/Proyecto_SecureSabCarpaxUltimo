@@ -206,110 +206,102 @@
         </div>
 
         <div class="tabla-container">
-            <table class="tabla-aprendices">
-                <thead>
-                    <tr>
-                        <th class="checkbox-col"></th>
-                        <th>Estado</th>
-                        <th>Documento</th>
-                        <th>Nombre Completo</th>
-                        <th>Correo</th>
-                        <th>Telefono</th>
-                        <th>Asistencia.S</th>
-                        <th>Asistencia.A</th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for aprendiz in aprendices %}
-                <tr id="fila-{{ aprendiz.id_usuario }}" class="{% if not aprendiz.tiene_asistencia_sede %}fila-sin-asistencia-sede{% endif %}">
-                    <td class="checkbox-col">
-                        {% if aprendiz.correo_ya_enviado %}
-                        <span class="correo-enviado-badge">✅ Correo enviado</span>
-                        {% elif not aprendiz.tiene_asistencia_sede or aprendiz.tiene_retardos_consecutivos %}
-                        <input type="checkbox" class="check-inasistente" data-id="{{ aprendiz.id_usuario }}" data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}" data-correo="{{ aprendiz.correo|default:'' }}" data-tiene-retardos="{{ aprendiz.tiene_retardos_consecutivos|yesno:'true,false' }}" data-retardos="{{ aprendiz.retardos_consecutivos|default:'0' }}" onchange="actualizarSeleccion()">
-                        {% endif %}
-                    </td>
-                    <td class="col-numero">
-                        {% if aprendiz.total_inasistencias >= 3 and not aprendiz.tiene_5_inasistencias %}
-                        <span class="icono-alerta icono-3" 
-                            data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}"
-                            data-tipo="3"
-                            data-total="{{ aprendiz.total_inasistencias }}"
-                            data-aprendiz-id="{{ aprendiz.id_usuario }}"
-                            data-cedula="{{ aprendiz.cedula }}"
-                            onclick="mostrarAlerta(this)">⚠️</span>
-                        {% endif %}
-                        {% if aprendiz.total_inasistencias >= 4 and not aprendiz.tiene_5_inasistencias %}
-                        <span class="icono-alerta icono-4" 
-                            data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}"
-                            data-tipo="4"
-                            data-total="{{ aprendiz.total_inasistencias }}"
-                            data-aprendiz-id="{{ aprendiz.id_usuario }}"
-                            data-cedula="{{ aprendiz.cedula }}"
-                            onclick="mostrarAlerta(this)">🔶</span>
-                        {% endif %}
-                        {% if aprendiz.tiene_5_inasistencias %}
-                        <span class="icono-alerta icono-5" 
-                            data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}"
-                            data-tipo="5"
-                            data-total="{{ aprendiz.total_inasistencias }}"
-                            data-aprendiz-id="{{ aprendiz.id_usuario }}"
-                            data-cedula="{{ aprendiz.cedula }}"
-                            onclick="mostrarAlerta(this)">🚨</span>
-                        {% endif %}
-                        {% if aprendiz.tiene_retardos_consecutivos %}
-                        <span class="icono-retardo" title="{{ aprendiz.retardos_consecutivos }} retardos consecutivos - Llamado de atencion">
-                            🕐<sup>{{ aprendiz.retardos_consecutivos }}</sup>
-                        </span>
-                        <button type="button" class="btn-enviar-retardo" onclick="enviarCorreoRetardo({{ aprendiz.id_usuario }}, {{ aprendiz.retardos_consecutivos }})">
-                            <i class="bi bi-envelope"></i> Aviso retardo
-                        </button>
-                        {% endif %}
-                    </td>
-                    <td>{{ aprendiz.cedula }}</td>
-                    <td>
-                        <a href="{% url 'coordinador:detalle_aprendiz' aprendiz.id_usuario %}" class="link-aprendiz" title="Ver historial completo del aprendiz">
-                            {{ aprendiz.nombre }} {{ aprendiz.apellido }}
-                            <i class="fas fa-external-link-alt" style="font-size:11px;margin-left:4px;opacity:0.6;"></i>
-                        </a>
-                    </td>
-                    <td>
-                        <a href='#' onclick='abrirModal("{{ aprendiz.id_usuario }}", "{{ aprendiz.correo|default:"-" }}", "correo")' class="editar-link">
-                            {{ aprendiz.correo|default:"-" }}
-                        </a>
-                    </td>
-                    <td>
-                        <a href='#' onclick='abrirModal("{{ aprendiz.id_usuario }}", "{{ aprendiz.telefono|default:"-" }}", "telefono")' class="editar-link">
-                            {{ aprendiz.telefono|default:"-" }}
-                        </a>
-                    </td>
-                    <td class="col-asistencia-sede">
-                        {% if aprendiz.tiene_asistencia_sede %}
-                            <span class="badge-sede presente"><i class="bi bi-check-circle-fill"></i> En sede</span>
-                        {% else %}
-                            <span class="badge-sede ausente"><i class="bi bi-x-circle-fill"></i> Sin registro</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <select name="asistencia_{{ aprendiz.id_usuario }}" class="asistencia-select">
-                            {% if not aprendiz.tiene_asistencia_sede %}
-                                <option value="Inasistio" selected>Inasistio</option>
+            {% if aprendices_sin_sede %}
+            <div class="seccion-asistencia seccion-sin-sede">
+                <h3 class="titulo-seccion" style="background:#fce4ec;padding:10px 15px;border-radius:8px;margin:20px 0 10px;">
+                    Sin asistencia en sede <span class="badge">{{ aprendices_sin_sede|length }}</span>
+                </h3>
+                <table class="tabla-aprendices">
+                    <thead><tr><th class="checkbox-col"></th><th>Estado</th><th>Documento</th><th>Nombre Completo</th><th>Correo</th><th>Telefono</th><th>Asistencia.S</th><th>Asistencia.A</th></tr></thead>
+                    <tbody>
+                    {% for aprendiz in aprendices_sin_sede %}
+                    <tr id="fila-{{ aprendiz.id_usuario }}" class="fila-sin-asistencia-sede">
+                        <td class="checkbox-col">
+                            {% if aprendiz.correo_ya_enviado %}
+                            <span class="correo-enviado-badge">✅ Correo enviado</span>
                             {% else %}
+                            <input type="checkbox" class="check-inasistente" data-id="{{ aprendiz.id_usuario }}" data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}" data-correo="{{ aprendiz.correo|default:'' }}" data-tiene-retardos="{{ aprendiz.tiene_retardos_consecutivos|yesno:'true,false' }}" data-retardos="{{ aprendiz.retardos_consecutivos|default:'0' }}" onchange="actualizarSeleccion()">
+                            {% endif %}
+                        </td>
+                        <td class="col-numero">
+                            {% if aprendiz.total_inasistencias >= 3 and not aprendiz.tiene_5_inasistencias %}
+                            <span class="icono-alerta icono-3" data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}" data-tipo="3" data-total="{{ aprendiz.total_inasistencias }}" data-aprendiz-id="{{ aprendiz.id_usuario }}" data-cedula="{{ aprendiz.cedula }}" onclick="mostrarAlerta(this)">⚠️</span>
+                            {% endif %}
+                            {% if aprendiz.total_inasistencias >= 4 and not aprendiz.tiene_5_inasistencias %}
+                            <span class="icono-alerta icono-4" data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}" data-tipo="4" data-total="{{ aprendiz.total_inasistencias }}" data-aprendiz-id="{{ aprendiz.id_usuario }}" data-cedula="{{ aprendiz.cedula }}" onclick="mostrarAlerta(this)">🔶</span>
+                            {% endif %}
+                            {% if aprendiz.tiene_5_inasistencias %}
+                            <span class="icono-alerta icono-5" data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}" data-tipo="5" data-total="{{ aprendiz.total_inasistencias }}" data-aprendiz-id="{{ aprendiz.id_usuario }}" data-cedula="{{ aprendiz.cedula }}" onclick="mostrarAlerta(this)">🚨</span>
+                            {% endif %}
+                            {% if aprendiz.tiene_retardos_consecutivos %}
+                            <span class="icono-retardo" title="{{ aprendiz.retardos_consecutivos }} retardos consecutivos - Llamado de atencion">🕐<sup>{{ aprendiz.retardos_consecutivos }}</sup></span>
+                            <button type="button" class="btn-enviar-retardo" onclick="enviarCorreoRetardo({{ aprendiz.id_usuario }}, {{ aprendiz.retardos_consecutivos }})"><i class="bi bi-envelope"></i> Aviso retardo</button>
+                            {% endif %}
+                        </td>
+                        <td>{{ aprendiz.cedula }}</td>
+                        <td><a href="{% url 'coordinador:detalle_aprendiz' aprendiz.id_usuario %}" class="link-aprendiz">{{ aprendiz.nombre }} {{ aprendiz.apellido }} <i class="fas fa-external-link-alt" style="font-size:11px;margin-left:4px;opacity:0.6;"></i></a></td>
+                        <td><a href='#' onclick='abrirModal("{{ aprendiz.id_usuario }}", "{{ aprendiz.correo|default:"-" }}", "correo")' class="editar-link">{{ aprendiz.correo|default:"-" }}</a></td>
+                        <td><a href='#' onclick='abrirModal("{{ aprendiz.id_usuario }}", "{{ aprendiz.telefono|default:"-" }}", "telefono")' class="editar-link">{{ aprendiz.telefono|default:"-" }}</a></td>
+                        <td class="col-asistencia-sede"><span class="badge-sede ausente"><i class="bi bi-x-circle-fill"></i> Sin registro</span></td>
+                        <td><select name="asistencia_{{ aprendiz.id_usuario }}" class="asistencia-select"><option value="Inasistio" selected>Inasistio</option></select></td>
+                    </tr>
+                    {% empty %}<tr><td colspan="8" class="text-center">No hay aprendices</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+            <div class="seccion-asistencia seccion-con-sede">
+                <h3 class="titulo-seccion" style="background:#e8f5e9;padding:10px 15px;border-radius:8px;margin:20px 0 10px;">
+                    Con asistencia en sede <span class="badge">{{ aprendices_con_sede|length }}</span>
+                </h3>
+                <table class="tabla-aprendices">
+                    <thead><tr><th class="checkbox-col"></th><th>Estado</th><th>Documento</th><th>Nombre Completo</th><th>Correo</th><th>Telefono</th><th>Asistencia.S</th><th>Asistencia.A</th></tr></thead>
+                    <tbody>
+                    {% for aprendiz in aprendices_con_sede %}
+                    <tr id="fila-{{ aprendiz.id_usuario }}">
+                        <td class="checkbox-col">
+                            {% if aprendiz.correo_ya_enviado %}
+                            <span class="correo-enviado-badge">✅ Correo enviado</span>
+                            {% elif aprendiz.tiene_retardos_consecutivos %}
+                            <input type="checkbox" class="check-inasistente" data-id="{{ aprendiz.id_usuario }}" data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}" data-correo="{{ aprendiz.correo|default:'' }}" data-tiene-retardos="{{ aprendiz.tiene_retardos_consecutivos|yesno:'true,false' }}" data-retardos="{{ aprendiz.retardos_consecutivos|default:'0' }}" onchange="actualizarSeleccion()">
+                            {% endif %}
+                        </td>
+                        <td class="col-numero">
+                            {% if aprendiz.total_inasistencias >= 3 and not aprendiz.tiene_5_inasistencias %}
+                            <span class="icono-alerta icono-3" data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}" data-tipo="3" data-total="{{ aprendiz.total_inasistencias }}" data-aprendiz-id="{{ aprendiz.id_usuario }}" data-cedula="{{ aprendiz.cedula }}" onclick="mostrarAlerta(this)">⚠️</span>
+                            {% endif %}
+                            {% if aprendiz.total_inasistencias >= 4 and not aprendiz.tiene_5_inasistencias %}
+                            <span class="icono-alerta icono-4" data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}" data-tipo="4" data-total="{{ aprendiz.total_inasistencias }}" data-aprendiz-id="{{ aprendiz.id_usuario }}" data-cedula="{{ aprendiz.cedula }}" onclick="mostrarAlerta(this)">🔶</span>
+                            {% endif %}
+                            {% if aprendiz.tiene_5_inasistencias %}
+                            <span class="icono-alerta icono-5" data-nombre="{{ aprendiz.nombre }} {{ aprendiz.apellido }}" data-tipo="5" data-total="{{ aprendiz.total_inasistencias }}" data-aprendiz-id="{{ aprendiz.id_usuario }}" data-cedula="{{ aprendiz.cedula }}" onclick="mostrarAlerta(this)">🚨</span>
+                            {% endif %}
+                            {% if aprendiz.tiene_retardos_consecutivos %}
+                            <span class="icono-retardo" title="{{ aprendiz.retardos_consecutivos }} retardos consecutivos - Llamado de atencion">🕐<sup>{{ aprendiz.retardos_consecutivos }}</sup></span>
+                            <button type="button" class="btn-enviar-retardo" onclick="enviarCorreoRetardo({{ aprendiz.id_usuario }}, {{ aprendiz.retardos_consecutivos }})"><i class="bi bi-envelope"></i> Aviso retardo</button>
+                            {% endif %}
+                        </td>
+                        <td>{{ aprendiz.cedula }}</td>
+                        <td><a href="{% url 'coordinador:detalle_aprendiz' aprendiz.id_usuario %}" class="link-aprendiz">{{ aprendiz.nombre }} {{ aprendiz.apellido }} <i class="fas fa-external-link-alt" style="font-size:11px;margin-left:4px;opacity:0.6;"></i></a></td>
+                        <td><a href='#' onclick='abrirModal("{{ aprendiz.id_usuario }}", "{{ aprendiz.correo|default:"-" }}", "correo")' class="editar-link">{{ aprendiz.correo|default:"-" }}</a></td>
+                        <td><a href='#' onclick='abrirModal("{{ aprendiz.id_usuario }}", "{{ aprendiz.telefono|default:"-" }}", "telefono")' class="editar-link">{{ aprendiz.telefono|default:"-" }}</a></td>
+                        <td class="col-asistencia-sede"><span class="badge-sede presente"><i class="bi bi-check-circle-fill"></i> En sede</span></td>
+                        <td>
+                            <select name="asistencia_{{ aprendiz.id_usuario }}" class="asistencia-select">
                                 <option value="">Seleccionar</option>
                                 <option value="Asistio" {% if aprendiz.asistencia == 'Asistio' %}selected{% endif %}>Asistio</option>
                                 <option value="Inasistio" {% if aprendiz.asistencia == 'Inasistio' %}selected{% endif %}>Inasistio</option>
                                 <option value="Retardo" {% if aprendiz.asistencia == 'Retardo' %}selected{% endif %}>Retardo</option>
-                            {% endif %}
-                        </select>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="8" class="text-center">No hay aprendices en esta ficha</td>
-                </tr>
-                {% endfor %}
-                </tbody>
-            </table>
+                            </select>
+                        </td>
+                    </tr>
+                    {% empty %}<tr><td colspan="8" class="text-center">No hay aprendices</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </form>
 </div>

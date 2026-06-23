@@ -42,16 +42,14 @@ def login_view(request):
         user = authenticate(request, username=cedula, password=password)
         
         if user:
-            # Login exitoso
             login(request, user)
-            
-            # Obtener el rol del usuario
-            rol = user.get_rol()
-            
-            # Guardar rol en sesión
+
+            roles_qs = user.get_roles()
+            roles = [r.role.name for r in roles_qs if r.role]
+            request.session['roles_usuario'] = roles
+            rol = roles[0] if roles else None
             request.session['user_rol'] = rol
 
-             # ✅ REGISTRAR INICIO DE SESIÓN
             registrar_actividad(
                 usuario=user,
                 tipo_accion='LOGIN',
@@ -59,8 +57,7 @@ def login_view(request):
                 descripcion=f'Usuario {user.nombre} {user.apellido} inició sesión correctamente',
                 request=request
             )
-            
-            # Redirigir según el rol
+
             if rol == 'aprendiz':
                 messages.success(request, f'¡Bienvenido {user.nombre}!')
                 return redirect('aprendiz:consultar_asistencia')
@@ -77,7 +74,6 @@ def login_view(request):
                 messages.success(request, f'¡Bienvenido Gestor {user.nombre}!')
                 return redirect('gestor_sistema:crear_usuario')
             else:
-                # Si no tiene rol, redirigir a home genérico
                 messages.warning(request, 'Usuario sin rol asignado')
                 return redirect('login:mi_perfil')
         else:
@@ -259,6 +255,27 @@ def recuperar(request):
         form = RecuperarForm()
     
     return render(request, 'recuperar.html', {'form': form})
+
+
+@login_required
+def switch_role_view(request, role_name):
+    roles = request.session.get('roles_usuario', [])
+    if role_name not in roles:
+        messages.error(request, 'No tienes ese rol asignado')
+        return redirect('login:mi_perfil')
+    request.session['user_rol'] = role_name
+    messages.info(request, f'Ahora estás en rol: {role_name}')
+    if role_name == 'aprendiz':
+        return redirect('aprendiz:consultar_asistencia')
+    elif role_name == 'instructor':
+        return redirect('instructor:fichas_instructor')
+    elif role_name == 'coordinador':
+        return redirect('coordinador:inicio')
+    elif role_name == 'vigilante':
+        return redirect('vigilante:iniciov')
+    elif role_name == 'gestor':
+        return redirect('gestor_sistema:crear_usuario')
+    return redirect('login:mi_perfil')
 
 
 @never_cache
