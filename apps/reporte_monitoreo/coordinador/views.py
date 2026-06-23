@@ -27,7 +27,10 @@ from .selectors.justificacion_selector import (
 from .services.export_service import obtener_logo_pdf, obtener_filtros_display, preparar_registros_pdf, exportar_csv
 from .utils.pdf_utils import generar_pdf_asistencia_ambiente, generar_pdf_asistencia_sede
 from apps.login.models import Usuarios
-from datetime import datetime
+from apps.gestion_asistencia_justificacion.instructor.models import LlamadoAtencion
+from .models import Justificacion, AsistenciaSede
+from datetime import datetime, timedelta
+from django.utils import timezone
 from xhtml2pdf import pisa
 
 # ==================== DASHBOARD ====================
@@ -41,11 +44,43 @@ def inicio(request):
     ambientes = obtener_asistencia_por_ambiente_hoy()
     tendencia = obtener_tendencia_asistencia_7_dias()
     
-    from django.utils import timezone
     hoy = timezone.localdate()
     meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
              'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
     fecha_hoy = f"{hoy.day} de {meses[hoy.month - 1]} de {hoy.year}"
+
+    llamados_desercion = LlamadoAtencion.objects.filter(
+        nivel=3,
+        fecha_creacion__gte=timezone.now() - timedelta(days=30)
+    ).select_related('id_usuario', 'id_instructor', 'id_usuario__id_ficha').order_by('-fecha_creacion')
+
+    aprendices_con_ficha = Usuarios.objects.filter(
+        id_ficha__isnull=False
+    ).exclude(
+        Q(nombre__icontains='instructor') | Q(nombre__icontains='coordinador') |
+        Q(apellido__icontains='instructor') | Q(apellido__icontains='coordinador')
+    ).select_related('id_ficha')
+
+    id_presentes = AsistenciaSede.objects.filter(
+        fecha=hoy, estado_asistencia__icontains='presente'
+    ).values_list('id_usuario_id', flat=True)
+
+    presentes_hoy_list = list(aprendices_con_ficha.filter(id_usuario__in=id_presentes).values(
+        'nombre', 'apellido', 'id_ficha__numero_ficha'
+    )[:10])
+
+    ausentes_hoy_list = list(aprendices_con_ficha.exclude(
+        id_usuario__in=id_presentes
+    ).values('nombre', 'apellido', 'id_ficha__numero_ficha')[:10])
+
+    justificados_list = list(Justificacion.objects.filter(
+        fecha=hoy, estado__icontains='aprobado'
+    ).select_related('id_asistencia_ambiente', 'id_asistencia_ambiente__id_usuario', 'id_asistencia_ambiente__id_usuario__id_ficha').values(
+        'id_asistencia_ambiente__id_usuario__nombre', 'id_asistencia_ambiente__id_usuario__apellido', 'id_asistencia_ambiente__id_usuario__id_ficha__numero_ficha'
+    )[:10])
+
+    from .selectors.estadistica_selector import obtener_fichas_con_estadisticas_coordinador
+    fichas_resumen = obtener_fichas_con_estadisticas_coordinador(hoy)
 
     context = {
         'coordinador_nombre': f"{coordinador.nombre or ''} {coordinador.apellido or ''}".strip() or 'Coordinador',
@@ -61,6 +96,11 @@ def inicio(request):
         'porcentaje_justificados': distribucion['pct_justificados'],
         'datos_ambientes_json': json.dumps(ambientes),
         'datos_tendencia_json': json.dumps(tendencia),
+        'llamados_desercion': llamados_desercion,
+        'presentes_hoy_list': presentes_hoy_list,
+        'ausentes_hoy_list': ausentes_hoy_list,
+        'justificados_list': justificados_list,
+        'fichas_resumen': fichas_resumen,
     }
     
     return render(request, 'inicio.html', context)
@@ -427,7 +467,6 @@ def detalle_aprendiz(request, usuario_id):
 @login_required
 def exportar_detalle_aprendiz_pdf(request, usuario_id):
     """Exporta el detalle individual de un aprendiz a PDF"""
-    from datetime import datetime
     try:
         historial = obtener_historial_completo_aprendiz(usuario_id)
     except Usuarios.DoesNotExist:

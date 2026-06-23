@@ -144,7 +144,8 @@
                     <i class="bi bi-eye"></i> Ver
                 </a>
                 <button type="button" class="btn btn-sm btn-outline-success btn-notificar-llamado"
-                        data-llamado-id="{{ llamado.id_llamado }}">
+                        data-llamado-id="{{ llamado.id_llamado }}"
+                        data-aprendiz-id="{{ llamado.id_usuario.id_usuario }}">
                     <i class="bi bi-envelope"></i> Notificar
                 </button>
             </div>
@@ -540,11 +541,21 @@ function cerrarLlamado(elemento) {
 }
 
 function notificarClick(boton) {
+    const llamadoId = boton.getAttribute('data-llamado-id');
     const aprendizId = boton.getAttribute('data-aprendiz-id');
+    let url, text;
+
+    if (llamadoId) {
+        url = '{% url "instructor:reenviar_notificacion_llamado" 0 %}'.replace('0', llamadoId);
+        text = 'Se reenviará el correo al aprendiz.';
+    } else {
+        url = '{% url "instructor:notificar_aprendiz" %}';
+        text = 'Se creará y enviará el llamado de atención.';
+    }
 
     Swal.fire({
         title: '¿Enviar llamado de atención?',
-        text: 'Se enviará un correo al aprendiz con el llamado correspondiente.',
+        text: text,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#28a745',
@@ -557,14 +568,16 @@ function notificarClick(boton) {
         boton.disabled = true;
         boton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando...';
 
-        fetch('{% url "instructor:notificar_aprendiz" %}', {
+        const body = llamadoId ? '' : 'aprendiz_id=' + aprendizId;
+
+        fetch(url, {
             method: 'POST',
             headers: {
                 'X-CSRFToken': '{{ csrf_token }}',
                 'X-Requested-With': 'XMLHttpRequest',
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
-            body: 'aprendiz_id=' + aprendizId
+            body: body
         })
         .then(function (r) { return r.json(); })
         .then(function (data) {

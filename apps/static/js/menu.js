@@ -3,11 +3,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const menuOpen = document.getElementById('menuOpen');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
 
+    function isMobile() {
+        return window.innerWidth <= 768;
+    }
+
     // Toggle sidebar
     if (menuIcono && menuOpen) {
         menuIcono.addEventListener('click', function() {
             menuOpen.classList.toggle('closed');
-            if (sidebarOverlay) {
+            if (isMobile() && sidebarOverlay) {
                 sidebarOverlay.classList.toggle('active');
             }
             // Toggle icon
@@ -38,8 +42,47 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Start sidebar closed on mobile
-    if (window.innerWidth <= 768 && menuOpen) {
+    if (isMobile() && menuOpen) {
         menuOpen.classList.add('closed');
+    }
+
+    // Toggle acordeón de secciones del menú gestor
+    var toggleBtns = document.querySelectorAll('.menu-toggle');
+    toggleBtns.forEach(function(btn) {
+        var section = btn.getAttribute('data-section');
+        var submenu = document.querySelector('.menu-submenu[data-section="' + section + '"]');
+        if (!submenu) return;
+
+        var saved = localStorage.getItem('menu_' + section);
+        if (saved === 'open') {
+            btn.classList.add('open');
+            submenu.classList.add('open');
+        }
+
+        btn.addEventListener('click', function() {
+            var isOpen = submenu.classList.contains('open');
+            if (isOpen) {
+                submenu.classList.remove('open');
+                btn.classList.remove('open');
+                localStorage.setItem('menu_' + section, 'closed');
+            } else {
+                submenu.classList.add('open');
+                btn.classList.add('open');
+                localStorage.setItem('menu_' + section, 'open');
+            }
+        });
+    });
+
+    // Auto-abrir sección que contiene link activo
+    var activeLink = document.querySelector('.menu-submenu .nav-link.active');
+    if (activeLink) {
+        var parentSubmenu = activeLink.closest('.menu-submenu');
+        var parentToggle = parentSubmenu ? document.querySelector('.menu-toggle[data-section="' + parentSubmenu.getAttribute('data-section') + '"]') : null;
+        if (parentSubmenu && parentToggle && !parentSubmenu.classList.contains('open')) {
+            parentSubmenu.classList.add('open');
+            parentToggle.classList.add('open');
+            localStorage.setItem('menu_' + parentSubmenu.getAttribute('data-section'), 'open');
+        }
     }
 
     // Toggle dropdown de usuario
