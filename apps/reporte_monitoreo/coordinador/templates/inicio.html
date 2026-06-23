@@ -27,47 +27,106 @@
 
     <!-- KPI CARDS -->
     <div class="dash-kpi-grid">
-        <div class="dash-kpi-card">
+        <div class="dash-kpi-card" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#collapseTotal">
             <div class="dash-kpi-icon dash-kpi-green-light">
                 <i class="bi bi-people-fill dash-icon-green"></i>
             </div>
             <div class="dash-kpi-info">
                 <span class="dash-kpi-label">Total Aprendices</span>
                 <span class="dash-kpi-value">{{ total_aprendices }}</span>
-                <span class="dash-kpi-subtitle">Matriculados en la sede</span>
+                <span class="dash-kpi-subtitle">Matriculados en la sede <i class="bi bi-chevron-down ms-1" style="font-size:0.7rem;"></i></span>
+            </div>
+        </div>
+        <div class="collapse" id="collapseTotal">
+            <div style="background:#f8f9fa; border-radius:8px; padding:1rem; margin-bottom:1rem;">
+                <h6 class="text-muted mb-2"><i class="bi bi-grid me-1"></i>Fichas activas</h6>
+                <div style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+                    {% for f in fichas_resumen %}
+                    <span class="badge bg-success bg-opacity-10 text-success" style="font-size:0.85rem;">
+                        {{ f.numero_ficha }} <span class="ms-1">{{ f.total_aprendices }} ap.</span>
+                    </span>
+                    {% empty %}
+                    <span class="text-muted">Sin datos de fichas</span>
+                    {% endfor %}
+                </div>
             </div>
         </div>
 
-        <div class="dash-kpi-card">
+        <div class="dash-kpi-card" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#collapsePresentes">
             <div class="dash-kpi-icon dash-kpi-green-circle">
                 <i class="bi bi-check-circle-fill dash-icon-white"></i>
             </div>
             <div class="dash-kpi-info">
                 <span class="dash-kpi-label">Presentes Hoy</span>
                 <span class="dash-kpi-value dash-text-green">{{ presentes_hoy }}</span>
-                <span class="dash-kpi-subtitle">{{ porcentaje_presentes }}% del total</span>
+                <span class="dash-kpi-subtitle">{{ porcentaje_presentes }}% del total <i class="bi bi-chevron-down ms-1" style="font-size:0.7rem;"></i></span>
+            </div>
+        </div>
+        <div class="collapse" id="collapsePresentes">
+            <div style="background:#f0fdf4; border-radius:8px; padding:1rem; margin-bottom:1rem;">
+                <h6 class="text-success mb-2"><i class="bi bi-check-circle me-1"></i>Presentes hoy</h6>
+                <div style="max-height:150px; overflow-y:auto;">
+                {% for p in presentes_hoy_list %}
+                    <div class="d-flex justify-content-between align-items-center py-1" style="border-bottom:1px solid #e0e0e0;">
+                        <span>{{ p.nombre }} {{ p.apellido }}</span>
+                        <span class="badge bg-success bg-opacity-10 text-success">{{ p.id_ficha__numero_ficha }}</span>
+                    </div>
+                {% empty %}
+                    <span class="text-muted">Ningún aprendiz registrado presente hoy</span>
+                {% endfor %}
+                </div>
             </div>
         </div>
 
-        <div class="dash-kpi-card">
+        <div class="dash-kpi-card" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#collapseAusentes">
             <div class="dash-kpi-icon dash-kpi-red-circle">
                 <i class="bi bi-x-circle-fill dash-icon-white"></i>
             </div>
             <div class="dash-kpi-info">
                 <span class="dash-kpi-label">Ausentes Hoy</span>
                 <span class="dash-kpi-value dash-text-red">{{ ausentes_hoy }}</span>
-                <span class="dash-kpi-subtitle">{{ porcentaje_ausentes }}% del total</span>
+                <span class="dash-kpi-subtitle">{{ porcentaje_ausentes }}% del total <i class="bi bi-chevron-down ms-1" style="font-size:0.7rem;"></i></span>
+            </div>
+        </div>
+        <div class="collapse" id="collapseAusentes">
+            <div style="background:#fef2f2; border-radius:8px; padding:1rem; margin-bottom:1rem;">
+                <h6 class="text-danger mb-2"><i class="bi bi-x-circle me-1"></i>Ausentes hoy</h6>
+                <div style="max-height:150px; overflow-y:auto;">
+                {% for a in ausentes_hoy_list %}
+                    <div class="d-flex justify-content-between align-items-center py-1" style="border-bottom:1px solid #e0e0e0;">
+                        <span>{{ a.nombre }} {{ a.apellido }}</span>
+                        <span class="badge bg-danger bg-opacity-10 text-danger">{{ a.id_ficha__numero_ficha }}</span>
+                    </div>
+                {% empty %}
+                    <span class="text-muted">Todos los aprendices están presentes</span>
+                {% endfor %}
+                </div>
             </div>
         </div>
 
-        <div class="dash-kpi-card">
+        <div class="dash-kpi-card" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#collapseJustificados">
             <div class="dash-kpi-icon dash-kpi-yellow-circle">
                 <i class="bi bi-person-fill dash-icon-white"></i>
             </div>
             <div class="dash-kpi-info">
                 <span class="dash-kpi-label">Justificados Hoy</span>
                 <span class="dash-kpi-value dash-text-yellow">{{ justificados_hoy }}</span>
-                <span class="dash-kpi-subtitle">{{ porcentaje_justificados }}% del total</span>
+                <span class="dash-kpi-subtitle">{{ porcentaje_justificados }}% del total <i class="bi bi-chevron-down ms-1" style="font-size:0.7rem;"></i></span>
+            </div>
+        </div>
+        <div class="collapse" id="collapseJustificados">
+            <div style="background:#fffbeb; border-radius:8px; padding:1rem; margin-bottom:1rem;">
+                <h6 class="text-warning mb-2"><i class="bi bi-file-check me-1"></i>Justificaciones aprobadas hoy</h6>
+                <div style="max-height:150px; overflow-y:auto;">
+                {% for j in justificados_list %}
+                    <div class="d-flex justify-content-between align-items-center py-1" style="border-bottom:1px solid #e0e0e0;">
+                        <span>{{ j.id_usuario__nombre }} {{ j.id_usuario__apellido }}</span>
+                        <span class="badge bg-warning bg-opacity-10 text-warning">{{ j.id_usuario__id_ficha__numero_ficha }}</span>
+                    </div>
+                {% empty %}
+                    <span class="text-muted">Sin justificaciones aprobadas hoy</span>
+                {% endfor %}
+                </div>
             </div>
         </div>
     </div>
