@@ -51,7 +51,7 @@ def inicio(request):
     llamados_desercion = LlamadoAtencion.objects.filter(
         nivel=3,
         fecha_creacion__gte=timezone.now() - timedelta(days=30)
-    ).select_related('id_usuario', 'id_instructor').order_by('-fecha_creacion')
+    ).select_related('id_usuario', 'id_instructor', 'id_usuario__id_ficha').order_by('-fecha_creacion')
 
     context = {
         'coordinador_nombre': f"{coordinador.nombre or ''} {coordinador.apellido or ''}".strip() or 'Coordinador',

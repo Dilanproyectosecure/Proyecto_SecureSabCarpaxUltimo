@@ -87,18 +87,27 @@
                 <thead>
                     <tr style="background: #f8f9fa;">
                         <th>Aprendiz</th>
+                        <th>Ficha</th>
                         <th>Instructor</th>
                         <th>Inasistencias</th>
                         <th>Fecha</th>
                         <th>Estado</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for llamado in llamados_desercion %}
-                    <tr>
+                    <tr style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#modalLlamado{{ llamado.id_llamado }}">
                         <td>
                             <strong>{{ llamado.id_usuario.nombre }} {{ llamado.id_usuario.apellido }}</strong>
                             <br><small class="text-muted">CC: {{ llamado.id_usuario.cedula }}</small>
+                        </td>
+                        <td>
+                            {% if llamado.id_usuario.id_ficha %}
+                                <span class="badge bg-secondary">{{ llamado.id_usuario.id_ficha.numero_ficha }}</span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
                         </td>
                         <td>{{ llamado.id_instructor.nombre }} {{ llamado.id_instructor.apellido }}</td>
                         <td><span class="badge bg-danger">{{ llamado.total_inasistencias }} inasistencias</span></td>
@@ -110,7 +119,77 @@
                                 <span class="badge bg-warning text-dark"><i class="bi bi-clock"></i> Pendiente</span>
                             {% endif %}
                         </td>
+                        <td><i class="bi bi-info-circle text-muted"></i></td>
                     </tr>
+
+                    <!-- Modal detalle llamado -->
+                    <div class="modal fade" id="modalLlamado{{ llamado.id_llamado }}" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>Proceso de Deserción</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row mb-3">
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Aprendiz</small>
+                                            <strong>{{ llamado.id_usuario.nombre }} {{ llamado.id_usuario.apellido }}</strong>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Cédula</small>
+                                            <strong>{{ llamado.id_usuario.cedula }}</strong>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Ficha</small>
+                                            <strong>{% if llamado.id_usuario.id_ficha %}{{ llamado.id_usuario.id_ficha.numero_ficha }}{% else %}—{% endif %}</strong>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Correo</small>
+                                            <strong>{{ llamado.id_usuario.correo|default:"—" }}</strong>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Instructor</small>
+                                            <strong>{{ llamado.id_instructor.nombre }} {{ llamado.id_instructor.apellido }}</strong>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Teléfono</small>
+                                            <strong>{{ llamado.id_usuario.telefono|default:"—" }}</strong>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="row mb-3">
+                                        <div class="col-4 text-center">
+                                            <div class="fw-bold text-danger fs-4">{{ llamado.total_inasistencias }}</div>
+                                            <small class="text-muted">Inasistencias</small>
+                                        </div>
+                                        <div class="col-4 text-center">
+                                            <div class="fw-bold fs-4">{{ llamado.nivel }}</div>
+                                            <small class="text-muted">Nivel llamado</small>
+                                        </div>
+                                        <div class="col-4 text-center">
+                                            <div class="fw-bold fs-4">{{ llamado.fecha_creacion|date:"d/m" }}</div>
+                                            <small class="text-muted">Fecha</small>
+                                        </div>
+                                    </div>
+                                    <div class="alert alert-danger mb-0">
+                                        <i class="bi bi-exclamation-circle me-1"></i>
+                                        Se ha iniciado el <strong>proceso de deserción</strong>. El aprendiz debe presentarse ante la coordinación académica.
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <a href="{% url 'coordinador:detalle_aprendiz' llamado.id_usuario.id_usuario %}" class="btn btn-primary">
+                                        <i class="bi bi-person-lines-fill me-1"></i>Ver perfil completo
+                                    </a>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     {% endfor %}
                 </tbody>
             </table>
