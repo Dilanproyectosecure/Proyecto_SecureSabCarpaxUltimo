@@ -451,6 +451,12 @@ body {
 }
 
 /* ===== RESPONSIVE ===== */
+@media (min-width: 769px) {
+    .sidebar-overlay {
+        display: none !important;
+    }
+}
+
 @media (max-width: 768px) {
     .sidebar {
         position: fixed;

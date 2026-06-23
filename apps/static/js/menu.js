@@ -3,11 +3,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const menuOpen = document.getElementById('menuOpen');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
 
+    function isMobile() {
+        return window.innerWidth <= 768;
+    }
+
     // Toggle sidebar
     if (menuIcono && menuOpen) {
         menuIcono.addEventListener('click', function() {
             menuOpen.classList.toggle('closed');
-            if (sidebarOverlay) {
+            if (isMobile() && sidebarOverlay) {
                 sidebarOverlay.classList.toggle('active');
             }
             // Toggle icon
@@ -38,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Start sidebar closed on mobile
-    if (window.innerWidth <= 768 && menuOpen) {
+    if (isMobile() && menuOpen) {
         menuOpen.classList.add('closed');
     }
 
