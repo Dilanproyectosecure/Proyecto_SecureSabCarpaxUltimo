@@ -27,50 +27,240 @@
 
     <!-- KPI CARDS -->
     <div class="dash-kpi-grid">
-        <div class="dash-kpi-card">
+        <div class="dash-kpi-card" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#collapseTotal">
             <div class="dash-kpi-icon dash-kpi-green-light">
                 <i class="bi bi-people-fill dash-icon-green"></i>
             </div>
             <div class="dash-kpi-info">
                 <span class="dash-kpi-label">Total Aprendices</span>
                 <span class="dash-kpi-value">{{ total_aprendices }}</span>
-                <span class="dash-kpi-subtitle">Matriculados en la sede</span>
+                <span class="dash-kpi-subtitle">Matriculados en la sede <i class="bi bi-chevron-down ms-1" style="font-size:0.7rem;"></i></span>
+            </div>
+        </div>
+        <div class="collapse" id="collapseTotal">
+            <div style="background:#f8f9fa; border-radius:8px; padding:1rem; margin-bottom:1rem;">
+                <h6 class="text-muted mb-2"><i class="bi bi-grid me-1"></i>Fichas con aprendices activos</h6>
+                <table class="table table-sm table-borderless mb-0" style="font-size:0.85rem;">
+                    <thead><tr><th>Ficha</th><th class="text-end">Aprendices</th></tr></thead>
+                    <tbody>
+                    {% for f in fichas_resumen %}
+                        {% if f.total_aprendices > 0 %}
+                        <tr style="border-bottom:1px solid #e9ecef;">
+                            <td><span class="badge bg-success">{{ f.numero_ficha }}</span></td>
+                            <td class="text-end"><strong>{{ f.total_aprendices }}</strong></td>
+                        </tr>
+                        {% endif %}
+                    {% empty %}
+                        <tr><td colspan="2" class="text-muted">Sin datos</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="dash-kpi-card">
+        <div class="dash-kpi-card" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#collapsePresentes">
             <div class="dash-kpi-icon dash-kpi-green-circle">
                 <i class="bi bi-check-circle-fill dash-icon-white"></i>
             </div>
             <div class="dash-kpi-info">
                 <span class="dash-kpi-label">Presentes Hoy</span>
                 <span class="dash-kpi-value dash-text-green">{{ presentes_hoy }}</span>
-                <span class="dash-kpi-subtitle">{{ porcentaje_presentes }}% del total</span>
+                <span class="dash-kpi-subtitle">{{ porcentaje_presentes }}% del total <i class="bi bi-chevron-down ms-1" style="font-size:0.7rem;"></i></span>
+            </div>
+        </div>
+        <div class="collapse" id="collapsePresentes">
+            <div style="background:#f0fdf4; border-radius:8px; padding:1rem; margin-bottom:1rem;">
+                <h6 class="text-success mb-2"><i class="bi bi-check-circle me-1"></i>Presentes hoy ({{ presentes_hoy }})</h6>
+                <table class="table table-sm table-borderless mb-0" style="font-size:0.85rem; max-height:160px; overflow-y:auto;">
+                    <thead><tr><th>Aprendiz</th><th class="text-end">Ficha</th></tr></thead>
+                    <tbody>
+                    {% for p in presentes_hoy_list %}
+                        <tr style="border-bottom:1px solid #d1e7dd;"><td>{{ p.nombre }} {{ p.apellido }}</td><td class="text-end"><span class="badge bg-success bg-opacity-10 text-success">{{ p.id_ficha__numero_ficha }}</span></td></tr>
+                    {% empty %}
+                        <tr><td colspan="2" class="text-muted">Ninguno registrado hoy</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="dash-kpi-card">
+        <div class="dash-kpi-card" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#collapseAusentes">
             <div class="dash-kpi-icon dash-kpi-red-circle">
                 <i class="bi bi-x-circle-fill dash-icon-white"></i>
             </div>
             <div class="dash-kpi-info">
                 <span class="dash-kpi-label">Ausentes Hoy</span>
                 <span class="dash-kpi-value dash-text-red">{{ ausentes_hoy }}</span>
-                <span class="dash-kpi-subtitle">{{ porcentaje_ausentes }}% del total</span>
+                <span class="dash-kpi-subtitle">{{ porcentaje_ausentes }}% del total <i class="bi bi-chevron-down ms-1" style="font-size:0.7rem;"></i></span>
+            </div>
+        </div>
+        <div class="collapse" id="collapseAusentes">
+            <div style="background:#fef2f2; border-radius:8px; padding:1rem; margin-bottom:1rem;">
+                <h6 class="text-danger mb-2"><i class="bi bi-x-circle me-1"></i>Ausentes hoy ({{ ausentes_hoy }})</h6>
+                <table class="table table-sm table-borderless mb-0" style="font-size:0.85rem; max-height:160px; overflow-y:auto;">
+                    <thead><tr><th>Aprendiz</th><th class="text-end">Ficha</th></tr></thead>
+                    <tbody>
+                    {% for a in ausentes_hoy_list %}
+                        <tr style="border-bottom:1px solid #fecaca;"><td>{{ a.nombre }} {{ a.apellido }}</td><td class="text-end"><span class="badge bg-danger bg-opacity-10 text-danger">{{ a.id_ficha__numero_ficha }}</span></td></tr>
+                    {% empty %}
+                        <tr><td colspan="2" class="text-muted">Todos presentes</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="dash-kpi-card">
+        <div class="dash-kpi-card" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#collapseJustificados">
             <div class="dash-kpi-icon dash-kpi-yellow-circle">
                 <i class="bi bi-person-fill dash-icon-white"></i>
             </div>
             <div class="dash-kpi-info">
                 <span class="dash-kpi-label">Justificados Hoy</span>
                 <span class="dash-kpi-value dash-text-yellow">{{ justificados_hoy }}</span>
-                <span class="dash-kpi-subtitle">{{ porcentaje_justificados }}% del total</span>
+                <span class="dash-kpi-subtitle">{{ porcentaje_justificados }}% del total <i class="bi bi-chevron-down ms-1" style="font-size:0.7rem;"></i></span>
+            </div>
+        </div>
+        <div class="collapse" id="collapseJustificados">
+            <div style="background:#fffbeb; border-radius:8px; padding:1rem; margin-bottom:1rem;">
+                <h6 class="text-warning mb-2"><i class="bi bi-file-check me-1"></i>Justificaciones aprobadas hoy ({{ justificados_hoy }})</h6>
+                <table class="table table-sm table-borderless mb-0" style="font-size:0.85rem; max-height:160px; overflow-y:auto;">
+                    <thead><tr><th>Aprendiz</th><th class="text-end">Ficha</th></tr></thead>
+                    <tbody>
+                    {% for j in justificados_list %}
+                        <tr style="border-bottom:1px solid #fde68a;"><td>{{ j.id_asistencia_ambiente__id_usuario__nombre }} {{ j.id_asistencia_ambiente__id_usuario__apellido }}</td><td class="text-end"><span class="badge bg-warning bg-opacity-10 text-warning">{{ j.id_asistencia_ambiente__id_usuario__id_ficha__numero_ficha }}</span></td></tr>
+                    {% empty %}
+                        <tr><td colspan="2" class="text-muted">Sin justificaciones hoy</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
+
+    <!-- LLAMADOS DE ATENCION - PROCESO DE DESERCION -->
+    {% if llamados_desercion %}
+    <div class="dash-chart-card dash-chart-full" style="border-left: 4px solid #dc3545;">
+        <div class="dash-chart-header">
+            <div>
+                <h3 style="color: #dc3545;"><i class="bi bi-exclamation-triangle-fill me-2"></i>Procesos de Deserción Activos</h3>
+                <span class="dash-chart-subtitle">Aprendices con 5+ inasistencias injustificadas — Requieren atención urgente</span>
+            </div>
+            <span class="badge bg-danger" style="font-size: 0.9rem;">{{ llamados_desercion|length }}</span>
+        </div>
+        <div class="dash-chart-body" style="padding: 0;">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr style="background: #f8f9fa;">
+                        <th>Aprendiz</th>
+                        <th>Ficha</th>
+                        <th>Instructor</th>
+                        <th>Inasistencias</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for llamado in llamados_desercion %}
+                    <tr style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#modalLlamado{{ llamado.id_llamado }}">
+                        <td>
+                            <strong>{{ llamado.id_usuario.nombre }} {{ llamado.id_usuario.apellido }}</strong>
+                            <br><small class="text-muted">CC: {{ llamado.id_usuario.cedula }}</small>
+                        </td>
+                        <td>
+                            {% if llamado.id_usuario.id_ficha %}
+                                <span class="badge bg-secondary">{{ llamado.id_usuario.id_ficha.numero_ficha }}</span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ llamado.id_instructor.nombre }} {{ llamado.id_instructor.apellido }}</td>
+                        <td><span class="badge bg-danger">{{ llamado.total_inasistencias }} inasistencias</span></td>
+                        <td>{{ llamado.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            {% if llamado.notificado %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Notificado</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-clock"></i> Pendiente</span>
+                            {% endif %}
+                        </td>
+                        <td><i class="bi bi-info-circle text-muted"></i></td>
+                    </tr>
+
+                    <!-- Modal detalle llamado -->
+                    <div class="modal fade" id="modalLlamado{{ llamado.id_llamado }}" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i>Proceso de Deserción</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row mb-3">
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Aprendiz</small>
+                                            <strong>{{ llamado.id_usuario.nombre }} {{ llamado.id_usuario.apellido }}</strong>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Cédula</small>
+                                            <strong>{{ llamado.id_usuario.cedula }}</strong>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Ficha</small>
+                                            <strong>{% if llamado.id_usuario.id_ficha %}{{ llamado.id_usuario.id_ficha.numero_ficha }}{% else %}—{% endif %}</strong>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Correo</small>
+                                            <strong>{{ llamado.id_usuario.correo|default:"—" }}</strong>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Instructor</small>
+                                            <strong>{{ llamado.id_instructor.nombre }} {{ llamado.id_instructor.apellido }}</strong>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Teléfono</small>
+                                            <strong>{{ llamado.id_usuario.telefono|default:"—" }}</strong>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div class="row mb-3">
+                                        <div class="col-4 text-center">
+                                            <div class="fw-bold text-danger fs-4">{{ llamado.total_inasistencias }}</div>
+                                            <small class="text-muted">Inasistencias</small>
+                                        </div>
+                                        <div class="col-4 text-center">
+                                            <div class="fw-bold fs-4">{{ llamado.nivel }}</div>
+                                            <small class="text-muted">Nivel llamado</small>
+                                        </div>
+                                        <div class="col-4 text-center">
+                                            <div class="fw-bold fs-4">{{ llamado.fecha_creacion|date:"d/m" }}</div>
+                                            <small class="text-muted">Fecha</small>
+                                        </div>
+                                    </div>
+                                    <div class="alert alert-danger mb-0">
+                                        <i class="bi bi-exclamation-circle me-1"></i>
+                                        Se ha iniciado el <strong>proceso de deserción</strong>. El aprendiz debe presentarse ante la coordinación académica.
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <a href="{% url 'coordinador:detalle_aprendiz' llamado.id_usuario.id_usuario %}" class="btn btn-primary">
+                                        <i class="bi bi-person-lines-fill me-1"></i>Ver perfil completo
+                                    </a>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- CHARTS ROW -->
     <div class="dash-charts-row">

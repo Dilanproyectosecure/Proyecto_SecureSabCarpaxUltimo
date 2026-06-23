@@ -93,37 +93,63 @@
         <span>Registro de Actividades</span>
     </a>
 
-    <div class="menu-section-label">COORDINADOR</div>
-    <a href="{% url 'coordinador:asistencia_ambiente' %}" class="nav-link {% if request.resolver_match.url_name == 'asistencia_ambiente' %}active{% endif %}">
-        <i class="bi bi-building me-2"></i>Asistencia Ambiente
-    </a>
-    <a href="{% url 'coordinador:asistencia_sede' %}" class="nav-link {% if request.resolver_match.url_name == 'asistencia_sede' %}active{% endif %}">
-        <i class="bi bi-door-open me-2"></i>Asistencia Sede
-    </a>
+    <hr class="my-2 bg-white bg-opacity-25">
 
-    <div class="menu-section-label">INSTRUCTOR</div>
-    <a href="{% url 'instructor:gestionar_asistencia' %}" class="nav-link {% if request.resolver_match.url_name == 'gestionar_asistencia' %}active{% endif %}">
-        <i class="bi bi-pencil-square me-2"></i>Gestionar Asistencia
-    </a>
-    <a href="{% url 'instructor:consultar_asistenciaI' %}" class="nav-link {% if request.resolver_match.url_name == 'consultar_asistenciaI' %}active{% endif %}">
-        <i class="bi bi-calendar-week me-2"></i>Consultar Asistencia
-    </a>
+    <div class="menu-toggle" data-section="coordinador">
+        <i class="bi bi-building me-2"></i>
+        <span>Coordinador</span>
+        <i class="bi bi-chevron-down menu-arrow"></i>
+    </div>
+    <div class="menu-submenu" data-section="coordinador">
+        <a href="{% url 'coordinador:asistencia_ambiente' %}" class="nav-link {% if request.resolver_match.url_name == 'asistencia_ambiente' %}active{% endif %}">
+            <i class="bi bi-building me-2"></i>Asistencia Ambiente
+        </a>
+        <a href="{% url 'coordinador:asistencia_sede' %}" class="nav-link {% if request.resolver_match.url_name == 'asistencia_sede' %}active{% endif %}">
+            <i class="bi bi-door-open me-2"></i>Asistencia Sede
+        </a>
+    </div>
 
-    <div class="menu-section-label">VIGILANTE</div>
-    <a href="{% url 'vigilante:consultar_invitado' %}" class="nav-link {% if request.resolver_match.url_name == 'consultar_invitado' %}active{% endif %}">
-        <i class="bi bi-search me-2"></i>Consultar Invitados
-    </a>
-    <a href="{% url 'vigilante:registro_manual' %}" class="nav-link {% if request.resolver_match.url_name == 'registro_manual' %}active{% endif %}">
-        <i class="bi bi-clipboard-data me-2"></i>Registro Manual
-    </a>
-    <a href="{% url 'vigilante:historial' %}" class="nav-link {% if request.resolver_match.url_name == 'historial' %}active{% endif %}">
-        <i class="bi bi-clock-history me-2"></i>Historial
-    </a>
+    <div class="menu-toggle" data-section="instructor">
+        <i class="bi bi-pencil-square me-2"></i>
+        <span>Instructor</span>
+        <i class="bi bi-chevron-down menu-arrow"></i>
+    </div>
+    <div class="menu-submenu" data-section="instructor">
+        <a href="{% url 'instructor:gestionar_asistencia' %}" class="nav-link {% if request.resolver_match.url_name == 'gestionar_asistencia' %}active{% endif %}">
+            <i class="bi bi-pencil-square me-2"></i>Gestionar Asistencia
+        </a>
+        <a href="{% url 'instructor:consultar_asistenciaI' %}" class="nav-link {% if request.resolver_match.url_name == 'consultar_asistenciaI' %}active{% endif %}">
+            <i class="bi bi-calendar-week me-2"></i>Consultar Asistencia
+        </a>
+    </div>
 
-    <div class="menu-section-label">JUSTIFICACIONES</div>
-    <a href="{% url 'coordinador:justificaciones' %}" class="nav-link {% if request.resolver_match.url_name == 'justificaciones' %}active{% endif %}">
-        <i class="bi bi-file-check me-2"></i>Consultar Justificaciones
-    </a>
+    <div class="menu-toggle" data-section="vigilante">
+        <i class="bi bi-search me-2"></i>
+        <span>Vigilante</span>
+        <i class="bi bi-chevron-down menu-arrow"></i>
+    </div>
+    <div class="menu-submenu" data-section="vigilante">
+        <a href="{% url 'vigilante:consultar_invitado' %}" class="nav-link {% if request.resolver_match.url_name == 'consultar_invitado' %}active{% endif %}">
+            <i class="bi bi-search me-2"></i>Consultar Invitados
+        </a>
+        <a href="{% url 'vigilante:registro_manual' %}" class="nav-link {% if request.resolver_match.url_name == 'registro_manual' %}active{% endif %}">
+            <i class="bi bi-clipboard-data me-2"></i>Registro Manual
+        </a>
+        <a href="{% url 'vigilante:historial' %}" class="nav-link {% if request.resolver_match.url_name == 'historial' %}active{% endif %}">
+            <i class="bi bi-clock-history me-2"></i>Historial
+        </a>
+    </div>
+
+    <div class="menu-toggle" data-section="justificaciones">
+        <i class="bi bi-file-check me-2"></i>
+        <span>Justificaciones</span>
+        <i class="bi bi-chevron-down menu-arrow"></i>
+    </div>
+    <div class="menu-submenu" data-section="justificaciones">
+        <a href="{% url 'coordinador:justificaciones' %}" class="nav-link {% if request.resolver_match.url_name == 'justificaciones' %}active{% endif %}">
+            <i class="bi bi-file-check me-2"></i>Consultar Justificaciones
+        </a>
+    </div>
 
 {% endif %}
 {% endwith %}
