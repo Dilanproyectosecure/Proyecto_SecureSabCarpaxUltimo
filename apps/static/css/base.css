@@ -246,13 +246,7 @@ body {
 /* ===== BOTONES DE ACORDEÓN (SUBMENÚS DEL GESTOR) ===== */
 .sidebar .menu-toggle {
     width: 100%;
-    background: transparent !important;
-    border: none !important;
-    outline: none !important;
-    box-shadow: none !important;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
+    background: transparent;
     color: rgba(255,255,255,0.8);
     padding: 0.85rem 1.5rem;
     display: flex;
@@ -264,25 +258,17 @@ body {
     border-left: 4px solid transparent;
     transition: all 0.3s;
     text-align: left;
-    border-radius: 0;
-    margin: 0;
 }
 
 .sidebar .menu-toggle:hover {
-    background: rgba(255,255,255,0.1) !important;
+    background: rgba(255,255,255,0.1);
     color: white;
 }
 
 .sidebar .menu-toggle.open {
-    background: rgba(255,255,255,0.08) !important;
+    background: rgba(255,255,255,0.08);
     color: white;
     border-left-color: #ffc107;
-}
-
-.sidebar .menu-toggle:focus,
-.sidebar .menu-toggle:focus-visible {
-    outline: none !important;
-    box-shadow: none !important;
 }
 
 .sidebar .menu-toggle i:first-child {
