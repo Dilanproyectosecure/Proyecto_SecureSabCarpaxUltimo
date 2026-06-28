@@ -262,6 +262,14 @@ select.filtros-input {
 
 .table-scroll {
     overflow-x: auto;
+    max-height: 65vh;
+    overflow-y: auto;
+}
+
+.tabla-asistencias thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .tabla-asistencias {
