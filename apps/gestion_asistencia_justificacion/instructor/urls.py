@@ -16,6 +16,7 @@ urlpatterns = [
     path('consultar-asistenciaI/', views.consultar_asistenciaI, name='consultar_asistenciaI'),
     path('gestionar-justificaciones/', views.gestionar_justificaciones, name='gestionar_justificaciones'),
     path('procesar-justificacion/', views.procesar_justificacion, name='procesar_justificacion'),
+    path('habilitar-carga/', views.habilitar_carga, name='habilitar_carga'),
     path('notificar-llamado/<int:llamado_id>/', views.reenviar_notificacion_llamado, name='reenviar_notificacion_llamado'),
     path('notificar-aprendiz/', views.notificar_aprendiz, name='notificar_aprendiz'),
 ]

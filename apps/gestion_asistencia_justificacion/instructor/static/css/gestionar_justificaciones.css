@@ -393,3 +393,46 @@
         justify-content: center;
     }
 }
+
+/* Botón habilitar carga */
+.btn-habilitar {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    background: #ffc107;
+    color: #856404;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: all 0.3s;
+    font-weight: 600;
+}
+
+.btn-habilitar:hover {
+    background: #e0a800;
+    transform: scale(1.05);
+}
+
+/* Badge habilitado */
+.badge-habilitado {
+    display: inline-block;
+    padding: 0.35rem 0.8rem;
+    background: #d1ecf1;
+    color: #0c5460;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* Badge expirada */
+.badge-expirada {
+    display: inline-block;
+    padding: 0.35rem 0.8rem;
+    background: #f8d7da;
+    color: #721c24;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}

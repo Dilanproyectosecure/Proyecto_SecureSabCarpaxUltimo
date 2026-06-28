@@ -5,8 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.conf import settings
 from django.http import JsonResponse
-from datetime import date
-import json
+from datetime import date, timedelta
+from django.db.models import Q, Subquery, OuterRef
 from apps.login.models import Usuarios
 from apps.reporte_monitoreo.coordinador.models import ( Ficha, AsistenciaAmbiente, Competencia, Justificacion, Jornada, AsistenciaSede)
 from .models import LlamadoAtencion
@@ -17,7 +17,7 @@ from .selectors.justificacion_queries import ( obtener_justificaciones, filtrar_
 from .services.inasistencias_service import calcular_inasistencias_aprendiz, calcular_retardos_aprendiz
 from .services.asistencia_service import ( registrar_asistencia, generar_reporte, generar_totales)
 from .services.aprendiz_service import actualizar_datos_aprendiz
-from .services.justificacion_action_service import procesar_accion_justificacion
+from .services.justificacion_action_service import procesar_accion_justificacion, habilitar_carga_evidencia
 from .services.llamado_service import verificar_y_procesar_aprendices, obtener_llamados_recientes, reenviar_correo, notificar_aprendiz as servicio_notificar_aprendiz
 from .utils.pdf_utils import generate_pdf_response
 from django.urls import reverse  
@@ -311,6 +311,31 @@ def gestionar_justificaciones(request):
     paginator = Paginator(justificaciones, 15)
     page_obj = paginator.get_page(request.GET.get('page', 1))
 
+    # INASISTENCIAS EXPIRADAS SIN JUSTIFICACION (para habilitar carga)
+    hoy = date.today()
+    fecha_limite = hoy - timedelta(days=3)
+    inasistencias_expiradas = AsistenciaAmbiente.objects.filter(
+        estado_asistencia='Inasistio',
+        id_instructor=request.user,
+        fecha__lt=fecha_limite,
+    ).exclude(
+        id_asistencia_ambiente__in=Justificacion.objects.filter(
+            estado__in=['Pendiente', 'Aprobado', 'Habilitado']
+        ).values('id_asistencia_ambiente')
+    ).select_related(
+        'id_usuario',
+        'id_usuario__id_ficha',
+        'id_usuario__id_ficha__id_jornada',
+        'id_competencia'
+    ).distinct()
+
+    inasistencias_habilitadas_ids = set(
+        Justificacion.objects.filter(
+            estado='Habilitado',
+            id_asistencia_ambiente__in=inasistencias_expiradas
+        ).values_list('id_asistencia_ambiente_id', flat=True)
+    )
+
     return render(request, 'gestionar_justificaciones.html', {
         'justificaciones': page_obj,
         'fichas': fichas,
@@ -322,6 +347,8 @@ def gestionar_justificaciones(request):
         'fecha_hasta': fecha_hasta,
         'aprendiz_busqueda': aprendiz,
         'MEDIA_URL': settings.MEDIA_URL,
+        'inasistencias_expiradas': inasistencias_expiradas,
+        'inasistencias_habilitadas_ids': inasistencias_habilitadas_ids,
     })
 
 
@@ -358,6 +385,41 @@ def procesar_justificacion(request):
         )
 
     if success:
+        messages.success(request, mensaje)
+    else:
+        messages.error(request, mensaje)
+
+    return redirect('instructor:gestionar_justificaciones')
+
+
+# ==================== HABILITAR CARGA DE EVIDENCIA ====================
+@login_required
+def habilitar_carga(request):
+
+    if request.method != 'POST':
+        return redirect('instructor:gestionar_justificaciones')
+
+    asistencia_id = request.POST.get('asistencia_id')
+    observaciones = request.POST.get('observaciones', '')
+
+    if not asistencia_id:
+        messages.error(request, 'ID de inasistencia no proporcionado')
+        return redirect('instructor:gestionar_justificaciones')
+
+    success, mensaje = habilitar_carga_evidencia(
+        asistencia_id=asistencia_id,
+        instructor=request.user,
+        observaciones=observaciones
+    )
+
+    if success:
+        registrar_actividad(
+            usuario=request.user,
+            tipo_accion='JUSTIFICACION_HABILITAR',
+            actividad='Habilitación de carga de evidencia',
+            descripcion=f'Instructor {request.user.nombre} {request.user.apellido} habilitó la carga de evidencia para la inasistencia ID: {asistencia_id}',
+            request=request
+        )
         messages.success(request, mensaje)
     else:
         messages.error(request, mensaje)

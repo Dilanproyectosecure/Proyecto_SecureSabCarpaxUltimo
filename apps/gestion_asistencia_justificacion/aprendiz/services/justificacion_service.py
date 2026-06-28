@@ -21,7 +21,12 @@ def crear_justificaciones(usuario, inasistencias_ids, motivo, soporte):
             dias_pasados = (hoy - asistencia.fecha).days
 
             if dias_pasados > 3:
-                continue
+                tiene_habilitacion = Justificacion.objects.filter(
+                    id_asistencia_ambiente=asistencia,
+                    estado='Habilitado'
+                ).exists()
+                if not tiene_habilitacion:
+                    continue
 
             extension = os.path.splitext(soporte.name)[1]
 
