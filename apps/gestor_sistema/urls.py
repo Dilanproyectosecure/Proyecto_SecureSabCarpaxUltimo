@@ -24,6 +24,7 @@ urlpatterns = [
     path('crear-usuario/', views.crear_usuario, name='crear_usuario'),
     path('crear-usuario-view/', views.crear_usuario_view, name='crear_usuario_view'),
     path('reportes/asistencia-ambientes/excel/', views.exportar_ambientes_excel, name='exportar_ambientes_excel'),
+    path('proxy/hikvision/', views.proxy_hikvision, name='proxy_hikvision'),
     path('sincronizar-asistencia/', views.sincronizar_asistencia, name='sincronizar_asistencia'),
     path('desactivar-usuario/<int:id_usuario>/', views.desactivar_usuario, name='desactivar_usuario'),
     path('activar-usuario/<int:id_usuario>/', views.activar_usuario, name='activar_usuario'),

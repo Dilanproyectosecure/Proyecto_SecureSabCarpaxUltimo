@@ -63,11 +63,13 @@ class Usuarios(AbstractBaseUser):
         return f"{self.nombre} {self.apellido}"
     
     def get_rol(self):
-        try:
-            role_user = RoleUser.objects.get(id_usuario=self.id_usuario)
+        role_user = RoleUser.objects.filter(id_usuario=self.id_usuario).first()
+        if role_user and role_user.role:
             return role_user.role.name
-        except RoleUser.DoesNotExist:
-            return None
+        return None
+
+    def get_roles(self):
+        return RoleUser.objects.filter(id_usuario=self.id_usuario).select_related('role').all()
 
 class Roles(models.Model):
     id = models.BigAutoField(primary_key=True)

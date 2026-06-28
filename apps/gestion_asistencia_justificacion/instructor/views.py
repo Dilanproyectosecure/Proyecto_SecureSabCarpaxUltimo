@@ -18,7 +18,7 @@ from .services.inasistencias_service import calcular_inasistencias_aprendiz, cal
 from .services.asistencia_service import ( registrar_asistencia, generar_reporte, generar_totales)
 from .services.aprendiz_service import actualizar_datos_aprendiz
 from .services.justificacion_action_service import procesar_accion_justificacion, habilitar_carga_evidencia
-from .services.llamado_service import verificar_y_procesar_aprendices, obtener_llamados_recientes, reenviar_correo, notificar_aprendiz as servicio_notificar_aprendiz
+from .services.llamado_service import verificar_y_procesar_aprendices, verificar_retardos_aprendices, obtener_llamados_recientes, reenviar_correo, notificar_aprendiz as servicio_notificar_aprendiz
 from .utils.pdf_utils import generate_pdf_response
 from django.urls import reverse  
 from apps.gestor_sistema.services import registrar_actividad
@@ -101,13 +101,19 @@ def gestionar_asistencia(request):
             registradas = registrar_asistencia(aprendices, request, fecha, competencia)
 
             llamados = verificar_y_procesar_aprendices(aprendices, request.user)
+            llamados_ret = verificar_retardos_aprendices(aprendices, request.user)
+            llamados = (llamados or []) + (llamados_ret or [])
             if llamados:
                 for ll in llamados:
                     nivel_nombre = dict(LlamadoAtencion.NIVEL_CHOICES).get(ll.nivel, f'Llamado nivel {ll.nivel}')
+                    if ll.total_inasistencias < 0:
+                        motivo = f'{abs(ll.total_inasistencias)} retardos consecutivos'
+                    else:
+                        motivo = f'{ll.total_inasistencias} inasistencias'
                     messages.warning(
                         request,
                         f'{nivel_nombre} generado para {ll.id_usuario.nombre} {ll.id_usuario.apellido} '
-                        f'({ll.total_inasistencias} inasistencias) - Correo enviado.'
+                        f'({motivo}) - Correo enviado.'
                     )
 
             registrar_actividad(
@@ -122,9 +128,14 @@ def gestionar_asistencia(request):
             url = reverse('instructor:gestionar_asistencia')
             return redirect(f'{url}?ficha={ficha_id}&fecha={fecha}&competencia={competencia.id_competencia if competencia else ""}')
 
+        aprendices_con_sede = [a for a in aprendices if not hasattr(a, 'tiene_asistencia_sede') or a.tiene_asistencia_sede]
+        aprendices_sin_sede = [a for a in aprendices if hasattr(a, 'tiene_asistencia_sede') and not a.tiene_asistencia_sede]
+
         return render(request, 'gestionar_asistencia.html', {
             'ficha': ficha,
             'aprendices': aprendices,
+            'aprendices_con_sede': aprendices_con_sede,
+            'aprendices_sin_sede': aprendices_sin_sede,
             'competencias': competencias,
             'competencia': competencia,
             'fecha_seleccionada': fecha,
@@ -451,6 +462,94 @@ def notificar_aprendiz(request):
         return JsonResponse({'success': True, 'message': mensaje})
     return JsonResponse({'success': False, 'error': mensaje}, status=400)
 
+
+# ==================== DESCARTAR NOTIFICACION (AJAX) ====================
+@login_required
+def dismiss_llamado(request, llamado_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False}, status=405)
+    try:
+        llamado = LlamadoAtencion.objects.get(id_llamado=llamado_id, id_instructor=request.user)
+        llamado.notificado = True
+        llamado.save(update_fields=['notificado'])
+        return JsonResponse({'success': True})
+    except LlamadoAtencion.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'No encontrado'}, status=404)
+
+
+# ==================== ENVIAR CORREOS INASISTENCIA (AJAX) ====================
+@login_required
+def enviar_correos_inasistencia_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    import json
+    data = json.loads(request.body)
+    ids = data.get('aprendices_ids', [])
+    ficha_id = data.get('ficha_id')
+    fecha = data.get('fecha')
+    competencia_id = data.get('competencia_id')
+
+    if not ids or not ficha_id:
+        return JsonResponse({'success': False, 'error': 'Faltan datos'}, status=400)
+
+    from apps.reporte_monitoreo.coordinador.models import Ficha, Competencia
+    from .services.email_service import enviar_correos_inasistencia
+    from apps.gestor_sistema.services import registrar_actividad
+    from apps.login.models import Usuarios
+
+    ficha = Ficha.objects.get(id_ficha=ficha_id)
+    competencia = Competencia.objects.filter(id_competencia=competencia_id).first() if competencia_id else None
+    aprendices = Usuarios.objects.filter(id_usuario__in=ids)
+
+    resultado = enviar_correos_inasistencia(list(aprendices), ficha, fecha, competencia)
+
+    ids_enviados = [d['id'] for d in resultado['detalles'] if d['estado'] == 'enviado']
+    if ids_enviados:
+        registrar_actividad(
+            usuario=request.user,
+            tipo_accion='EMAIL_INASISTENCIA',
+            actividad='Envío de correos de inasistencia',
+            descripcion=f'Correos enviados a {len(ids_enviados)} aprendices - ficha {ficha.numero_ficha} - fecha {fecha} ids[{",".join(str(i) for i in ids_enviados)}]',
+            request=request
+        )
+
+    return JsonResponse(resultado)
+
+
+# ==================== ENVIAR CORREO RETARDO (AJAX) ====================
+@login_required
+def enviar_correo_retardo_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    import json
+    data = json.loads(request.body)
+    aprendiz_id = data.get('aprendiz_id')
+    retardos = data.get('retardos_consecutivos', 0)
+
+    if not aprendiz_id:
+        return JsonResponse({'success': False, 'error': 'aprendiz_id requerido'}, status=400)
+
+    from apps.reporte_monitoreo.coordinador.models import Ficha
+    from .services.email_service import enviar_correo_retardo
+    from apps.login.models import Usuarios
+
+    ficha_id = data.get('ficha_id')
+    ficha = Ficha.objects.filter(id_ficha=ficha_id).first() if ficha_id else None
+    aprendiz = Usuarios.objects.get(id_usuario=aprendiz_id)
+    fecha = data.get('fecha', '')
+
+    enviado = enviar_correo_retardo(aprendiz, retardos, ficha, fecha)
+    if enviado:
+        from apps.gestor_sistema.services import registrar_actividad
+        registrar_actividad(
+            usuario=request.user,
+            tipo_accion='EMAIL_RETARDO',
+            actividad='Envío de correo de retardo',
+            descripcion=f'Correo de retardo enviado a {aprendiz.nombre} {aprendiz.apellido} ({retardos} retardos)',
+            request=request
+        )
+        return JsonResponse({'enviado': True, 'mensaje': 'Correo de retardo enviado correctamente'})
+    return JsonResponse({'enviado': False, 'mensaje': 'No se pudo enviar el correo'}, status=400)
 
 
 
