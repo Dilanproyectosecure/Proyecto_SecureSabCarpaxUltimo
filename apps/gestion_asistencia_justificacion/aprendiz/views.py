@@ -78,9 +78,13 @@ def radicar_justificacion(request):
             ultima = inasistencia.justificaciones[0]
             inasistencia.estado_justificacion = ultima.estado
             inasistencia.observacion_justificacion = ultima.observaciones
+            inasistencia.tiene_habilitacion = any(
+                j.estado == 'Habilitado' for j in inasistencia.justificaciones
+            )
         else:
             inasistencia.estado_justificacion = None
             inasistencia.observacion_justificacion = ""
+            inasistencia.tiene_habilitacion = False
 
     if request.method == 'POST':
 
@@ -106,6 +110,15 @@ def radicar_justificacion(request):
 
         if not soporte:
             messages.error(request, 'Debe adjuntar un archivo de soporte')
+            return render(request, 'radicar_justificacion.html', {
+                'usuario': request.user,
+                'competencias': competencias,
+                'inasistencias': inasistencias
+            })
+
+        extensiones_permitidas = ('.pdf', '.png')
+        if not soporte.name.lower().endswith(extensiones_permitidas):
+            messages.error(request, 'Solo se permiten archivos PDF o PNG')
             return render(request, 'radicar_justificacion.html', {
                 'usuario': request.user,
                 'competencias': competencias,

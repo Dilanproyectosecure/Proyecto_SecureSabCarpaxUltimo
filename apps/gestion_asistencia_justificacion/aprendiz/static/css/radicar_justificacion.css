@@ -235,6 +235,12 @@
     color: white;
 }
 
+/* Badge para inasistencias HABILITADAS (azul) */
+.badge-habilitado {
+    background: #17a2b8;
+    color: white;
+}
+
 .sin-datos {
     text-align: center;
     padding: 2rem !important;

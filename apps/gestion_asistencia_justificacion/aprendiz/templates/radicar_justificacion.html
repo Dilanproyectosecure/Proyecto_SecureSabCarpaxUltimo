@@ -55,13 +55,13 @@
             </thead>
             <tbody>
                 {% for inasistencia in inasistencias %}
-                <tr class="{% if inasistencia.dias_pasados > 3 %}expirada{% endif %}">
+                <tr class="{% if inasistencia.dias_pasados > 3 and not inasistencia.tiene_habilitacion %}expirada{% endif %}">
                     <td class="checkbox-cell">
                         <input type="checkbox" 
                                name="inasistencias" 
                                value="{{ inasistencia.id_asistencia_ambiente }}"
                                id="inasistencia_{{ inasistencia.id_asistencia_ambiente }}"
-                               {% if inasistencia.dias_pasados > 3 or inasistencia.estado_justificacion == 'Pendiente' or inasistencia.estado_justificacion == 'Aprobado' %}disabled{% endif %}>
+                               {% if inasistencia.estado_justificacion == 'Pendiente' or inasistencia.estado_justificacion == 'Aprobado' %}disabled{% endif %}>
                     </td>
                     <td>{{ inasistencia.fecha|date:"d/m/Y" }}</td>
                     <td>{{ inasistencia.id_competencia.nombre_competencia }}</td>
@@ -75,6 +75,9 @@
                                             
                         {% elif inasistencia.estado_justificacion == 'Rechazado' %}
                             <span class="badge-rechazada">Rechazada</span>
+
+                        {% elif inasistencia.tiene_habilitacion %}
+                            <span class="badge-habilitado">Habilitado</span>
                                             
                         {% elif inasistencia.dias_pasados > 3 %}
                             <span class="badge-expirada">Expirada</span>
@@ -109,8 +112,8 @@
         <!-- ARCHIVO SOPORTE -->
         <div class="form-group">
             <label for="soporte">Soporte (PDF):</label>
-            <input type="file" name="soporte" id="soporte" class="form-control" accept=".pdf,.jpg,.jpeg,.png" required>
-            <small class="form-text text-muted">Solo se permite archivos en formato PDF (máx. 5MB)</small>
+            <input type="file" name="soporte" id="soporte" class="form-control" accept=".pdf,.png" required>
+            <small class="form-text text-muted">Solo se permite archivos en formato PDF o PNG (máx. 5MB)</small>
         </div>
 
         <!-- BOTÓN DE ENVÍO -->
