@@ -31,15 +31,15 @@ def generar_reporte(asistencias):
         'id_usuario__nombre',
         'id_usuario__apellido'
     ).annotate(
-        asistio=Count(Case(When(estado_asistencia='asistio', then=1), output_field=IntegerField())),
-        inasistio=Count(Case(When(estado_asistencia='inasistio', then=1), output_field=IntegerField())),
-        retardo=Count(Case(When(estado_asistencia='retardo', then=1), output_field=IntegerField())),
+        asistio=Count(Case(When(estado_asistencia__iexact='asistio', then=1), output_field=IntegerField())),
+        inasistio=Count(Case(When(estado_asistencia__iexact='inasistio', then=1), output_field=IntegerField())),
+        retardo=Count(Case(When(estado_asistencia__iexact='retardo', then=1), output_field=IntegerField())),
     )
 
 
 def generar_totales(asistencias):
     return asistencias.aggregate(
-        total_asistio=Count(Case(When(estado_asistencia='asistio', then=1), output_field=IntegerField())),
-        total_inasistio=Count(Case(When(estado_asistencia='inasistio', then=1), output_field=IntegerField())),
-        total_retardo=Count(Case(When(estado_asistencia='retardo', then=1), output_field=IntegerField())),
+        total_asistio=Count(Case(When(estado_asistencia__iexact='asistio', then=1), output_field=IntegerField())),
+        total_inasistio=Count(Case(When(estado_asistencia__iexact='inasistio', then=1), output_field=IntegerField())),
+        total_retardo=Count(Case(When(estado_asistencia__iexact='retardo', then=1), output_field=IntegerField())),
     )
