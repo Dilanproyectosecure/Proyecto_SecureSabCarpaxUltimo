@@ -3,7 +3,8 @@ from django.db.models import Prefetch
 
 def obtener_inasistencias_usuario(usuario):
     return AsistenciaAmbiente.objects.filter(
-        id_usuario=usuario
+        id_usuario=usuario,
+        estado_asistencia__in=['Inasistio', 'Justificado', 'Justificada']
     ).select_related(
         'id_competencia',
         'id_instructor'
