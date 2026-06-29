@@ -121,6 +121,7 @@ def mi_perfil(request):
     Vista del perfil de usuario (accesible para todos los roles)
     """
     usuario = request.user
+    es_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     
 
     if request.method == 'POST':
