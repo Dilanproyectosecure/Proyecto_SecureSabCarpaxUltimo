@@ -124,7 +124,20 @@ table.reporte tr:nth-child(even) {
         <tr>
             <td><strong>Desde:</strong> {{ desde }}</td>
             <td><strong>Hasta:</strong> {{ hasta }}</td>
+            {% if aprendiz_filtro %}
+            <td><strong>Aprendiz:</strong> {{ aprendiz_filtro }}</td>
+            {% endif %}
         </tr>
+        {% if competencia_filtro or estado_filtro %}
+        <tr>
+            {% if competencia_filtro %}
+            <td><strong>Competencia:</strong> {{ competencia_filtro }}</td>
+            {% endif %}
+            {% if estado_filtro %}
+            <td><strong>Estado:</strong> {{ estado_filtro }}</td>
+            {% endif %}
+        </tr>
+        {% endif %}
     </table>
 </div>
 

@@ -233,13 +233,23 @@ def consultar_asistenciaI(request):
             reporte_resumen = generar_reporte(asistencias)
             totales = generar_totales(asistencias)
 
+            competencia_nombre = ''
+            if competencia_id:
+                try:
+                    competencia_nombre = Competencia.objects.get(id_competencia=competencia_id).nombre_competencia
+                except Competencia.DoesNotExist:
+                    competencia_nombre = competencia_id
+
             context_pdf = {
                 'reporte_resumen': reporte_resumen,
                 'totales': totales,
                 'desde': reporte_desde,
                 'hasta': reporte_hasta,
                 'ficha': ficha_seleccionada_obj,
-                'jornada': ficha_seleccionada_obj.id_jornada
+                'jornada': ficha_seleccionada_obj.id_jornada,
+                'aprendiz_filtro': aprendiz_busqueda or '',
+                'competencia_filtro': competencia_nombre,
+                'estado_filtro': estado or '',
             }
 
             return generate_pdf_response(
