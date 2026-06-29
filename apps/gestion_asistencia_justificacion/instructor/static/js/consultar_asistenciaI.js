@@ -50,6 +50,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Abrir modal
     window.abrirModalReporte = function () {
+        const fechaDesde = document.getElementById('fecha_desde').value;
+        const fechaHasta = document.getElementById('fecha_hasta').value;
+        if (fechaDesde) document.getElementById('reporte_desde').value = fechaDesde;
+        if (fechaHasta) document.getElementById('reporte_hasta').value = fechaHasta;
         document.getElementById('modalReporte').style.display = 'flex';
     };
 
@@ -79,6 +83,9 @@ document.addEventListener("DOMContentLoaded", function () {
         const ficha = document.getElementById('ficha').value;
         const desde = document.getElementById('reporte_desde').value;
         const hasta = document.getElementById('reporte_hasta').value;
+        const competencia = document.getElementById('competencia').value;
+        const estado = document.getElementById('estado').value;
+        const aprendiz = document.getElementById('aprendiz').value;
 
         if (!ficha) {
             alert("Debes seleccionar una ficha primero");
@@ -106,8 +113,12 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        window.location.href =
-            `?reporte=1&reporte_desde=${desde}&reporte_hasta=${hasta}&ficha=${document.getElementById('ficha').value}`;
+        let url = `?reporte=1&reporte_desde=${desde}&reporte_hasta=${hasta}&ficha=${ficha}`;
+        if (competencia) url += `&competencia=${competencia}`;
+        if (estado) url += `&estado=${estado}`;
+        if (aprendiz) url += `&aprendiz=${encodeURIComponent(aprendiz)}`;
+
+        window.location.href = url;
     };
 
 });

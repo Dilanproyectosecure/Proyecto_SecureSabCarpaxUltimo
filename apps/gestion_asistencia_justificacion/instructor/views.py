@@ -219,7 +219,10 @@ def consultar_asistenciaI(request):
             asistencias = asistencias.filter(id_competencia_id=competencia_id)
 
         if estado:
-            asistencias = asistencias.filter(estado_asistencia=estado)
+            asistencias = asistencias.filter(estado_asistencia__iexact=estado)
+
+        if aprendiz_encontrado:
+            asistencias = asistencias.filter(id_usuario=aprendiz_encontrado)
 
         if reporte and reporte_desde and reporte_hasta:
 
@@ -251,11 +254,11 @@ def consultar_asistenciaI(request):
         if fecha_hasta:
             asistencias = asistencias.filter(fecha__lte=fecha_hasta)
 
-        if aprendiz_encontrado:
-            asistencias = asistencias.filter(id_usuario=aprendiz_encontrado)
-
         asistencias = asistencias.order_by('-fecha', 'id_usuario__apellido')
 
+    total_asistio = asistencias.filter(estado_asistencia__iexact='Asistio').count()
+    total_inasistio = asistencias.filter(estado_asistencia__iexact='Inasistio').count()
+    total_retardo = asistencias.filter(estado_asistencia__iexact='Retardo').count()
 
     paginator = Paginator(asistencias, 20)
     page_obj = paginator.get_page(request.GET.get('page', 1))
@@ -280,11 +283,16 @@ def consultar_asistenciaI(request):
         'ficha_seleccionada': int(ficha_id) if ficha_id else None,
         'ficha_seleccionada_obj': ficha_seleccionada_obj,
         'aprendiz_encontrado': aprendiz_encontrado,
-        'fecha_desde': fecha_desde,
-        'fecha_hasta': fecha_hasta,
-        'estado': estado,
+        'aprendiz_busqueda': aprendiz_busqueda or '',
+        'competencia_seleccionada': int(competencia_id) if competencia_id else None,
+        'fecha_desde': fecha_desde or '',
+        'fecha_hasta': fecha_hasta or '',
+        'estado': estado or '',
         'llamado_activo': llamado_activo,
         'total_inasistencias': total_inasistencias,
+        'total_asistio': total_asistio,
+        'total_inasistio': total_inasistio,
+        'total_retardo': total_retardo,
     })
 
 
