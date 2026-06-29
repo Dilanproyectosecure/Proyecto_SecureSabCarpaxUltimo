@@ -135,15 +135,15 @@
 
     {% if ficha_seleccionada %}
     <div class="resumen-cards">
-        <div class="resumen-card asistio">
+        <div class="resumen-card asistio {% if estado == 'asistio' %}active{% endif %}" onclick="filtrarPorEstado('asistio')" style="cursor:pointer">
             <span class="resumen-label">Asistencias</span>
             <span class="resumen-valor">{{ total_asistio }}</span>
         </div>
-        <div class="resumen-card inasistio">
-            <span class="resumen-label">Inasistiencias</span>
+        <div class="resumen-card inasistio {% if estado == 'inasistio' %}active{% endif %}" onclick="filtrarPorEstado('inasistio')" style="cursor:pointer">
+            <span class="resumen-label">Inasistencias</span>
             <span class="resumen-valor">{{ total_inasistio }}</span>
         </div>
-        <div class="resumen-card retardo">
+        <div class="resumen-card retardo {% if estado == 'retardo' %}active{% endif %}" onclick="filtrarPorEstado('retardo')" style="cursor:pointer">
             <span class="resumen-label">Retardos</span>
             <span class="resumen-valor">{{ total_retardo }}</span>
         </div>
@@ -280,6 +280,18 @@ function limpiarFiltros() {
 function cambiarPagina(numero) {
     const url = new URL(window.location.href);
     url.searchParams.set('page', numero);
+    window.location.href = url.toString();
+}
+
+function filtrarPorEstado(estado) {
+    const url = new URL(window.location.href);
+    const estadoActual = url.searchParams.get('estado');
+    if (estadoActual === estado) {
+        url.searchParams.delete('estado');
+    } else {
+        url.searchParams.set('estado', estado);
+    }
+    url.searchParams.delete('page');
     window.location.href = url.toString();
 }
 </script>
