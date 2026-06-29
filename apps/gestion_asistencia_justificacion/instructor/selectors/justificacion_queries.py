@@ -1,16 +1,27 @@
 from django.db.models import Q
-from apps.reporte_monitoreo.coordinador.models import Justificacion
+from apps.reporte_monitoreo.coordinador.models import Justificacion, FichaInstructor
 
 
-def obtener_justificaciones():
-    return Justificacion.objects.filter(
+def obtener_justificaciones(instructor_id=None):
+    qs = Justificacion.objects.filter(
         id_asistencia_ambiente__isnull=False
     ).select_related(
         'id_asistencia_ambiente',
         'id_asistencia_ambiente__id_usuario',
         'id_asistencia_ambiente__id_usuario__id_ficha',
-        'id_asistencia_ambiente__id_usuario__id_ficha__id_jornada'
+        'id_asistencia_ambiente__id_usuario__id_ficha__id_jornada',
+        'id_asistencia_ambiente__id_competencia'
     ).order_by('-fecha', '-id_justificacion')
+
+    if instructor_id:
+        competencias = FichaInstructor.objects.filter(
+            id_instructor=instructor_id
+        ).values_list('id_competencia', flat=True)
+        qs = qs.filter(
+            id_asistencia_ambiente__id_competencia__in=competencias
+        )
+
+    return qs
 
 
 def filtrar_justificaciones(queryset, ficha_id=None, jornada_id=None,
