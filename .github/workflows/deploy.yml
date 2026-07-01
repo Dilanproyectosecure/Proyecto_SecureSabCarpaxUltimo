@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
@@ -19,11 +19,12 @@ jobs:
           username: azureuser
           key: ${{ secrets.AZURE_SSH_KEY }}
           script: |
-            set -ex
+            set -e
             echo "=== PASO 1: Git pull ==="
             cd /home/azureuser/securesab_project
             git status
-            git pull origin main
+            git fetch origin main
+            git reset --hard origin/main
             
             echo "=== PASO 2: Activar entorno virtual ==="
             source venv/bin/activate
@@ -32,10 +33,10 @@ jobs:
             pip install -r requirements.txt
             
             echo "=== PASO 4: Migraciones ==="
-            python manage.py migrate --check 2>/dev/null || python manage.py migrate || true
+            python manage.py migrate || true
             
             echo "=== PASO 5: Collectstatic ==="
-            python manage.py collectstatic --noinput 2>/dev/null || true
+            python manage.py collectstatic --noinput || true
             
             echo "=== PASO 6: Reiniciar servicio ==="
             sudo systemctl restart gunicorn || sudo systemctl restart securesab || sudo systemctl restart securesab.service || true
