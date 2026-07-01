@@ -19,10 +19,26 @@ jobs:
           username: azureuser
           key: ${{ secrets.AZURE_SSH_KEY }}
           script: |
-            set -e
+            set -ex
+            echo "=== PASO 1: Git pull ==="
             cd /home/azureuser/securesab_project
+            git status
             git pull origin main
+            
+            echo "=== PASO 2: Activar entorno virtual ==="
             source venv/bin/activate
+            
+            echo "=== PASO 3: Instalar dependencias ==="
             pip install -r requirements.txt
-            python manage.py migrate --check 2>/dev/null || true
-            sudo systemctl restart gunicorn || sudo systemctl restart securesab || true
+            
+            echo "=== PASO 4: Migraciones ==="
+            python manage.py migrate --check 2>/dev/null || python manage.py migrate || true
+            
+            echo "=== PASO 5: Collectstatic ==="
+            python manage.py collectstatic --noinput 2>/dev/null || true
+            
+            echo "=== PASO 6: Reiniciar servicio ==="
+            sudo systemctl restart gunicorn || sudo systemctl restart securesab || sudo systemctl restart securesab.service || true
+            
+            echo "=== DEPLOY COMPLETADO ==="
+            systemctl status gunicorn --no-pager || true
