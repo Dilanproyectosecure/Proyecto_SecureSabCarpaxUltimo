@@ -323,7 +323,7 @@ def gestionar_justificaciones(request):
     jornadas = Jornada.objects.all()
 
     # SELECTOR
-    justificaciones = obtener_justificaciones()
+    justificaciones = obtener_justificaciones(instructor_id=request.user.id_usuario)
 
     # FILTROS
     justificaciones = filtrar_justificaciones(
@@ -397,7 +397,8 @@ def procesar_justificacion(request):
     success, mensaje = procesar_accion_justificacion(
         justificacion_id,
         accion,
-        observaciones
+        observaciones,
+        instructor_id=request.user.id_usuario
     )
 
     # ✅ REGISTRAR ACTIVIDAD - APROBACIÓN/RECHAZO DE JUSTIFICACIÓN

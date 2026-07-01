@@ -1,41 +1,51 @@
 from datetime import date
-from apps.reporte_monitoreo.coordinador.models import Justificacion, AsistenciaAmbiente
+from apps.reporte_monitoreo.coordinador.models import Justificacion, AsistenciaAmbiente, FichaInstructor
 
 
 def procesar_accion_justificacion(
     justificacion_id,
     accion,
-    observaciones=None
+    observaciones=None,
+    instructor_id=None
 ):
     """
-    Aprueba o rechaza una justificación
+    Aprueba o rechaza una justificación.
+    Valida que la competencia de la justificación pertenezca al instructor.
     """
 
     try:
-        justificacion = Justificacion.objects.get(
+        justificacion = Justificacion.objects.select_related(
+            'id_asistencia_ambiente',
+            'id_asistencia_ambiente__id_competencia'
+        ).get(
             id_justificacion=justificacion_id
         )
-
-        if accion == 'aprobar':
-
-            justificacion.estado = 'Aprobado'
-
-            if justificacion.id_asistencia_ambiente:
-                justificacion.id_asistencia_ambiente.estado_asistencia = 'Justificada'
-                justificacion.id_asistencia_ambiente.save()
-
-        elif accion == 'rechazar':
-            justificacion.estado = 'Rechazado'
-
-        if observaciones:
-            justificacion.observaciones = observaciones
-
-        justificacion.save()
-
-        return True, "Procesado correctamente"
-
     except Justificacion.DoesNotExist:
         return False, "Justificación no encontrada"
+
+    if instructor_id and justificacion.id_asistencia_ambiente:
+        competencia_id = justificacion.id_asistencia_ambiente.id_competencia_id
+        tiene_permiso = FichaInstructor.objects.filter(
+            id_instructor=instructor_id,
+            id_competencia=competencia_id
+        ).exists()
+        if not tiene_permiso:
+            return False, "No tiene permiso para procesar justificaciones de esta competencia"
+
+    if accion == 'aprobar':
+        justificacion.estado = 'Aprobado'
+        if justificacion.id_asistencia_ambiente:
+            justificacion.id_asistencia_ambiente.estado_asistencia = 'Justificada'
+            justificacion.id_asistencia_ambiente.save()
+
+    elif accion == 'rechazar':
+        justificacion.estado = 'Rechazado'
+
+    if observaciones:
+        justificacion.observaciones = observaciones
+
+    justificacion.save()
+    return True, "Procesado correctamente"
 
 
 def habilitar_carga_evidencia(asistencia_id, instructor, observaciones=None):
