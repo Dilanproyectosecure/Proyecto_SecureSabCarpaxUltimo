@@ -8,12 +8,12 @@ from django.http import JsonResponse
 from datetime import date, timedelta
 from django.db.models import Q, Subquery, OuterRef
 from apps.login.models import Usuarios
-from apps.reporte_monitoreo.coordinador.models import ( Ficha, AsistenciaAmbiente, Competencia, Justificacion, Jornada, AsistenciaSede)
+from apps.reporte_monitoreo.coordinador.models import ( Ficha, AsistenciaAmbiente, Competencia, Justificacion, PeticionJustificacion, FichaInstructor, Jornada, AsistenciaSede)
 from .models import LlamadoAtencion
 from .selectors.fichas_selector import obtener_fichas_con_estadisticas
 from .selectors.fichas_selector import obtener_datos_ficha
 from .selectors.asistencia_selector import ( obtener_ficha_con_asistencias, obtener_asistencias_base, buscar_aprendiz, obtener_competencias_programa)
-from .selectors.justificacion_queries import ( obtener_justificaciones, filtrar_justificaciones)
+from .selectors.justificacion_queries import ( obtener_justificaciones, filtrar_justificaciones, obtener_peticiones_pendientes)
 from .services.inasistencias_service import calcular_inasistencias_aprendiz, calcular_retardos_aprendiz
 from .services.asistencia_service import ( registrar_asistencia, generar_reporte, generar_totales)
 from .services.aprendiz_service import actualizar_datos_aprendiz
@@ -365,6 +365,9 @@ def gestionar_justificaciones(request):
         ).values_list('id_asistencia_ambiente_id', flat=True)
     )
 
+    # PETICIONES PENDIENTES
+    peticiones_pendientes = obtener_peticiones_pendientes(instructor_id=request.user.id_usuario)
+
     return render(request, 'gestionar_justificaciones.html', {
         'justificaciones': page_obj,
         'fichas': fichas,
@@ -378,6 +381,7 @@ def gestionar_justificaciones(request):
         'MEDIA_URL': settings.MEDIA_URL,
         'inasistencias_expiradas': inasistencias_expiradas,
         'inasistencias_habilitadas_ids': inasistencias_habilitadas_ids,
+        'peticiones_pendientes': peticiones_pendientes,
     })
 
 
@@ -455,6 +459,59 @@ def habilitar_carga(request):
         messages.error(request, mensaje)
 
     return redirect('instructor:gestionar_justificaciones')
+
+
+# ==================== PROCESAR PETICIÓN DE JUSTIFICACIÓN (AJAX) ====================
+@login_required
+def procesar_peticion(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+
+    import json
+    peticion_id = request.POST.get('peticion_id')
+    accion = request.POST.get('accion')
+    observaciones = request.POST.get('observaciones', '')
+
+    if not peticion_id or accion not in ('aprobar', 'rechazar'):
+        return JsonResponse({'success': False, 'error': 'Datos inválidos'}, status=400)
+
+    try:
+        peticion = PeticionJustificacion.objects.select_related(
+            'id_asistencia_ambiente',
+            'id_asistencia_ambiente__id_competencia',
+            'id_aprendiz'
+        ).get(id_peticion=peticion_id)
+    except PeticionJustificacion.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Petición no encontrada'}, status=404)
+
+    if peticion.id_asistencia_ambiente and peticion.id_asistencia_ambiente.id_competencia_id:
+        competencia_id = peticion.id_asistencia_ambiente.id_competencia_id
+        tiene_permiso = FichaInstructor.objects.filter(
+            id_instructor=request.user.id_usuario,
+            id_competencia=competencia_id
+        ).exists()
+        if not tiene_permiso:
+            return JsonResponse({'success': False, 'error': 'No tiene permiso para procesar peticiones de esta competencia'}, status=403)
+
+    if accion == 'aprobar':
+        peticion.estado = 'Aprobado'
+    else:
+        peticion.estado = 'Rechazado'
+
+    if observaciones:
+        peticion.observaciones_instructor = observaciones
+
+    peticion.save()
+
+    registrar_actividad(
+        usuario=request.user,
+        tipo_accion='PETICION_JUSTIFICACION_' + accion.upper(),
+        actividad='Petición de justificación ' + ('aprobada' if accion == 'aprobar' else 'rechazada'),
+        descripcion=f'Instructor {request.user.nombre} {request.user.apellido} {accion}ó petición #{peticion_id} de {peticion.id_aprendiz.nombre} {peticion.id_aprendiz.apellido}',
+        request=request
+    )
+
+    return JsonResponse({'success': True, 'message': f'Petición {accion}ada correctamente'})
 
 
 # ==================== REENVIAR NOTIFICACIÓN LLAMADO (AJAX) ====================

@@ -222,7 +222,7 @@
                         {% endwith %}
                     </td>
                     <td>
-                        {% if inasistencia.id_asistencia_ambiente in inasistencias_habilitadas_ids %}
+                        {% if inasistencia.id_asistencia_ambiente_id in inasistencias_habilitadas_ids %}
                             <span class="badge-habilitado">
                                 <i class="bi bi-unlock"></i> Ya habilitada
                             </span>
@@ -264,6 +264,96 @@
                         <i class="bi bi-unlock"></i> Habilitar
                     </button>
                     <button type="button" class="btn-cancelar" onclick="cerrarModalHabilitar()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- SECCIÓN: Peticiones de justificación pendientes -->
+{% if peticiones_pendientes %}
+<div class="content-card" style="margin-top: 20px;">
+    <h2 style="color: #856404; margin-bottom: 15px;">
+        <i class="bi bi-envelope-paper"></i> Peticiones de justificación pendientes
+    </h2>
+    <p style="color: #666; margin-bottom: 15px;">Aprendices que solicitan permiso para justificar inasistencias vencidas.</p>
+
+    <div class="tabla-container">
+        <table class="tabla-justificaciones">
+            <thead>
+                <tr>
+                    <th>Aprendiz</th>
+                    <th>Ficha</th>
+                    <th>Jornada</th>
+                    <th>Competencia</th>
+                    <th>Fecha inasistencia</th>
+                    <th>Motivo solicitud</th>
+                    <th>Fecha petición</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for peticion in peticiones_pendientes %}
+                <tr id="peticion-row-{{ peticion.id_peticion }}">
+                    <td>
+                        <strong>
+                            {{ peticion.id_aprendiz.nombre }}
+                            {{ peticion.id_aprendiz.apellido }}
+                        </strong>
+                        <br>
+                        <small>{{ peticion.id_aprendiz.cedula }}</small>
+                    </td>
+                    <td>{{ peticion.id_asistencia_ambiente.id_usuario.id_ficha.numero_ficha|default:"-" }}</td>
+                    <td>{{ peticion.id_asistencia_ambiente.id_usuario.id_ficha.id_jornada.nombre_jornada|default:"-" }}</td>
+                    <td>{{ peticion.id_asistencia_ambiente.id_competencia.nombre_competencia }}</td>
+                    <td>{{ peticion.id_asistencia_ambiente.fecha|date:"d/m/Y" }}</td>
+                    <td>
+                        <span class="motivo-tooltip" title="{{ peticion.motivo_extension }}">
+                            {{ peticion.motivo_extension|truncatechars:30 }}
+                        </span>
+                    </td>
+                    <td>{{ peticion.fecha_creacion|date:"d/m/Y" }}</td>
+                    <td>
+                        <button class="btn-aprobar" onclick="aprobarPeticion('{{ peticion.id_peticion }}', '{{ peticion.id_aprendiz.nombre }} {{ peticion.id_aprendiz.apellido }}')">
+                            <i class="bi bi-check-circle"></i> Aprobar
+                        </button>
+                        <button class="btn-rechazar" onclick="abrirModalRechazarPeticion('{{ peticion.id_peticion }}', '{{ peticion.id_aprendiz.nombre }} {{ peticion.id_aprendiz.apellido }}')">
+                            <i class="bi bi-x-circle"></i> Rechazar
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal para rechazar petición -->
+<div id="modalPeticionRechazar" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Rechazar Petición</h2>
+            <span class="close" onclick="cerrarModalPeticionRechazar()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="formPeticionRechazar" method="post" action="{% url 'instructor:procesar_peticion' %}">
+                {% csrf_token %}
+                <input type="hidden" name="peticion_id" id="peticion_id_rechazar">
+                <input type="hidden" name="accion" value="rechazar">
+
+                <p>¿Está seguro de rechazar la petición de <strong id="peticion_nombre_aprendiz"></strong>?</p>
+
+                <div class="form-group">
+                    <label for="peticion_observaciones">Observaciones (obligatorio):</label>
+                    <textarea name="observaciones" id="peticion_observaciones" class="form-control" rows="4" required placeholder="Motivo del rechazo"></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn-rechazar">
+                        <i class="bi bi-send"></i> Rechazar
+                    </button>
+                    <button type="button" class="btn-cancelar" onclick="cerrarModalPeticionRechazar()">Cancelar</button>
                 </div>
             </form>
         </div>
@@ -342,6 +432,44 @@ function abrirModalHabilitar(asistenciaId, nombreAprendiz) {
 
 function cerrarModalHabilitar() {
     document.getElementById('modalHabilitar').style.display = 'none';
+}
+
+function aprobarPeticion(peticionId, nombreAprendiz) {
+    if (confirm('¿Aprobar la petición de ' + nombreAprendiz + '?')) {
+        var formData = new FormData();
+        formData.append('peticion_id', peticionId);
+        formData.append('accion', 'aprobar');
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch('{% url "instructor:procesar_peticion" %}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                var row = document.getElementById('peticion-row-' + peticionId);
+                if (row) row.remove();
+                alert(data.message);
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error al procesar la petición');
+        });
+    }
+}
+
+function abrirModalRechazarPeticion(peticionId, nombreAprendiz) {
+    document.getElementById('peticion_id_rechazar').value = peticionId;
+    document.getElementById('peticion_nombre_aprendiz').textContent = nombreAprendiz;
+    document.getElementById('peticion_observaciones').value = '';
+    document.getElementById('modalPeticionRechazar').style.display = 'block';
+}
+
+function cerrarModalPeticionRechazar() {
+    document.getElementById('modalPeticionRechazar').style.display = 'none';
 }
 </script>
 
