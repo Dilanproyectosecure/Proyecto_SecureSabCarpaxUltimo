@@ -17,6 +17,7 @@ urlpatterns = [
     path('gestionar-justificaciones/', views.gestionar_justificaciones, name='gestionar_justificaciones'),
     path('procesar-justificacion/', views.procesar_justificacion, name='procesar_justificacion'),
     path('habilitar-carga/', views.habilitar_carga, name='habilitar_carga'),
+    path('procesar-peticion/', views.procesar_peticion, name='procesar_peticion'),
     path('notificar-llamado/<int:llamado_id>/', views.reenviar_notificacion_llamado, name='reenviar_notificacion_llamado'),
     path('notificar-aprendiz/', views.notificar_aprendiz, name='notificar_aprendiz'),
     path('enviar-correos-inasistencia/', views.enviar_correos_inasistencia_view, name='enviar_correos_inasistencia'),
