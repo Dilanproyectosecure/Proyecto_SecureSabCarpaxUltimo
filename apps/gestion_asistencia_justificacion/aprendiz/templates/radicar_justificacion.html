@@ -55,13 +55,13 @@
             </thead>
             <tbody>
                 {% for inasistencia in inasistencias %}
-                <tr class="{% if inasistencia.expirada and not inasistencia.peticion_aprobada %}expirada{% endif %}">
+                <tr class="{% if inasistencia.estado_justificacion == 'Habilitado' %}habilitada{% elif inasistencia.expirada and not inasistencia.peticion_aprobada and not inasistencia.tiene_habilitacion %}expirada{% endif %}">
                     <td class="checkbox-cell">
                         <input type="checkbox" 
                                name="inasistencias" 
                                value="{{ inasistencia.id_asistencia_ambiente }}"
                                id="inasistencia_{{ inasistencia.id_asistencia_ambiente }}"
-                               {% if inasistencia.expirada and not inasistencia.peticion_aprobada or inasistencia.estado_justificacion == 'Pendiente' or inasistencia.estado_justificacion == 'Aprobado' %}disabled{% endif %}>
+                               {% if inasistencia.estado_justificacion == 'Pendiente' or inasistencia.estado_justificacion == 'Aprobado' or inasistencia.expirada and not inasistencia.peticion_aprobada and not inasistencia.tiene_habilitacion %}disabled{% endif %}>
                     </td>
                     <td>{{ inasistencia.fecha|date:"d/m/Y" }}</td>
                     <td>{{ inasistencia.id_competencia.nombre_competencia }}</td>
@@ -73,14 +73,18 @@
                             <span class="badge-aprobada">Justificada</span>
                         {% elif inasistencia.estado_justificacion == 'Rechazado' %}
                             <span class="badge-rechazada">Rechazada</span>
-                        {% elif inasistencia.expirada and not inasistencia.peticion_aprobada %}
+                        {% elif inasistencia.estado_justificacion == 'Habilitado' %}
+                            <span class="badge-habilitado">Habilitado</span>
+                        {% elif inasistencia.expirada and not inasistencia.peticion_aprobada and not inasistencia.tiene_habilitacion %}
                             <span class="badge-expirada">Expirada</span>
                         {% else %}
                             <span class="badge-pendiente">Pendiente</span>
                         {% endif %}
                     </td>
                     <td>
-                        {% if inasistencia.expirada and not inasistencia.peticion_aprobada %}
+                        {% if inasistencia.tiene_habilitacion %}
+                            <span class="badge-aprobada">Habilitado</span>
+                        {% elif inasistencia.expirada and not inasistencia.peticion_aprobada %}
                             {% if inasistencia.peticion_estado == 'Pendiente' %}
                                 <span class="badge-en-revision">Pendiente</span>
                             {% elif inasistencia.peticion_estado == 'Rechazado' %}
@@ -107,6 +111,16 @@
                         </td>
                     </tr>
                     {% endif %}
+                {% if inasistencia.peticion_estado == 'Rechazado' and inasistencia.peticion_observaciones %}
+                    <tr class="fila-observacion">
+                        <td colspan="6">
+                            <div class="observacion-box">
+                                <strong>Observación del instructor sobre su petición: </strong>
+                                <span>{{ inasistencia.peticion_observaciones }}</span>
+                            </div>
+                        </td>
+                    </tr>
+                {% endif %}
                 {% empty %}
                 <tr>
                     <td colspan="6" class="sin-datos">No hay inasistencias registradas.</td>
@@ -177,7 +191,7 @@
     border-radius: 8px;
     cursor: pointer;
 }
-.badge-en-revision, .badge-rechazada {
+.badge-en-revision, .badge-rechazada, .badge-habilitado {
     display: inline-block;
     padding: 2px 10px;
     border-radius: 12px;
@@ -186,6 +200,7 @@
 }
 .badge-en-revision { background: #fef3c7; color: #92400e; }
 .badge-rechazada { background: #fee2e2; color: #991b1b; }
+.badge-habilitado { background: #dbeafe; color: #1e40af; }
 </style>
 
 <script>

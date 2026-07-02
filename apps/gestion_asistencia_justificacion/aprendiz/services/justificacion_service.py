@@ -26,7 +26,11 @@ def crear_justificaciones(usuario, inasistencias_ids, motivo, soporte):
                     id_aprendiz=usuario,
                     estado='Aprobado'
                 ).exists()
-                if not tiene_peticion:
+                tiene_habilitacion = Justificacion.objects.filter(
+                    id_asistencia_ambiente=asistencia,
+                    estado='Habilitado'
+                ).exists()
+                if not tiene_peticion and not tiene_habilitacion:
                     continue
 
             extension = os.path.splitext(soporte.name)[1]
