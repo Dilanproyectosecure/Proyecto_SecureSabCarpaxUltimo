@@ -125,6 +125,15 @@ def radicar_justificacion(request):
                 'inasistencias': inasistencias
             })
 
+        TAMANO_MAXIMO = 5 * 1024 * 1024
+        if soporte.size > TAMANO_MAXIMO:
+            messages.error(request, 'El archivo no debe superar los 5MB')
+            return render(request, 'radicar_justificacion.html', {
+                'usuario': request.user,
+                'competencias': competencias,
+                'inasistencias': inasistencias
+            })
+
         # SERVICE
         cantidad_creadas = crear_justificaciones(
             usuario=request.user,
