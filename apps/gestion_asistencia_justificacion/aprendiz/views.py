@@ -91,10 +91,12 @@ def radicar_justificacion(request):
             inasistencia.peticion_estado = ultima_pet.estado
             inasistencia.peticion_id = ultima_pet.id_peticion
             inasistencia.peticion_motivo = ultima_pet.motivo_extension
+            inasistencia.peticion_observaciones = ultima_pet.observaciones_instructor
         else:
             inasistencia.peticion_estado = None
             inasistencia.peticion_id = None
             inasistencia.peticion_motivo = ""
+            inasistencia.peticion_observaciones = ""
 
         inasistencia.expirada = inasistencia.dias_pasados > 3
         inasistencia.peticion_aprobada = inasistencia.peticion_estado == 'Aprobado'
