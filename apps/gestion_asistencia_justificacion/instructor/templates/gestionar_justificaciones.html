@@ -128,6 +128,9 @@
             <span class="badge-{{ justificacion.estado|lower }}">
                 {{ justificacion.estado }}
             </span>
+            {% if justificacion.estado == 'Rechazado' and justificacion.observaciones %}
+            <br><small class="text-danger" style="font-size:0.75rem;display:block;margin-top:4px;max-width:180px;word-wrap:break-word;" title="{{ justificacion.observaciones }}"><i class="bi bi-info-circle"></i> {{ justificacion.observaciones|truncatechars:60 }}</small>
+            {% endif %}
         </td>
         <td>
             {% if justificacion.estado == 'Pendiente' %}
