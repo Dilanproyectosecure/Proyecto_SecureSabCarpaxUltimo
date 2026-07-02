@@ -30,8 +30,12 @@ from apps.gestor_sistema.services import registrar_actividad
 def fichas_instructor(request):
     fichas = obtener_fichas_con_estadisticas(instructor_id=request.user.id_usuario)
 
+    peticiones_pendientes = obtener_peticiones_pendientes(instructor_id=request.user.id_usuario)
+
     return render(request, 'fichas_instructor.html', {
-        'fichas': fichas
+        'fichas': fichas,
+        'peticiones_pendientes': peticiones_pendientes,
+        'total_peticiones': peticiones_pendientes.count(),
     })
 
 
