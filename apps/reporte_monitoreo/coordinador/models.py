@@ -99,8 +99,7 @@ class FichaInstructor(models.Model):
     'Competencia',
     on_delete=models.CASCADE,
     db_column='id_competencia',
-    null=True,
-    blank=True
+    null=False
     )
 
     class Meta:

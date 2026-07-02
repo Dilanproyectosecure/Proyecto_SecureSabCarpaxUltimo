@@ -65,7 +65,7 @@
         .detalle-modal-overlay.active { display: flex; }
         .detalle-modal {
             background: white; border-radius: 12px;
-            width: 90%; max-width: 800px; max-height: 85vh;
+            width: 90%; max-width: 1050px; max-height: 85vh;
             display: flex; flex-direction: column;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
             animation: modalIn 0.25s ease;
@@ -339,6 +339,26 @@ const sedes = [
     {% endfor %}
 ];
 
+const justificaciones = [
+    {% for j in historial.justificaciones %}
+    {
+        idAsistenciaAmbiente: {{ j.id_asistencia_ambiente_id|default:"null" }},
+        fecha: "{{ j.fecha|date:'Y-m-d'|default:'N/D' }}",
+        competencia: "{{ j.id_asistencia_ambiente.id_competencia.nombre_competencia|escapejs|default:'N/D' }}",
+        instructor: "{% if j.id_asistencia_ambiente.id_instructor %}{{ j.id_asistencia_ambiente.id_instructor.nombre|escapejs }} {{ j.id_asistencia_ambiente.id_instructor.apellido|escapejs }}{% else %}No asignado{% endif %}",
+        motivo: "{{ j.motivo|escapejs|default:'Sin motivo' }}",
+        estado: "{{ j.estado|escapejs|default:'Pendiente' }}",
+        soporte: "{{ j.soporte|escapejs|default:'' }}",
+        observaciones: "{{ j.observaciones|escapejs|default:'' }}"
+    },
+    {% endfor %}
+];
+
+var justificacionMap = {};
+justificaciones.forEach(function(j) {
+    justificacionMap[j.idAsistenciaAmbiente] = j;
+});
+
 const modalTitles = {
     asistio: 'Asistencias registradas',
     inasistio: 'Inasistencias registradas',
@@ -369,14 +389,32 @@ function abrirModal(tipo) {
             });
             count.textContent = 'Total: ' + sedes.length + ' registro(s)';
         }
+    } else if (tipo === 'justificada') {
+        thead.innerHTML = '<tr><th><i class="fas fa-calendar"></i> Fecha</th><th><i class="fas fa-book"></i> Competencia</th><th><i class="fas fa-chalkboard-teacher"></i> Instructor</th><th>Motivo</th><th><i class="fas fa-info-circle"></i> Estado Justificaci\u00f3n</th><th><i class="fas fa-paperclip"></i> Soporte</th></tr>';
+        if (justificaciones.length === 0) {
+            empty.style.display = 'block';
+            count.textContent = '';
+        } else {
+            justificaciones.forEach(function(j) {
+                var estadoLower = j.estado.toLowerCase();
+                var badgeClass = '';
+                if (estadoLower === 'aprobado') badgeClass = 'badge-aprobado';
+                else if (estadoLower === 'rechazado') badgeClass = 'badge-rechazado';
+                else badgeClass = 'badge-pendiente';
+                var estadoHtml = '<span class="badge-estado ' + badgeClass + '"><i class="fas fa-' + (estadoLower === 'aprobado' ? 'check' : estadoLower === 'rechazado' ? 'times' : 'clock') + '"></i> ' + j.estado + '</span>';
+                var soporteHtml = j.soporte
+                    ? '<a href="/media/' + j.soporte + '" target="_blank" style="color:#4fc3f7;text-decoration:underline;"><i class="fas fa-file"></i> Ver</a>'
+                    : '<span style="color:#888;">Sin soporte</span>';
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>' + j.fecha + '</td><td>' + j.competencia + '</td><td>' + j.instructor + '</td><td>' + j.motivo + '</td><td>' + estadoHtml + '</td><td>' + soporteHtml + '</td>';
+                tbody.appendChild(tr);
+            });
+            count.textContent = 'Total: ' + justificaciones.length + ' registro(s)';
+        }
     } else {
         thead.innerHTML = '<tr><th><i class="fas fa-calendar"></i> Fecha</th><th><i class="fas fa-book"></i> Competencia</th><th><i class="fas fa-chalkboard-teacher"></i> Instructor</th><th><i class="fas fa-info-circle"></i> Estado</th></tr>';
         var filtered = ambientes.filter(function(a) {
-            var est = a.estado.toLowerCase();
-            if (tipo === 'justificada') {
-                return est === 'justificado' || est === 'justificada';
-            }
-            return est === tipo;
+            return a.estado.toLowerCase() === tipo;
         });
         if (filtered.length === 0) {
             empty.style.display = 'block';

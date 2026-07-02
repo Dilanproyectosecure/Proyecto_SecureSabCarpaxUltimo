@@ -128,6 +128,9 @@
             <span class="badge-{{ justificacion.estado|lower }}">
                 {{ justificacion.estado }}
             </span>
+            {% if justificacion.estado == 'Rechazado' and justificacion.observaciones %}
+            <br><small class="text-danger" style="font-size:0.75rem;display:block;margin-top:4px;max-width:180px;word-wrap:break-word;" title="{{ justificacion.observaciones }}"><i class="bi bi-info-circle"></i> {{ justificacion.observaciones|truncatechars:60 }}</small>
+            {% endif %}
         </td>
         <td>
             {% if justificacion.estado == 'Pendiente' %}
@@ -176,6 +179,97 @@
     </div>
     {% endif %}
 </div>
+
+<!-- SECCIÓN: Inasistencias expiradas sin justificación -->
+{% if inasistencias_expiradas %}
+<div class="content-card" style="margin-top: 20px;">
+    <h2 style="color: #dc3545; margin-bottom: 15px;">
+        <i class="bi bi-exclamation-triangle"></i> Inasistencias vencidas - Habilitar carga de evidencia
+    </h2>
+    <p style="color: #666; margin-bottom: 15px;">Estas inasistencias superaron el plazo de 3 días. Puede habilitar la carga de evidencia si es una urgencia justificada.</p>
+
+    <div class="tabla-container">
+        <table class="tabla-justificaciones">
+            <thead>
+                <tr>
+                    <th>Aprendiz</th>
+                    <th>Ficha</th>
+                    <th>Jornada</th>
+                    <th>Competencia</th>
+                    <th>Fecha inasistencia</th>
+                    <th>Días vencida</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inasistencia in inasistencias_expiradas %}
+                <tr>
+                    <td>
+                        <strong>
+                            {{ inasistencia.id_usuario.nombre }}
+                            {{ inasistencia.id_usuario.apellido }}
+                        </strong>
+                        <br>
+                        <small>{{ inasistencia.id_usuario.cedula }}</small>
+                    </td>
+                    <td>{{ inasistencia.id_usuario.id_ficha.numero_ficha|default:"-" }}</td>
+                    <td>{{ inasistencia.id_usuario.id_ficha.id_jornada.nombre_jornada|default:"-" }}</td>
+                    <td>{{ inasistencia.id_competencia.nombre_competencia }}</td>
+                    <td>{{ inasistencia.fecha|date:"d/m/Y" }}</td>
+                    <td>
+                        {% with dias=inasistencia.fecha|timesince %}
+                        <span class="badge-expirada">{{ inasistencia.fecha|timesince }}</span>
+                        {% endwith %}
+                    </td>
+                    <td>
+                        {% if inasistencia.id_asistencia_ambiente in inasistencias_habilitadas_ids %}
+                            <span class="badge-habilitado">
+                                <i class="bi bi-unlock"></i> Ya habilitada
+                            </span>
+                        {% else %}
+                            <button class="btn-habilitar" onclick="abrirModalHabilitar('{{ inasistencia.id_asistencia_ambiente }}', '{{ inasistencia.id_usuario.nombre }} {{ inasistencia.id_usuario.apellido }}')">
+                                <i class="bi bi-unlock"></i> Habilitar carga
+                            </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal para habilitar carga -->
+<div id="modalHabilitar" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Habilitar carga de evidencia</h2>
+            <span class="close" onclick="cerrarModalHabilitar()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="formHabilitar" method="post" action="{% url 'instructor:habilitar_carga' %}">
+                {% csrf_token %}
+                <input type="hidden" name="asistencia_id" id="habilitar_asistencia_id">
+
+                <p>¿Está seguro de habilitar la carga de evidencia para <strong id="habilitar_nombre_aprendiz"></strong>?</p>
+                <p style="color: #dc3545; font-size: 0.9em;">Solo debe habilitar si es una urgencia justificada.</p>
+
+                <div class="form-group">
+                    <label for="habilitar_observaciones">Observaciones:</label>
+                    <textarea name="observaciones" id="habilitar_observaciones" class="form-control" rows="3" placeholder="Motivo de la habilitación (opcional)"></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn-habilitar">
+                        <i class="bi bi-unlock"></i> Habilitar
+                    </button>
+                    <button type="button" class="btn-cancelar" onclick="cerrarModalHabilitar()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Modal para aprobar/rechazar -->
 <div id="modalJustificacion" class="modal">
@@ -237,6 +331,17 @@ function aprobarDirecto(id) {
         document.body.appendChild(form);
         form.submit();
     }
+}
+
+function abrirModalHabilitar(asistenciaId, nombreAprendiz) {
+    document.getElementById('habilitar_asistencia_id').value = asistenciaId;
+    document.getElementById('habilitar_nombre_aprendiz').textContent = nombreAprendiz;
+    document.getElementById('habilitar_observaciones').value = '';
+    document.getElementById('modalHabilitar').style.display = 'block';
+}
+
+function cerrarModalHabilitar() {
+    document.getElementById('modalHabilitar').style.display = 'none';
 }
 </script>
 

@@ -142,6 +142,32 @@
     border-left-color: #ffc107;
 }
 
+.resumen-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+}
+
+.resumen-card.active {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+.resumen-card.asistio.active {
+    background: #d4edda;
+    border-left-width: 6px;
+}
+
+.resumen-card.inasistio.active {
+    background: #f8d7da;
+    border-left-width: 6px;
+}
+
+.resumen-card.retardo.active {
+    background: #fff3cd;
+    border-left-width: 6px;
+}
+
 .resumen-label {
     display: block;
     font-size: 0.9rem;

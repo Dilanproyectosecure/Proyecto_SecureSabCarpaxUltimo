@@ -79,6 +79,9 @@ def radicar_justificacion(request):
             ultima = inasistencia.justificaciones[0]
             inasistencia.estado_justificacion = ultima.estado
             inasistencia.observacion_justificacion = ultima.observaciones
+            inasistencia.tiene_habilitacion = any(
+                j.estado == 'Habilitado' for j in inasistencia.justificaciones
+            )
         else:
             inasistencia.estado_justificacion = None
             inasistencia.observacion_justificacion = ""
