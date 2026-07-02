@@ -21,4 +21,6 @@ urlpatterns = [
     path('enviar-correos-inasistencia/', views.enviar_correos_inasistencia_view, name='enviar_correos_inasistencia'),
     path('enviar-correo-retardo/', views.enviar_correo_retardo_view, name='enviar_correo_retardo'),
     path('dismiss-llamado/<int:llamado_id>/', views.dismiss_llamado, name='dismiss_llamado'),
+    path('gestionar-peticiones/', views.gestionar_peticiones, name='gestionar_peticiones'),
+    path('procesar-peticion/', views.procesar_peticion, name='procesar_peticion'),
 ]

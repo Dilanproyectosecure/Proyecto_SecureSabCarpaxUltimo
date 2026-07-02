@@ -48,6 +48,7 @@ from .services import (
     cambiar_estado_usuario,
 )
 from .usuario_huella_services import eliminar_huella as eliminar_huella_service, registrar_huella as registrar_huella_service
+from apps.reporte_monitoreo.coordinador.models import FichaInstructor
 from .models import registro_actividad  # noqa: F811
 
 def generar_password_segura(cedula='', nombre=''):
@@ -247,6 +248,16 @@ def panel_admin(request):
                 usuario.id_ficha_id = ficha_id
                 usuario.save(update_fields=['id_ficha_id'])
 
+            fichas_instructor_raw = request.POST.get('fichas_instructor', '')
+            if fichas_instructor_raw:
+                for fi_id in fichas_instructor_raw.split(','):
+                    fi_id = fi_id.strip()
+                    if fi_id and fi_id.isdigit():
+                        FichaInstructor.objects.get_or_create(
+                            id_ficha_id=int(fi_id),
+                            id_instructor=usuario
+                        )
+
             enviar_usuario_hikvision(usuario)
             enviar_password_usuario(nombre, apellido, correo, password, cedula)
             messages.success(request, f"Usuario {nombre} creado y sincronizado correctamente.")
@@ -280,20 +291,18 @@ def panel_admin(request):
 
 @login_required
 def carga_masiva_view(request):
-    if request.method == 'POST' and request.FILES.get('archivo'):
-        archivo = request.FILES['archivo']
-        if not archivo.name.endswith(('.csv', '.xlsx')):
-            messages.error(request, 'Formato no soportado. Use .csv o .xlsx')
-            return redirect('gestor_sistema:gestionar_usuarios')
-        from .services import procesar_carga_masiva
-        creados, omitidos, errores = procesar_carga_masiva(request, archivo)
-        if creados:
-            messages.success(request, f'{creados} usuarios creados. Credenciales enviadas por correo.')
-        if omitidos:
-            messages.warning(request, f'{omitidos} usuarios omitidos (ya existían).')
-        for e in errores[:5]:
-            messages.error(request, e)
-    return redirect('gestor_sistema:gestionar_usuarios')
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            usuarios_data = data.get('usuarios', [])
+            rol_nombre = data.get('rol', '').strip().lower()
+
+            from .services import procesar_carga_masiva_json
+            result = procesar_carga_masiva_json(request, usuarios_data, rol_nombre)
+            return JsonResponse(result)
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'creados': 0, 'omitidos': 0, 'errores': ['Error al decodificar JSON']}, status=400)
+    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
     
 
 @csrf_exempt
@@ -633,6 +642,57 @@ def gestionar_usuarios(request):
 
 
 @login_required
+def usuario_detalle_api(request, id_usuario):
+    try:
+        usuario = Usuarios.objects.get(pk=id_usuario)
+        roles = Roles.objects.raw("""
+            SELECT r.* FROM roles r
+            JOIN role_user ru ON ru.role_id = r.id
+            WHERE ru.id_usuario = %s
+        """, [id_usuario])
+        roles_list = [{'id': r.id, 'name': r.name} for r in roles]
+
+        ficha_info = None
+        if usuario.id_ficha_id:
+            ficha = Ficha.objects.filter(id_ficha=usuario.id_ficha_id).first()
+            if ficha:
+                ficha_info = {'id': ficha.id_ficha, 'numero': ficha.numero_ficha}
+
+        fichas_instructor = []
+        try:
+            from apps.reporte_monitoreo.coordinador.models import FichaInstructor
+            fis = FichaInstructor.objects.filter(id_instructor=usuario).select_related('id_ficha')
+            for fi in fis:
+                if fi.id_ficha:
+                    fichas_instructor.append({'id': fi.id_ficha.id_ficha, 'numero': fi.id_ficha.numero_ficha})
+        except Exception:
+            pass
+
+        tiene_huella = Huella.objects.filter(usuario=usuario).exists()
+
+        data = {
+            'id': usuario.id_usuario,
+            'tipo_documento': usuario.tipo_documento,
+            'cedula': usuario.cedula,
+            'nombre': usuario.nombre,
+            'apellido': usuario.apellido,
+            'correo': usuario.correo,
+            'telefono': usuario.telefono,
+            'estado': usuario.estado,
+            'is_active': usuario.is_active,
+            'roles': roles_list,
+            'ficha': ficha_info,
+            'fichas_instructor': fichas_instructor,
+            'tiene_huella': tiene_huella,
+        }
+        return JsonResponse(data)
+    except Usuarios.DoesNotExist:
+        return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
 def crear_usuario_view(request):
     if request.method == 'POST':
         cedula = request.POST.get('cedula')
@@ -646,6 +706,15 @@ def crear_usuario_view(request):
             ficha, _ = Ficha.objects.get_or_create(numero_ficha=nueva_ficha)
             ficha_id = ficha.id_ficha
 
+        fichas_ids = request.POST.getlist('fichas_instructor')
+        rol_id = request.POST.get('rol')
+        rol = Roles.objects.filter(id=rol_id).first()
+        es_instructor = rol and rol.name == 'instructor'
+
+        if es_instructor and (len(fichas_ids) < 1 or len(fichas_ids) > 5):
+            messages.error(request, 'El instructor debe tener entre 1 y 5 fichas asignadas.')
+            return redirect('gestor_sistema:gestionar_usuarios')
+
         datos = {
             'cedula': cedula,
             'nombre': request.POST.get('nombre'),
@@ -653,11 +722,16 @@ def crear_usuario_view(request):
             'correo': request.POST.get('correo'),
             'telefono': request.POST.get('telefono'),
             'password': request.POST.get('password'),
-            'rol_id': request.POST.get('rol'),
-            'ficha_id': ficha_id,
+            'rol_id': rol_id,
+            'ficha_id': ficha_id if not es_instructor else None,
         }
 
         usuario = crear_usuario(request, datos)
+
+        if es_instructor:
+            from .services import asignar_fichas_instructor
+            asignar_fichas_instructor(usuario, fichas_ids)
+
         messages.success(request, f'Usuario {usuario.nombre} {usuario.apellido} creado exitosamente')
         return redirect('gestor_sistema:gestionar_usuarios')
 
@@ -721,6 +795,8 @@ def cambiar_estado_usuario_view(request, id_usuario):
 
 @login_required
 def gestion_huellas(request):
+    from django.core.paginator import Paginator
+
     query = """
         SELECT u.*, r.name as nombre_rol,
         CASE WHEN EXISTS (
@@ -746,8 +822,12 @@ def gestion_huellas(request):
     if rol_filtro:
         usuarios = [u for u in usuarios if getattr(u, 'nombre_rol', '') == rol_filtro]
 
+    paginator = Paginator(usuarios, 15)
+    page = request.GET.get('page', 1)
+    usuarios_page = paginator.get_page(page)
+
     context = {
-        'usuarios': usuarios,
+        'usuarios': usuarios_page,
         'roles': Roles.objects.all(),
         'filtros': {
             'buscar': buscar,
@@ -773,6 +853,7 @@ def eliminar_huella_usuario_view(request, id_usuario):
 
 @login_required
 def registro_actividad_view(request):
+    from django.core.paginator import Paginator
 
     actividades = registro_actividad.objects.select_related(
         'id_usuario'
@@ -811,29 +892,21 @@ def registro_actividad_view(request):
         '-hora'
     )
 
+    paginator = Paginator(actividades, 15)
+    page = request.GET.get('page', 1)
+    actividades_page = paginator.get_page(page)
+
     total_actividades = registro_actividad.objects.count()
-
-    total_login = registro_actividad.objects.filter(
-        tipo_accion='LOGIN'
-    ).count()
-
-    total_huellas = registro_actividad.objects.filter(
-        tipo_accion='HUELLA'
-    ).count()
-
-    total_usuarios = registro_actividad.objects.filter(
-        tipo_accion='USUARIO'
-    ).count()
+    total_login = registro_actividad.objects.filter(tipo_accion='LOGIN').count()
+    total_huellas = registro_actividad.objects.filter(tipo_accion='HUELLA').count()
+    total_usuarios = registro_actividad.objects.filter(tipo_accion='USUARIO').count()
 
     context = {
-
-        'actividades': actividades,
-
+        'actividades': actividades_page,
         'total_actividades': total_actividades,
         'total_login': total_login,
         'total_huellas': total_huellas,
         'total_usuarios': total_usuarios,
-
         'filtros': {
             'buscar': buscar,
             'tipo_accion': tipo_accion,
@@ -886,7 +959,7 @@ def historial_fallos(request):
     if fecha_hasta:
         fallos = fallos.filter(fecha__lte=fecha_hasta)
 
-    paginator = Paginator(fallos, 50)
+    paginator = Paginator(fallos, 15)
     page = request.GET.get('page', 1)
     fallos_page = paginator.get_page(page)
 

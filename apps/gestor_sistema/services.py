@@ -2,7 +2,7 @@ import random
 import string
 
 from apps.login.models import Usuarios, Roles, RoleUser
-from apps.reporte_monitoreo.coordinador.models import Ficha, AsistenciaSede
+from apps.reporte_monitoreo.coordinador.models import Ficha, AsistenciaSede, FichaInstructor
 from django.utils import timezone
 from .models import Huella, registro_actividad
 
@@ -210,6 +210,78 @@ def cambiar_estado_usuario(request, usuario, accion):
         descripcion=descripcion,
         request=request,
     )
+
+
+def asignar_fichas_instructor(usuario, fichas_ids):
+    from django.db import connection
+    with connection.cursor() as cursor:
+        cursor.execute('DELETE FROM ficha_instructor WHERE id_instructor = %s', [usuario.id_usuario])
+        for fid in fichas_ids:
+            cursor.execute(
+                'INSERT IGNORE INTO ficha_instructor (id_ficha, id_instructor, id_competencia) VALUES (%s, %s, NULL)',
+                [fid, usuario.id_usuario]
+            )
+
+
+def procesar_carga_masiva_json(request, usuarios_data, rol_nombre):
+    from .views import generar_password_segura, enviar_password_usuario
+
+    creados = 0
+    omitidos = 0
+    errores = []
+
+    rol = Roles.objects.filter(name=rol_nombre).first()
+    if not rol:
+        return {'success': False, 'creados': 0, 'omitidos': 0, 'errores': [f'Rol "{rol_nombre}" no existe']}
+
+    for index, item in enumerate(usuarios_data):
+        cedula = item.get('cedula', '').strip()
+        nombre = item.get('nombre', '').strip()
+        apellido = item.get('apellido', '').strip()
+
+        if not cedula or not nombre:
+            errores.append(f'Fila {index+1}: Faltan campos obligatorios (cedula, nombre)')
+            continue
+
+        if Usuarios.objects.filter(cedula=cedula).exists():
+            omitidos += 1
+            continue
+
+        password_generada = generar_password_segura(cedula, nombre)
+
+        usuario = Usuarios.objects.create_user(
+            cedula=cedula,
+            password=password_generada,
+            nombre=nombre,
+            apellido=apellido,
+            correo=item.get('correo', ''),
+            telefono=item.get('telefono', ''),
+            tipo_documento=item.get('tipo_documento', 'CC'),
+            is_active=True,
+            is_staff=(rol_nombre == 'gestor'),
+            estado='Activo',
+        )
+
+        RoleUser.objects.update_or_create(id_usuario=usuario, defaults={'role': rol})
+
+        if rol_nombre == 'aprendiz':
+            ficha_id = item.get('ficha_id')
+            if ficha_id:
+                usuario.id_ficha_id = ficha_id
+                usuario.save()
+
+        if rol_nombre == 'instructor':
+            fichas_ids = item.get('fichas_ids', [])
+            if fichas_ids:
+                asignar_fichas_instructor(usuario, fichas_ids)
+
+        correo = item.get('correo', '')
+        if correo:
+            enviar_password_usuario(nombre, apellido, correo, password_generada, cedula)
+
+        creados += 1
+
+    return {'success': True, 'creados': creados, 'omitidos': omitidos, 'errores': errores}
 
 
 def procesar_carga_masiva(request, archivo):

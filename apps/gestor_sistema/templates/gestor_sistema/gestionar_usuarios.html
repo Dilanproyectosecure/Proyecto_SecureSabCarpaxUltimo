@@ -25,43 +25,123 @@
     </div>
 
 <div class="modal fade" id="modalCargaMasiva" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="bi bi-file-earmark-spreadsheet"></i> Carga Masiva de Usuarios</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="post" action="{% url 'gestor_sistema:carga_masiva' %}" enctype="multipart/form-data">
-                {% csrf_token %}
-                <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> El archivo debe tener las siguientes columnas:
-                        <ul class="mt-2 mb-0">
-                            <li><strong>tipo_documento</strong> — CC, TI, CE, etc.</li>
-                            <li><strong>cedula</strong> — Número de identificación</li>
-                            <li><strong>nombre</strong> — Nombre del usuario</li>
-                            <li><strong>apellido</strong> — Apellido del usuario</li>
-                            <li><strong>correo</strong> — Correo electrónico</li>
-                            <li><strong>telefono</strong> — Teléfono</li>
-                            <li><strong>rol</strong> — aprendiz, instructor, coordinador, vigilante, gestor</li>
-                            <li><strong>ficha</strong> — Número de ficha (requerido si el rol es <strong>aprendiz</strong>)</li>
-                        </ul>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Complete los datos y presione "Agregar" para añadir cada usuario. Al finalizar, presione "Crear Usuarios" para procesar todos.
+                </div>
+
+                <div class="mb-3">
+                    <label><strong>Tipo de usuario a cargar:</strong></label>
+                    <select id="cmRol" class="form-control" onchange="cmCambiarRol()">
+                        <option value="">Seleccione...</option>
+                        <option value="aprendiz">Aprendiz</option>
+                        <option value="instructor">Instructor</option>
+                        <option value="coordinador">Coordinador</option>
+                        <option value="vigilante">Vigilante</option>
+                        <option value="gestor">Gestor</option>
+                    </select>
+                </div>
+
+                <div id="cmFormFields" style="display:none;">
+                    <div class="card card-body bg-light">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label>Tipo documento:</label>
+                                <select id="cmTipoDoc" class="form-control">
+                                    <option value="CC">CC</option>
+                                    <option value="TI">TI</option>
+                                    <option value="CE">CE</option>
+                                    <option value="Pasaporte">Pasaporte</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label>Documento:</label>
+                                <input type="text" id="cmDoc" class="form-control" placeholder="Número">
+                            </div>
+                            <div class="col-md-3">
+                                <label>Nombre:</label>
+                                <input type="text" id="cmNombre" class="form-control" placeholder="Nombre">
+                            </div>
+                            <div class="col-md-3">
+                                <label>Apellido:</label>
+                                <input type="text" id="cmApellido" class="form-control" placeholder="Apellido">
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-4">
+                                <label>Email:</label>
+                                <input type="email" id="cmEmail" class="form-control" placeholder="correo@ejemplo.com">
+                            </div>
+                            <div class="col-md-4">
+                                <label>Teléfono:</label>
+                                <input type="text" id="cmTelefono" class="form-control" placeholder="Teléfono">
+                            </div>
+                            <div class="col-md-4" id="cmFieldFicha">
+                                <label>Ficha:</label>
+                                <select id="cmFicha" class="form-control">
+                                    <option value="">Seleccione...</option>
+                                    {% for ficha in fichas %}
+                                    <option value="{{ ficha.id_ficha }}">{{ ficha.numero_ficha }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mt-2" id="cmFieldFichasInstructor" style="display:none;">
+                            <div class="col-md-12">
+                                <label>Fichas a asignar (máximo 5, mínimo 1):</label>
+                                <select id="cmFichasInstructor" class="form-control" multiple size="5">
+                                    {% for ficha in fichas %}
+                                    <option value="{{ ficha.id_ficha }}">{{ ficha.numero_ficha }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">Mantenga presionado Ctrl para seleccionar múltiples</small>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-primary mt-3" onclick="cmAgregarFila()">
+                            <i class="bi bi-plus-circle"></i> Agregar a la lista
+                        </button>
                     </div>
-                    <div class="mb-3">
-                        <label>Seleccionar archivo (.csv o .xlsx):</label>
-                        <input type="file" name="archivo" class="form-control" accept=".csv,.xlsx" required>
+                </div>
+
+                <div id="cmTableContainer" style="display:none;" class="mt-3">
+                    <h6>Usuarios a crear: <span class="badge bg-secondary" id="cmCount">0</span></h6>
+                    <div class="table-responsive" style="max-height:300px;overflow-y:auto;">
+                        <table class="table table-sm table-bordered" id="cmTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Tipo Doc</th>
+                                    <th>Documento</th>
+                                    <th>Nombre</th>
+                                    <th>Apellido</th>
+                                    <th>Email</th>
+                                    <th>Teléfono</th>
+                                    <th>Ficha(s)</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cmTableBody"></tbody>
+                        </table>
                     </div>
-                    <div class="alert alert-secondary mb-0">
+                    <div class="alert alert-secondary mb-0 mt-2">
                         <i class="bi bi-key"></i> La contraseña se genera automáticamente (cédula + inicial + signo) y se envía por correo al usuario.
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-cloud-upload"></i> Importar
-                    </button>
-                </div>
-            </form>
+
+                <div id="cmResultado" style="display:none;" class="mt-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-success" id="cmBtnEnviar" onclick="cmEnviar()" style="display:none;">
+                    <i class="bi bi-cloud-upload"></i> Crear Usuarios
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -111,14 +191,14 @@
             <div class="row mt-2">
                 <div class="col-md-4">
                     <label>Rol:</label>
-                    <select name="rol" class="form-control" id="selectRol" required>
+                    <select name="rol" class="form-control" id="selectRol" required onchange="toggleRolFields()">
                         <option value="">Seleccione...</option>
                         {% for rol in roles %}
                             <option value="{{ rol.id }}">{{ rol.name|capfirst }}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-4" id="divFicha">
+                <div class="col-md-4" id="divFicha" style="display:none;">
                     <label>Ficha existente:</label>
                     <select name="ficha" class="form-control" id="selectFicha" onchange="if(this.value) document.getElementById('nuevaFicha').value=''">
                         <option value="">Seleccione...</option>
@@ -131,6 +211,15 @@
                     </div>
                     <label>Nueva ficha:</label>
                     <input type="text" name="nueva_ficha" id="nuevaFicha" class="form-control" placeholder="Escriba número de ficha..." oninput="if(this.value) document.getElementById('selectFicha').value=''">
+                </div>
+                <div class="col-md-4" id="divFichasInstructor" style="display:none;">
+                    <label>Fichas a asignar (máx 5, mín 1):</label>
+                    <select name="fichas_instructor" class="form-control" id="selectFichasInstructor" multiple size="4">
+                        {% for ficha in fichas %}
+                            <option value="{{ ficha.id_ficha }}">{{ ficha.numero_ficha }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">Ctrl+click para seleccionar múltiples</small>
                 </div>
             </div>
             <div class="formulario-botones mt-3">

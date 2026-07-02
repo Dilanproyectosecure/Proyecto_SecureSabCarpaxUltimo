@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/gestionar_justificaciones.css' %}">
+{% endblock %}
+
+{% block title %}Peticiones de Justificación{% endblock %}
+
+{% block content %}
+
+<div class="content-card">
+    <h1>Peticiones de Justificación</h1>
+    <p class="text-muted">Aprendices que solicitan justificar inasistencias fuera del plazo de 3 días.</p>
+
+    <div class="tabla-container">
+        <table class="tabla-justificaciones">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Aprendiz</th>
+                    <th>Cédula</th>
+                    <th>Competencia</th>
+                    <th>Motivo</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+    {% for p in peticiones %}
+    <tr>
+        <td>{{ p.fecha_creacion|date:"d/m/Y" }}</td>
+        <td>
+            <strong>{{ p.id_asistencia_ambiente.id_usuario.nombre }} {{ p.id_asistencia_ambiente.id_usuario.apellido }}</strong>
+        </td>
+        <td>{{ p.id_asistencia_ambiente.id_usuario.cedula }}</td>
+        <td>{{ p.id_asistencia_ambiente.id_competencia.nombre_competencia }}</td>
+        <td>
+            <span class="motivo-tooltip" title="{{ p.motivo_extension }}">
+                {{ p.motivo_extension|truncatechars:30 }}
+            </span>
+        </td>
+        <td>
+            <span class="badge-{{ p.estado|lower }}">{{ p.estado }}</span>
+        </td>
+        <td>
+            {% if p.estado == 'Pendiente' %}
+            <button class="btn-aprobar" onclick="aprobarPeticion('{{ p.id_peticion }}')">
+                <i class="bi bi-check-circle"></i>
+            </button>
+            <button class="btn-rechazar" onclick="abrirModalRechazar('{{ p.id_peticion }}')">
+                <i class="bi bi-x-circle"></i>
+            </button>
+            {% else %}
+            <span class="text-muted">—</span>
+            {% endif %}
+        </td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="7" class="text-center">No hay peticiones registradas</td>
+    </tr>
+    {% endfor %}
+</tbody>
+        </table>
+    </div>
+
+    {% if peticiones.has_other_pages %}
+    <div class="paginacion">
+        {% if peticiones.has_previous %}
+        <a href="?page={{ peticiones.previous_page_number }}" class="page-link"><i class="bi bi-chevron-left"></i></a>
+        {% endif %}
+        {% for i in peticiones.paginator.page_range %}
+            {% if peticiones.number == i %}
+            <span class="page-link active">{{ i }}</span>
+            {% else %}
+            <a href="?page={{ i }}" class="page-link">{{ i }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if peticiones.has_next %}
+        <a href="?page={{ peticiones.next_page_number }}" class="page-link"><i class="bi bi-chevron-right"></i></a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal rechazar -->
+<div id="modalPeticion" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Rechazar Petición</h2>
+            <span class="close" onclick="cerrarModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="formPeticion" method="post" action="{% url 'instructor:procesar_peticion' %}">
+                {% csrf_token %}
+                <input type="hidden" name="peticion_id" id="peticion_id">
+                <input type="hidden" name="accion" id="accion" value="rechazar">
+                <div class="form-group">
+                    <label for="observaciones">Observaciones (obligatorio):</label>
+                    <textarea name="observaciones" id="observaciones" class="form-control" rows="4" required></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn-rechazar"><i class="bi bi-send"></i> Rechazar</button>
+                    <button type="button" class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function aprobarPeticion(id) {
+    if (confirm('¿Aprobar esta petición? El aprendiz podrá justificar la inasistencia.')) {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = "{% url 'instructor:procesar_peticion' %}";
+        var csrf = document.createElement('input');
+        csrf.type = 'hidden'; csrf.name = 'csrfmiddlewaretoken'; csrf.value = '{{ csrf_token }}';
+        form.appendChild(csrf);
+        var i1 = document.createElement('input');
+        i1.type = 'hidden'; i1.name = 'peticion_id'; i1.value = id;
+        form.appendChild(i1);
+        var i2 = document.createElement('input');
+        i2.type = 'hidden'; i2.name = 'accion'; i2.value = 'aprobar';
+        form.appendChild(i2);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+function abrirModalRechazar(id) {
+    document.getElementById('peticion_id').value = id;
+    document.getElementById('modalPeticion').style.display = 'block';
+}
+function cerrarModal() {
+    document.getElementById('modalPeticion').style.display = 'none';
+}
+window.onclick = function(e) {
+    var m = document.getElementById('modalPeticion');
+    if (e.target == m) m.style.display = 'none';
+}
+</script>
+
+{% endblock %}
