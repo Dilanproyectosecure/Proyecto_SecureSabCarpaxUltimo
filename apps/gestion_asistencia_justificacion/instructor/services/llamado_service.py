@@ -1,9 +1,12 @@
+import logging
 from datetime import timedelta
 from django.utils import timezone
 from apps.login.models import Usuarios
 from ..models import LlamadoAtencion
-from apps.email_service import enviar_correo_seguro
+from apps.email_service import enviar_correo_seguro, EmailSendError
 from .inasistencias_service import calcular_inasistencias_aprendiz, calcular_retardos_aprendiz
+
+logger = logging.getLogger('apps.gestion_asistencia_justificacion.instructor')
 
 
 def _obtener_coordinadores():
@@ -116,12 +119,12 @@ def verificar_y_procesar_aprendices(aprendices, instructor):
 
         niveles_a_verificar = []
 
-        if total >= 5:
-            niveles_a_verificar.append((3, 5))
-        if total >= 4:
-            niveles_a_verificar.append((2, 4))
         if total >= 3:
             niveles_a_verificar.append((1, 3))
+        if total >= 4:
+            niveles_a_verificar.append((2, 4))
+        if total >= 5:
+            niveles_a_verificar.append((3, 5))
 
         for nivel, umbral in niveles_a_verificar:
             existe = LlamadoAtencion.objects.filter(
@@ -137,11 +140,22 @@ def verificar_y_procesar_aprendices(aprendices, instructor):
                     total_inasistencias=total,
                 )
 
-                enviado = _enviar_llamado_correo(llamado)
-                if enviado:
-                    llamado.notificado = True
-                    llamado.fecha_notificacion = timezone.now()
-                    llamado.save(update_fields=['notificado', 'fecha_notificacion'])
+                try:
+                    enviado = _enviar_llamado_correo(llamado)
+                    if enviado:
+                        llamado.notificado = True
+                        llamado.fecha_notificacion = timezone.now()
+                        llamado.save(update_fields=['notificado', 'fecha_notificacion'])
+                    else:
+                        logger.warning(
+                            f"No se pudo enviar correo de llamado nivel {nivel} "
+                            f"a {aprendiz.nombre} {aprendiz.apellido}"
+                        )
+                except EmailSendError as e:
+                    logger.error(
+                        f"Error enviando correo de llamado nivel {nivel} "
+                        f"a {aprendiz.nombre} {aprendiz.apellido}: {e.mensaje}"
+                    )
 
                 llamados_creados.append(llamado)
 
@@ -159,12 +173,16 @@ def obtener_llamados_recientes(instructor, dias=7):
 def reenviar_correo(llamado_id):
     try:
         llamado = LlamadoAtencion.objects.select_related('id_usuario', 'id_instructor').get(id_llamado=llamado_id)
-        enviado = _enviar_llamado_correo(llamado)
-        if enviado:
-            llamado.notificado = True
-            llamado.fecha_notificacion = timezone.now()
-            llamado.save(update_fields=['notificado', 'fecha_notificacion'])
-        return enviado
+        try:
+            enviado = _enviar_llamado_correo(llamado)
+            if enviado:
+                llamado.notificado = True
+                llamado.fecha_notificacion = timezone.now()
+                llamado.save(update_fields=['notificado', 'fecha_notificacion'])
+            return enviado
+        except EmailSendError as e:
+            logger.error(f"Error reenviando correo llamado {llamado_id}: {e.mensaje}")
+            return False
     except LlamadoAtencion.DoesNotExist:
         return False
 
@@ -238,11 +256,20 @@ def verificar_retardos_aprendices(aprendices, instructor):
                 f'<hr><p><em>Atentamente,<br>Sistema SecureSab - SENA</em></p>'
             )
 
-            enviado = enviar_correo_seguro(asunto, aprendiz.correo, mensaje_texto, mensaje_html)
-            if enviado:
-                llamado.notificado = True
-                llamado.fecha_notificacion = timezone.now()
-                llamado.save(update_fields=['notificado', 'fecha_notificacion'])
+            try:
+                enviado = enviar_correo_seguro(asunto, aprendiz.correo, mensaje_texto, mensaje_html)
+                if enviado:
+                    llamado.notificado = True
+                    llamado.fecha_notificacion = timezone.now()
+                    llamado.save(update_fields=['notificado', 'fecha_notificacion'])
+                else:
+                    logger.warning(
+                        f"No se pudo enviar correo de retardos a {aprendiz.nombre} {aprendiz.apellido}"
+                    )
+            except EmailSendError as e:
+                logger.error(
+                    f"Error enviando correo de retardos a {aprendiz.nombre} {aprendiz.apellido}: {e.mensaje}"
+                )
 
             llamados_creados.append(llamado)
 

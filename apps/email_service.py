@@ -4,7 +4,15 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from django.conf import settings
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('apps.email_service')
+
+
+class EmailSendError(Exception):
+    """Excepción personalizada para errores de envío de correo."""
+    def __init__(self, mensaje, destinatarios_rechazados=None):
+        self.mensaje = mensaje
+        self.destinatarios_rechazados = destinatarios_rechazados or []
+        super().__init__(self.mensaje)
 
 
 def enviar_correo_seguro(asunto, destinatario, mensaje_texto, mensaje_html, cc=None):
@@ -28,16 +36,47 @@ def enviar_correo_seguro(asunto, destinatario, mensaje_texto, mensaje_html, cc=N
         else:
             todos_destinos.append(cc)
 
+    server = None
     try:
         server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
         server.ehlo()
-        server.starttls()
-        server.ehlo()
+        if getattr(settings, 'EMAIL_USE_TLS', True):
+            server.starttls()
+            server.ehlo()
         server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
-        server.sendmail(settings.EMAIL_HOST_USER, todos_destinos, msg.as_string())
-        server.quit()
+        refused = server.sendmail(settings.EMAIL_HOST_USER, todos_destinos, msg.as_string())
+
+        if refused:
+            rechazados = list(refused.keys())
+            logger.error(
+                f"Destinatarios rechazados por el servidor SMTP: {rechazados}. "
+                f"Detalles: {refused}"
+            )
+            raise EmailSendError(
+                f"El servidor SMTP rechazó destinatarios: {rechazados}",
+                destinatarios_rechazados=rechazados
+            )
+
         logger.info(f"Correo enviado a {destinatario}" + (f" (CC: {cc})" if cc else ""))
         return True
+
+    except EmailSendError:
+        raise
+    except smtplib.SMTPAuthenticationError as e:
+        logger.error(f"Error de autenticación SMTP para {destinatario}: {e}")
+        raise EmailSendError(f"Error de autenticación SMTP: {e}")
+    except smtplib.SMTPConnectError as e:
+        logger.error(f"Error de conexión SMTP para {destinatario}: {e}")
+        raise EmailSendError(f"Error de conexión SMTP: {e}")
+    except smtplib.SMTPException as e:
+        logger.error(f"Error SMTP enviando correo a {destinatario}: {e}")
+        raise EmailSendError(f"Error SMTP: {e}")
     except Exception as e:
-        logger.exception(f"Error al enviar correo a {destinatario}")
-        return False
+        logger.exception(f"Error inesperado enviando correo a {destinatario}")
+        raise EmailSendError(f"Error inesperado: {e}")
+    finally:
+        if server:
+            try:
+                server.quit()
+            except Exception:
+                pass
