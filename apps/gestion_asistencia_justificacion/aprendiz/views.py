@@ -3,8 +3,10 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from datetime import date
 import os
+import logging
 
 from apps.reporte_monitoreo.coordinador.models import Competencia, PeticionJustificacion, AsistenciaAmbiente
+from apps.email_service import enviar_correo_seguro
 
 from .selectors.asistencia_selector import obtener_asistencias_usuario
 from .selectors.inasistencias_selector import obtener_inasistencias_usuario
@@ -204,13 +206,38 @@ def solicitar_peticion(request):
         return redirect('aprendiz:radicar_justificacion')
 
     hoy = date.today()
+    try:
+        asistencia = AsistenciaAmbiente.objects.select_related('id_instructor').get(id_asistencia_ambiente=asistencia_id)
+    except AsistenciaAmbiente.DoesNotExist:
+        messages.error(request, 'Inasistencia no encontrada')
+        return redirect('aprendiz:radicar_justificacion')
+
     PeticionJustificacion.objects.create(
-        id_asistencia_ambiente_id=asistencia_id,
+        id_asistencia_ambiente=asistencia,
         id_aprendiz=request.user,
         motivo_extension=motivo,
         fecha_creacion=hoy,
         estado='Pendiente'
     )
+
+    # NOTIFICAR AL INSTRUCTOR POR EMAIL
+    instructor = asistencia.id_instructor
+    if instructor and instructor.correo:
+        asunto = f'Petición de justificación - {request.user.nombre} {request.user.apellido}'
+        mensaje = f'''
+El aprendiz {request.user.nombre} {request.user.apellido} (CC: {request.user.cedula})
+ha solicitado permiso para justificar su inasistencia del {asistencia.fecha}.
+
+Motivo: {motivo}
+
+Ingrese al sistema para aprobar o rechazar esta petición.
+https://securesab.app/instructor/gestionar-justificaciones/
+'''
+        try:
+            enviar_correo_seguro(asunto, instructor.correo, mensaje, mensaje.replace('\n', '<br>'))
+        except Exception as e:
+            logger = logging.getLogger('apps.gestion_asistencia_justificacion.instructor')
+            logger.error(f"Error al notificar instructor {instructor.correo} sobre petición: {e}")
 
     registrar_actividad(
         usuario=request.user,

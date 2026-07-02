@@ -67,15 +67,13 @@ def obtener_peticiones_pendientes(instructor_id=None):
         'id_asistencia_ambiente__id_usuario__id_ficha',
         'id_asistencia_ambiente__id_usuario__id_ficha__id_jornada',
         'id_asistencia_ambiente__id_competencia',
+        'id_asistencia_ambiente__id_instructor',
         'id_aprendiz'
     ).order_by('-fecha_creacion')
 
     if instructor_id:
-        competencias = FichaInstructor.objects.filter(
-            id_instructor=instructor_id
-        ).values_list('id_competencia', flat=True)
         qs = qs.filter(
-            id_asistencia_ambiente__id_competencia__in=competencias
+            id_asistencia_ambiente__id_instructor=instructor_id
         )
 
     return qs
