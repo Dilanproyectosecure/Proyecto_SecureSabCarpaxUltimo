@@ -1,7 +1,7 @@
 import logging
-from apps.email_service import enviar_correo_seguro
+from apps.email_service import enviar_correo_seguro, EmailSendError
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('apps.gestion_asistencia_justificacion.instructor')
 
 
 def _construir_html_inasistencia(aprendiz, ficha, fecha, competencia):
@@ -94,18 +94,37 @@ def enviar_correos_inasistencia(aprendices_inasistentes, ficha, fecha, competenc
         )
         html = _construir_html_inasistencia(aprendiz, ficha, fecha, competencia)
 
-        resultado = enviar_correo_seguro(asunto, aprendiz.correo, texto_plano, html)
+        try:
+            resultado = enviar_correo_seguro(asunto, aprendiz.correo, texto_plano, html)
 
-        if resultado:
-            enviados += 1
+            if resultado:
+                enviados += 1
+                detalles.append({
+                    'id': aprendiz.id_usuario,
+                    'nombre': nombre_completo,
+                    'correo': aprendiz.correo,
+                    'estado': 'enviado'
+                })
+            else:
+                fallidos += 1
+                detalles.append({
+                    'id': aprendiz.id_usuario,
+                    'nombre': nombre_completo,
+                    'correo': aprendiz.correo,
+                    'estado': 'fallido'
+                })
+        except EmailSendError as e:
+            fallidos += 1
+            logger.error(f"Error enviando correo de inasistencia a {nombre_completo}: {e.mensaje}")
             detalles.append({
                 'id': aprendiz.id_usuario,
                 'nombre': nombre_completo,
                 'correo': aprendiz.correo,
-                'estado': 'enviado'
+                'estado': 'fallido'
             })
-        else:
+        except Exception as e:
             fallidos += 1
+            logger.error(f"Error inesperado enviando correo a {nombre_completo}: {e}")
             detalles.append({
                 'id': aprendiz.id_usuario,
                 'nombre': nombre_completo,
@@ -188,4 +207,11 @@ def enviar_correo_retardo(aprendiz, retardos_consecutivos, ficha, fecha):
         f"SecureSab - Sistema de Control de Asistencia SENA"
     )
 
-    return enviar_correo_seguro(asunto, aprendiz.correo, texto_plano, html)
+    try:
+        return enviar_correo_seguro(asunto, aprendiz.correo, texto_plano, html)
+    except EmailSendError as e:
+        logger.error(f"Error enviando correo de retardo a {nombre_completo}: {e.mensaje}")
+        return False
+    except Exception as e:
+        logger.error(f"Error inesperado enviando correo de retardo a {nombre_completo}: {e}")
+        return False

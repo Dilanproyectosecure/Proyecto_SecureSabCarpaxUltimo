@@ -28,9 +28,7 @@
     <a href="{% url 'instructor:gestionar_justificaciones' %}" class="nav-link {% if request.resolver_match.url_name == 'gestionar_justificaciones' %}active{% endif %}">
         <i class="fas fa-file-alt"></i> Gestionar justificaciones
     </a>
-    <a href="{% url 'instructor:gestionar_peticiones' %}" class="nav-link {% if request.resolver_match.url_name == 'gestionar_peticiones' %}active{% endif %}">
-        <i class="fas fa-clock"></i> Peticiones de justificación
-    </a>
+
 
 
 {% elif current_rol == 'coordinador' %}

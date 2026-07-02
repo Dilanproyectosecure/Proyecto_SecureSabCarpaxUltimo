@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from datetime import date, timedelta
 from django.db.models import Q, Subquery, OuterRef
 from apps.login.models import Usuarios
-from apps.reporte_monitoreo.coordinador.models import ( Ficha, AsistenciaAmbiente, Competencia, Justificacion, Jornada, AsistenciaSede, PeticionJustificacion)
+from apps.reporte_monitoreo.coordinador.models import ( Ficha, AsistenciaAmbiente, Competencia, Justificacion, Jornada, AsistenciaSede)
 from .models import LlamadoAtencion
 from .selectors.fichas_selector import obtener_fichas_con_estadisticas
 from .selectors.fichas_selector import obtener_datos_ficha
@@ -502,7 +502,14 @@ def enviar_correos_inasistencia_view(request):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
     import json
-    data = json.loads(request.body)
+    import logging
+    logger = logging.getLogger('apps.gestion_asistencia_justificacion.instructor')
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
+
     ids = data.get('aprendices_ids', [])
     ficha_id = data.get('ficha_id')
     fecha = data.get('fecha')
@@ -511,12 +518,16 @@ def enviar_correos_inasistencia_view(request):
     if not ids or not ficha_id:
         return JsonResponse({'success': False, 'error': 'Faltan datos'}, status=400)
 
-    from apps.reporte_monitoreo.coordinador.models import Ficha, Competencia
-    from .services.email_service import enviar_correos_inasistencia
-    from apps.gestor_sistema.services import registrar_actividad
-    from apps.login.models import Usuarios
+    try:
+        from apps.reporte_monitoreo.coordinador.models import Ficha, Competencia
+        from .services.email_service import enviar_correos_inasistencia
+        from apps.gestor_sistema.services import registrar_actividad
+        from apps.login.models import Usuarios
 
-    ficha = Ficha.objects.get(id_ficha=ficha_id)
+        ficha = Ficha.objects.get(id_ficha=ficha_id)
+    except Ficha.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Ficha no encontrada'}, status=404)
+
     competencia = Competencia.objects.filter(id_competencia=competencia_id).first() if competencia_id else None
     aprendices = Usuarios.objects.filter(id_usuario__in=ids)
 
@@ -532,6 +543,13 @@ def enviar_correos_inasistencia_view(request):
             request=request
         )
 
+    fallidos = resultado.get('fallidos', 0)
+    if fallidos > 0:
+        logger.warning(
+            f"Envío inasistencia: {fallidos} correos fallaron para ficha {ficha.numero_ficha} fecha {fecha}. "
+            f"Detalles: {[d for d in resultado['detalles'] if d['estado'] == 'fallido']}"
+        )
+
     return JsonResponse(resultado)
 
 
@@ -541,20 +559,31 @@ def enviar_correo_retardo_view(request):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
     import json
-    data = json.loads(request.body)
+    import logging
+    logger = logging.getLogger('apps.gestion_asistencia_justificacion.instructor')
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
+
     aprendiz_id = data.get('aprendiz_id')
     retardos = data.get('retardos_consecutivos', 0)
 
     if not aprendiz_id:
         return JsonResponse({'success': False, 'error': 'aprendiz_id requerido'}, status=400)
 
-    from apps.reporte_monitoreo.coordinador.models import Ficha
-    from .services.email_service import enviar_correo_retardo
-    from apps.login.models import Usuarios
+    try:
+        from apps.reporte_monitoreo.coordinador.models import Ficha
+        from .services.email_service import enviar_correo_retardo
+        from apps.login.models import Usuarios
 
-    ficha_id = data.get('ficha_id')
-    ficha = Ficha.objects.filter(id_ficha=ficha_id).first() if ficha_id else None
-    aprendiz = Usuarios.objects.get(id_usuario=aprendiz_id)
+        ficha_id = data.get('ficha_id')
+        ficha = Ficha.objects.filter(id_ficha=ficha_id).first() if ficha_id else None
+        aprendiz = Usuarios.objects.get(id_usuario=aprendiz_id)
+    except Usuarios.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Aprendiz no encontrado'}, status=404)
+
     fecha = data.get('fecha', '')
 
     enviado = enviar_correo_retardo(aprendiz, retardos, ficha, fecha)
@@ -568,61 +597,6 @@ def enviar_correo_retardo_view(request):
             request=request
         )
         return JsonResponse({'enviado': True, 'mensaje': 'Correo de retardo enviado correctamente'})
-    return JsonResponse({'enviado': False, 'mensaje': 'No se pudo enviar el correo'}, status=400)
-
-
-# ==================== GESTIONAR PETICIONES DE JUSTIFICACIÓN (EXTEMPORÁNEAS) ====================
-@login_required
-def gestionar_peticiones(request):
-    peticiones = PeticionJustificacion.objects.select_related(
-        'id_asistencia_ambiente__id_usuario',
-        'id_asistencia_ambiente__id_competencia',
-        'id_asistencia_ambiente__id_instructor'
-    ).order_by('-fecha_creacion', '-id_peticion')
-
-    paginator = Paginator(peticiones, 15)
-    page_obj = paginator.get_page(request.GET.get('page', 1))
-
-    return render(request, 'gestionar_peticiones.html', {
-        'peticiones': page_obj,
-    })
-
-
-@login_required
-def procesar_peticion(request):
-    if request.method != 'POST':
-        return redirect('instructor:gestionar_peticiones')
-
-    peticion_id = request.POST.get('peticion_id')
-    accion = request.POST.get('accion')
-    observaciones = request.POST.get('observaciones', '')
-
-    try:
-        peticion = PeticionJustificacion.objects.get(id_peticion=peticion_id)
-    except PeticionJustificacion.DoesNotExist:
-        messages.error(request, 'Petición no encontrada')
-        return redirect('instructor:gestionar_peticiones')
-
-    if accion == 'aprobar':
-        peticion.estado = 'Aprobado'
-        msg = 'Petición aprobada'
-    elif accion == 'rechazar':
-        peticion.estado = 'Rechazado'
-        msg = 'Petición rechazada'
     else:
-        messages.error(request, 'Acción inválida')
-        return redirect('instructor:gestionar_peticiones')
-
-    peticion.observaciones_instructor = observaciones
-    peticion.save()
-
-    registrar_actividad(
-        usuario=request.user,
-        tipo_accion='PETICION_' + accion.upper(),
-        actividad=msg,
-        descripcion=f'Instructor {request.user.nombre} {request.user.apellido} {msg.lower()} (ID: {peticion_id})',
-        request=request
-    )
-
-    messages.success(request, msg)
-    return redirect('instructor:gestionar_peticiones')
+        logger.warning(f"No se pudo enviar correo de retardo a {aprendiz.nombre} {aprendiz.apellido}")
+    return JsonResponse({'enviado': False, 'mensaje': 'No se pudo enviar el correo'}, status=400)

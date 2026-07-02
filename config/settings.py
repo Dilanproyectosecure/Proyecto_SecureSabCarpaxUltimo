@@ -201,6 +201,41 @@ DEFAULT_FROM_EMAIL = 'secureSab <securesabsena@gmail.com>'
 # ==================== CONFIGURACIÓN POR DEFECTO ====================
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# ==================== CONFIGURACIÓN DE LOGGING ====================
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] {levelname} {name}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'apps.email_service': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'apps.gestion_asistencia_justificacion.instructor': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': True,
+        },
+    },
+}
+
 # ==================== CONFIGURACIÓN DE CACHE ====================
 CACHE_BACKEND = os.environ.get('DJANGO_CACHE_BACKEND', 'locmem').lower()
 
