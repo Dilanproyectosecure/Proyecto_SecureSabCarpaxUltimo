@@ -3,7 +3,7 @@ from django.core.files.storage import default_storage
 from datetime import date
 import os
 
-from apps.reporte_monitoreo.coordinador.models import AsistenciaAmbiente, Justificacion
+from apps.reporte_monitoreo.coordinador.models import AsistenciaAmbiente, Justificacion, PeticionJustificacion
 
 
 def crear_justificaciones(usuario, inasistencias_ids, motivo, soporte):
@@ -21,11 +21,12 @@ def crear_justificaciones(usuario, inasistencias_ids, motivo, soporte):
             dias_pasados = (hoy - asistencia.fecha).days
 
             if dias_pasados > 3:
-                tiene_habilitacion = Justificacion.objects.filter(
+                tiene_peticion = PeticionJustificacion.objects.filter(
                     id_asistencia_ambiente=asistencia,
-                    estado='Habilitado'
+                    id_aprendiz=usuario,
+                    estado='Aprobado'
                 ).exists()
-                if not tiene_habilitacion:
+                if not tiene_peticion:
                     continue
 
             extension = os.path.splitext(soporte.name)[1]

@@ -30,4 +30,6 @@ urlpatterns = [
     path('activar-usuario/<int:id_usuario>/', views.activar_usuario, name='activar_usuario'),
     path('editar-usuario/<int:id_usuario>/', views.editar_usuario, name='editar_usuario'),
     path('editar-usuario-view/<int:id_usuario>/', views.editar_usuario_view, name='editar_usuario_view'),
+    path('gestionar-usuarios/', views.gestionar_usuarios, name='gestionar_usuarios'),
+    path('usuario-detalle/<int:id_usuario>/', views.usuario_detalle_api, name='usuario_detalle'),
 ]

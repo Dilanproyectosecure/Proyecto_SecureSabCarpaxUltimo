@@ -2,7 +2,43 @@
 {% load static %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'gestor_sistema/css/registro_actividad.css' %}">
+<style>
+.paginacion {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+}
+.page-link {
+    padding: 0.5rem 0.9rem;
+    background: white;
+    border: 2px solid #e1e1e1;
+    border-radius: 8px;
+    color: #178202;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+}
+.page-link:hover {
+    background: linear-gradient(135deg, #178202 0%, #0d6e00 100%);
+    color: white;
+    transform: translateY(-2px);
+    border-color: transparent;
+    box-shadow: 0 4px 10px rgba(23, 130, 2, 0.3);
+}
+.page-current {
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    color: #333;
+    font-size: 0.95rem;
+}
+</style>
 {% endblock %}
 
 {% block title %}Registro de Actividades{% endblock %}
@@ -229,6 +265,32 @@
             </table>
 
         </div>
+
+        {% if actividades.has_other_pages %}
+        <div class="paginacion">
+            {% if actividades.has_previous %}
+                <a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">
+                    <i class="bi bi-chevron-bar-left"></i>
+                </a>
+                <a href="?page={{ actividades.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            {% endif %}
+
+            <span class="page-current">
+                Página {{ actividades.number }} de {{ actividades.paginator.num_pages }}
+            </span>
+
+            {% if actividades.has_next %}
+                <a href="?page={{ actividades.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+                <a href="?page={{ actividades.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">
+                    <i class="bi bi-chevron-bar-right"></i>
+                </a>
+            {% endif %}
+        </div>
+        {% endif %}
 
     </div>
 

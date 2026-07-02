@@ -95,6 +95,9 @@
                             {% endif %}
                         </td>
                         <td data-label="Acción" class="col-acciones">
+                            <button type="button" class="btn-action btn-action-view" onclick="verDetalle('{{ u.id_usuario }}')" title="Ver detalle" style="background:linear-gradient(135deg,#38bdf8,#0284c7);">
+                                <i class="fas fa-eye"></i>
+                            </button>
                             <button type="button" class="btn-action btn-action-edit" onclick="abrirModalEditar('{{ u.id_usuario }}', '{{ u.tipo_documento }}', '{{ u.cedula }}', '{{ u.nombre }}', '{{ u.apellido }}', '{{ u.correo }}', '{{ u.nombre_rol }}', '{{ u.id_ficha_id|default:'' }}')" title="Editar">
                                 <i class="fas fa-edit"></i>
                             </button>
@@ -130,7 +133,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <form method="POST" action="{% url 'gestor_sistema:panel_admin' %}">
+            <form method="POST" action="{% url 'gestor_sistema:panel_admin' %}" onsubmit="return validarFormCrear()">
                 {% csrf_token %}
                 <div class="modal-body-app">
                     <div class="form-grid-app">
@@ -210,7 +213,7 @@
                         </div>
 
                         <div class="form-group-app full" id="divFichaCrear" style="display:none;">
-                            <label>Ficha existente:</label>
+                            <label>Ficha existente <span class="required-asterisk">*</span>:</label>
                             <select name="ficha" class="form-control" onchange="if(this.value) document.getElementById('nuevaFicha').value=''">
                                 <option value="">Seleccione...</option>
                                 {% for ficha in fichas %}
@@ -220,6 +223,20 @@
                             <div class="mt-2"><small class="text-muted">ó</small></div>
                             <label>Nueva ficha:</label>
                             <input type="text" name="nueva_ficha" id="nuevaFicha" class="form-control" placeholder="Escriba número de ficha..." oninput="if(this.value) document.querySelector('[name=ficha]').value=''">
+                        </div>
+                        <div class="form-group-app full" id="divFichasInstructorCrear" style="display:none;">
+                            <label>Fichas a asignar <span class="required-asterisk">*</span> (máx 5, mín 1):</label>
+                            <div class="ficha-list-wrapper" id="fichasListCrear">
+                                {% for ficha in fichas %}
+                                    <div class="ficha-list-item" data-id="{{ ficha.id_ficha }}" onclick="togglePill(this, 'fichasListCrear', 5)">
+                                        <div class="ficha-check"><i class="fas fa-check"></i></div>
+                                        <span class="ficha-numero">{{ ficha.numero_ficha }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <input type="hidden" name="fichas_instructor" id="fichasHiddenCrear" value="">
+                            <small class="text-muted" id="fichasCountCrear">Ninguna seleccionada</small>
+                            <div class="invalid-feedback-custom" id="fichasCrearError">Debe seleccionar al menos 1 ficha (máx 5).</div>
                         </div>
                         
                     </div>
@@ -237,9 +254,9 @@
     </div>
 </div>
 
-<!-- MODAL: CARGA MASIVA CSV -->
+<!-- MODAL: CARGA MASIVA (plantilla dinámica) -->
 <div class="modal fade" id="modalCargaMasiva" tabindex="-1" aria-labelledby="modalCargaMasivaLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable modal-carga-masiva">
         <div class="modal-content modal-content-app">
             <div class="modal-header-app">
                 <h5 id="modalCargaMasivaLabel"><i class="fas fa-file-csv"></i> Carga Masiva de Usuarios</h5>
@@ -247,36 +264,139 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <form method="POST" enctype="multipart/form-data" action="{% url 'gestor_sistema:panel_admin' %}">
-                {% csrf_token %}
-                <div class="modal-body-app">
-                    <div class="csv-info">
-                        <i class="fas fa-info-circle"></i>
-                        <strong>El archivo CSV debe tener las siguientes columnas:</strong>
-                        <ul>
-                            <li><strong>tipo_documento</strong> — Cédula, Pasaporte, TI, CE</li>
-                            <li><strong>cedula</strong> — Número de identificación</li>
-                            <li><strong>nombre</strong> — Nombre del usuario</li>
-                            <li><strong>apellido</strong> — Apellido del usuario</li>
-                            <li><strong>correo</strong> — Correo electrónico</li>
-                            <li><strong>rol</strong> — aprendiz, instructor, vigilante, coordinador</li>
-                            <li><strong>password</strong> — Contraseña (opcional, se genera una segura automáticamente)</li>
-                        </ul>
-                    </div>
-                    <div class="form-group-app">
-                        <label>Seleccionar archivo CSV <span class="required">*</span></label>
-                        <input type="file" name="archivo_csv" class="csv-file-input" accept=".csv" required>
+            <div class="modal-body modal-body-app">
+                <div class="alert alert-info" style="padding:10px;font-size:13px;">
+                    <i class="fas fa-info-circle"></i> Complete los datos y presione "Agregar" para añadir cada usuario. Al finalizar, presione "Crear Usuarios".
+                </div>
+
+                <div class="mb-3">
+                    <label><strong>Tipo de usuario a cargar:</strong></label>
+                    <select id="cmRol" class="form-control" onchange="cmCambiarRol()">
+                        <option value="">Seleccione...</option>
+                        <option value="aprendiz">Aprendiz</option>
+                        <option value="instructor">Instructor</option>
+                        <option value="coordinador">Coordinador</option>
+                        <option value="vigilante">Vigilante</option>
+                        <option value="gestor">Gestor</option>
+                    </select>
+                </div>
+
+                <div id="cmFormFields" style="display:none;">
+                    <div style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;padding:15px;">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <label>Tipo documento:</label>
+                                <select id="cmTipoDoc" class="form-control">
+                                    <option value="CC">CC</option>
+                                    <option value="TI">TI</option>
+                                    <option value="CE">CE</option>
+                                    <option value="Pasaporte">Pasaporte</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label>Documento:</label>
+                                <input type="text" id="cmDoc" class="form-control" placeholder="Número">
+                            </div>
+                            <div class="col-md-3">
+                                <label>Nombre:</label>
+                                <input type="text" id="cmNombre" class="form-control" placeholder="Nombre">
+                            </div>
+                            <div class="col-md-3">
+                                <label>Apellido:</label>
+                                <input type="text" id="cmApellido" class="form-control" placeholder="Apellido">
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-4">
+                                <label>Email:</label>
+                                <input type="email" id="cmEmail" class="form-control" placeholder="correo@ejemplo.com">
+                            </div>
+                            <div class="col-md-4">
+                                <label>Teléfono:</label>
+                                <input type="text" id="cmTelefono" class="form-control" placeholder="Teléfono">
+                            </div>
+                            <div class="col-md-4" id="cmFieldFicha">
+                                <label>Ficha:</label>
+                                <select id="cmFicha" class="form-control">
+                                    <option value="">Seleccione...</option>
+                                    {% for ficha in fichas %}
+                                    <option value="{{ ficha.id_ficha }}">{{ ficha.numero_ficha }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mt-2" id="cmFieldFichasInstructor" style="display:none;">
+                            <div class="col-md-12">
+                                <label>Fichas a asignar <span class="required-asterisk">*</span> (máx 5, mín 1):</label>
+                                <div class="ficha-list-wrapper" id="cmFichasList">
+                                    {% for ficha in fichas %}
+                                    <div class="ficha-list-item" data-id="{{ ficha.id_ficha }}" onclick="togglePill(this, 'cmFichasList', 5)">
+                                        <div class="ficha-check"><i class="fas fa-check"></i></div>
+                                        <span class="ficha-numero">{{ ficha.numero_ficha }}</span>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <small class="text-muted" id="cmFichasCountLabel">Ninguna seleccionada</small>
+                                <div class="invalid-feedback-custom" id="cmFichasError">Debe seleccionar al menos 1 ficha (máx 5).</div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-primary mt-3" onclick="cmAgregarFila()">
+                            <i class="fas fa-plus-circle"></i> Agregar a la lista
+                        </button>
+                        <hr class="mt-3">
+                        <div id="cmPasteSection" class="mt-2">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="fas fa-paste text-success"></i>
+                                <strong>Pegar varias filas desde Excel</strong>
+                            </div>
+                            <p class="text-muted mb-1" style="font-size:13px;">
+                                Copie los datos desde Excel/Google Sheets (sin encabezados) y péguelos abajo.
+                                <br><strong>Orden:</strong> TipoDoc <i class="fas fa-arrow-right" style="font-size:10px;"></i> Cédula <i class="fas fa-arrow-right" style="font-size:10px;"></i> Nombre <i class="fas fa-arrow-right" style="font-size:10px;"></i> Apellido <i class="fas fa-arrow-right" style="font-size:10px;"></i> Email <i class="fas fa-arrow-right" style="font-size:10px;"></i> Teléfono
+                                <span id="cmPasteFichaHint"><i class="fas fa-arrow-right" style="font-size:10px;"></i> Ficha</span>
+                            </p>
+                            <div class="input-group">
+                                <textarea id="cmPasteArea" class="form-control" rows="3" placeholder="Pegue aquí los datos copiados desde Excel...&#10;Ej:&#10;CC	12345	Juan	Perez	juan@mail.com	3001234567	2567890&#10;CC	67890	Maria	Lopez	maria@mail.com	3009876543	2567891" style="font-size:13px;font-family:monospace;"></textarea>
+                            </div>
+                            <button type="button" class="btn btn-success btn-sm mt-2" onclick="cmPasteFromExcel()">
+                                <i class="fas fa-file-import"></i> Agregar todo desde portapapeles
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer-app">
-                    <button type="button" class="btn-cancel-app" data-bs-dismiss="modal">
-                        <i class="fas fa-times"></i> Cancelar
-                    </button>
-                    <button type="submit" class="btn-save-app">
-                        <i class="fas fa-cloud-upload-alt"></i> Importar CSV
-                    </button>
+
+                <div id="cmTableContainer" style="display:none;" class="mt-2">
+                    <h6>Usuarios a crear: <span class="badge bg-secondary" id="cmCount">0</span></h6>
+                    <table class="table table-sm table-bordered" id="cmTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>Tipo Doc</th>
+                                <th>Documento</th>
+                                <th>Nombre</th>
+                                <th>Apellido</th>
+                                <th>Email</th>
+                                <th>Teléfono</th>
+                                <th>Ficha(s)</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cmTableBody"></tbody>
+                    </table>
+                    <div class="alert alert-secondary mb-0 mt-2" style="padding:10px;font-size:12px;">
+                        <i class="fas fa-key"></i> La contraseña se genera automáticamente (cédula + inicial + signo) y se envía por correo al usuario.
+                    </div>
                 </div>
-            </form>
+
+                <div id="cmResultado" style="display:none;" class="mt-3"></div>
+            </div>
+            <div class="modal-footer-app">
+                <button type="button" class="btn-cancel-app" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+                <button type="button" class="btn-save-app" id="cmBtnEnviar" onclick="cmEnviar()" style="display:none;">
+                    <i class="fas fa-cloud-upload-alt"></i> Crear Usuarios
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -357,6 +477,31 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: DETALLE USUARIO -->
+<div class="modal fade" id="modalDetalleUsuario" tabindex="-1" aria-labelledby="modalDetalleUsuarioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-app">
+            <div class="modal-header-app">
+                <h5 id="modalDetalleUsuarioLabel"><i class="fas fa-user"></i> Detalle del Usuario</h5>
+                <button type="button" class="btn-close-app" data-bs-dismiss="modal" aria-label="Cerrar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-app" id="detalleBody">
+                <div class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x text-success"></i>
+                    <p class="mt-2">Cargando...</p>
+                </div>
+            </div>
+            <div class="modal-footer-app">
+                <button type="button" class="btn-cancel-app" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -513,16 +658,372 @@ function actualizarRolesDropdown() {
 
 function toggleFicha() {
     var divFicha = document.getElementById('divFichaCrear');
+    var divFichasIns = document.getElementById('divFichasInstructorCrear');
     if (!divFicha) return;
     var items = document.querySelectorAll('#rolesMenu .dropdown-roles-item');
     var esAprendiz = false;
+    var esInstructor = false;
     items.forEach(function(item) {
         var cb = item.querySelector('input[type="checkbox"]');
-        if (cb && cb.checked && cb.getAttribute('data-rol-name') === 'aprendiz') {
-            esAprendiz = true;
+        if (cb && cb.checked) {
+            if (cb.getAttribute('data-rol-name') === 'aprendiz') esAprendiz = true;
+            if (cb.getAttribute('data-rol-name') === 'instructor') esInstructor = true;
         }
     });
     divFicha.style.display = esAprendiz ? 'block' : 'none';
+    if (divFichasIns) divFichasIns.style.display = esInstructor ? 'block' : 'none';
+}
+
+function validarFormCrear() {
+    var items = document.querySelectorAll('#rolesMenu .dropdown-roles-item');
+    var esAprendiz = false;
+    var esInstructor = false;
+    items.forEach(function(item) {
+        var cb = item.querySelector('input[type="checkbox"]');
+        if (cb && cb.checked) {
+            if (cb.getAttribute('data-rol-name') === 'aprendiz') esAprendiz = true;
+            if (cb.getAttribute('data-rol-name') === 'instructor') esInstructor = true;
+        }
+    });
+    if (esAprendiz) {
+        var ficha = document.querySelector('[name="ficha"]');
+        var nuevaFicha = document.getElementById('nuevaFicha');
+        if ((!ficha || !ficha.value) && (!nuevaFicha || !nuevaFicha.value.trim())) {
+            alert('Debe seleccionar o crear una ficha para el aprendiz.');
+            if (ficha) ficha.classList.add('is-invalid-border');
+            if (nuevaFicha) nuevaFicha.classList.add('is-invalid-border');
+            return false;
+        }
+        if (ficha) ficha.classList.remove('is-invalid-border');
+        if (nuevaFicha) nuevaFicha.classList.remove('is-invalid-border');
+    }
+    if (esInstructor) {
+        if (!validateFichasList('fichasListCrear')) {
+            alert('Debe seleccionar entre 1 y 5 fichas para el instructor.');
+            document.getElementById('fichasListCrear').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return false;
+        }
+    }
+    return true;
+}
+
+function togglePill(el, containerId, max) {
+    el.classList.toggle('selected');
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    var selected = container.querySelectorAll('.ficha-list-item.selected');
+    if (max && selected.length > max) {
+        el.classList.remove('selected');
+        alert('Máximo ' + max + ' fichas permitidas');
+        return;
+    }
+    var errorDiv = container.parentElement.querySelector('.invalid-feedback-custom');
+    if (errorDiv) errorDiv.classList.remove('show');
+    container.classList.remove('is-invalid-border');
+    var label = container.parentElement.querySelector('small.text-muted');
+    if (label) {
+        if (selected.length === 0) label.textContent = 'Ninguna seleccionada';
+        else label.textContent = selected.length + ' seleccionada(s)';
+    }
+    var hiddenId = containerId.replace('List', 'Hidden');
+    var hidden = document.getElementById(hiddenId);
+    if (hidden) {
+        var ids = Array.from(selected).map(function(p) { return p.getAttribute('data-id'); });
+        hidden.value = ids.join(',');
+    }
+}
+
+function getSelectedPills(containerId) {
+    var container = document.getElementById(containerId);
+    if (!container) return [];
+    return Array.from(container.querySelectorAll('.ficha-list-item.selected')).map(function(p) {
+        return { id: p.getAttribute('data-id'), text: p.querySelector('.ficha-numero').textContent.trim() };
+    });
+}
+
+function clearPills(containerId) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    container.querySelectorAll('.ficha-list-item.selected').forEach(function(p) { p.classList.remove('selected'); });
+    var label = container.parentElement.querySelector('small.text-muted');
+    if (label) label.textContent = 'Ninguna seleccionada';
+    var hiddenId = containerId.replace('List', 'Hidden');
+    var hidden = document.getElementById(hiddenId);
+    if (hidden) hidden.value = '';
+    var errorDiv = container.parentElement.querySelector('.invalid-feedback-custom');
+    if (errorDiv) errorDiv.classList.remove('show');
+    container.classList.remove('is-invalid-border');
+}
+
+function validateFichasList(containerId) {
+    var container = document.getElementById(containerId);
+    if (!container) return true;
+    var selected = container.querySelectorAll('.ficha-list-item.selected');
+    var errorDiv = container.parentElement.querySelector('.invalid-feedback-custom');
+    var valid = selected.length >= 1 && selected.length <= 5;
+    if (errorDiv) {
+        if (!valid) errorDiv.classList.add('show');
+        else errorDiv.classList.remove('show');
+    }
+    if (!valid) container.classList.add('is-invalid-border');
+    else container.classList.remove('is-invalid-border');
+    return valid;
+}
+
+var cmUsuarios = [];
+var cmUltimoRol = '';
+function cmCambiarRol() {
+    var rol = document.getElementById('cmRol').value;
+    if (cmUsuarios.length > 0) {
+        if (!confirm('Al cambiar el tipo de usuario se limpiará la lista actual. ¿Continuar?')) {
+            document.getElementById('cmRol').value = cmUltimoRol;
+            return;
+        }
+    }
+    cmUltimoRol = rol;
+    document.getElementById('cmFormFields').style.display = rol ? 'block' : 'none';
+    document.getElementById('cmFieldFicha').style.display = rol === 'aprendiz' ? 'block' : 'none';
+    document.getElementById('cmFieldFichasInstructor').style.display = rol === 'instructor' ? 'block' : 'none';
+    var hint = document.getElementById('cmPasteFichaHint');
+    if (hint) hint.style.display = (rol === 'aprendiz' || rol === 'instructor') ? 'inline' : 'none';
+    cmUsuarios = [];
+    cmRenderTabla();
+}
+function cmAgregarFila() {
+    var rol = document.getElementById('cmRol').value;
+    if (!rol) { alert('Seleccione un tipo de usuario'); return; }
+    var doc = document.getElementById('cmDoc').value.trim();
+    var nombre = document.getElementById('cmNombre').value.trim();
+    var apellido = document.getElementById('cmApellido').value.trim();
+    if (!doc || !nombre) { alert('Documento y nombre son obligatorios'); return; }
+    var email = document.getElementById('cmEmail').value.trim();
+    var telefono = document.getElementById('cmTelefono').value.trim();
+    var tipoDoc = document.getElementById('cmTipoDoc').value;
+    var fichasLabel = '';
+    var fichasIds = [];
+    if (rol === 'aprendiz') {
+        var selFicha = document.getElementById('cmFicha');
+        if (!selFicha.value) {
+            selFicha.classList.add('is-invalid-border');
+            alert('Debe seleccionar una ficha para el aprendiz');
+            selFicha.focus();
+            return;
+        }
+        selFicha.classList.remove('is-invalid-border');
+        fichasLabel = selFicha.options[selFicha.selectedIndex].text;
+    } else if (rol === 'instructor') {
+        if (!validateFichasList('cmFichasList')) {
+            alert('El instructor debe tener entre 1 y 5 fichas seleccionadas');
+            document.getElementById('cmFichasList').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        var selected = getSelectedPills('cmFichasList');
+        fichasLabel = selected.map(function(o) { return o.text; }).join(', ');
+        fichasIds = selected.map(function(o) { return o.id; });
+    }
+    var fichaSelect = document.getElementById('cmFicha');
+    var usuario = {
+        tipo_documento: tipoDoc,
+        cedula: doc,
+        nombre: nombre,
+        apellido: apellido,
+        correo: email,
+        telefono: telefono,
+        ficha_id: (rol === 'aprendiz' && fichaSelect && fichaSelect.value) ? fichaSelect.value : null,
+        fichas_ids: fichasIds,
+        fichasLabel: fichasLabel
+    };
+    cmUsuarios.push(usuario);
+    cmRenderTabla();
+    document.getElementById('cmDoc').value = '';
+    document.getElementById('cmNombre').value = '';
+    document.getElementById('cmApellido').value = '';
+    document.getElementById('cmEmail').value = '';
+    document.getElementById('cmTelefono').value = '';
+    if (rol === 'aprendiz' && document.getElementById('cmFicha')) {
+        document.getElementById('cmFicha').value = '';
+        document.getElementById('cmFicha').classList.remove('is-invalid-border');
+    }
+    if (rol === 'instructor') clearPills('cmFichasList');
+}
+function cmEliminarFila(index) {
+    cmUsuarios.splice(index, 1);
+    cmRenderTabla();
+}
+function cmRenderTabla() {
+    var tbody = document.getElementById('cmTableBody');
+    var container = document.getElementById('cmTableContainer');
+    var btnEnviar = document.getElementById('cmBtnEnviar');
+    var countSpan = document.getElementById('cmCount');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (cmUsuarios.length === 0) {
+        container.style.display = 'none';
+        btnEnviar.style.display = 'none';
+        return;
+    }
+    container.style.display = 'block';
+    btnEnviar.style.display = 'inline-block';
+    countSpan.textContent = cmUsuarios.length;
+    for (var i = 0; i < cmUsuarios.length; i++) {
+        var u = cmUsuarios[i];
+        var tr = document.createElement('tr');
+        tr.innerHTML = '<td>' + (i+1) + '</td>' +
+            '<td>' + u.tipo_documento + '</td>' +
+            '<td>' + u.cedula + '</td>' +
+            '<td>' + u.nombre + '</td>' +
+            '<td>' + u.apellido + '</td>' +
+            '<td>' + (u.correo || '-') + '</td>' +
+            '<td>' + (u.telefono || '-') + '</td>' +
+            '<td>' + (u.fichasLabel || '-') + '</td>' +
+            '<td><button class="btn btn-danger btn-sm" onclick="cmEliminarFila(' + i + ')"><i class="fas fa-trash"></i></button></td>';
+        tbody.appendChild(tr);
+    }
+}
+function cmEnviar() {
+    if (cmUsuarios.length === 0) { alert('No hay usuarios para crear'); return; }
+    var rol = document.getElementById('cmRol').value;
+    for (var ei = 0; ei < cmUsuarios.length; ei++) {
+        var u = cmUsuarios[ei];
+        if (rol === 'aprendiz' && !u.ficha_id) {
+            alert('Fila ' + (ei+1) + ': el aprendiz debe tener una ficha asignada');
+            return;
+        }
+        if (rol === 'instructor' && (!u.fichas_ids || u.fichas_ids.length === 0)) {
+            alert('Fila ' + (ei+1) + ': el instructor debe tener al menos 1 ficha asignada');
+            return;
+        }
+    }
+    if (!confirm('Crear ' + cmUsuarios.length + ' usuario(s)?')) return;
+    var rol = document.getElementById('cmRol').value;
+    var btn = document.getElementById('cmBtnEnviar');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Creando...';
+    var datos = cmUsuarios.map(function(u) {
+        return {
+            tipo_documento: u.tipo_documento,
+            cedula: u.cedula,
+            nombre: u.nombre,
+            apellido: u.apellido,
+            correo: u.correo,
+            telefono: u.telefono,
+            ficha_id: u.ficha_id,
+            fichas_ids: u.fichas_ids
+        };
+    });
+    fetch('/gestor_sistema/carga-masiva/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({ usuarios: datos, rol: rol })
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Crear Usuarios';
+        var div = document.getElementById('cmResultado');
+        div.style.display = 'block';
+        var html = '';
+        if (data.creados > 0) html += '<div class="alert alert-success" style="padding:10px;font-size:13px;">' + data.creados + ' usuario(s) creados exitosamente.</div>';
+        if (data.omitidos > 0) html += '<div class="alert alert-warning" style="padding:10px;font-size:13px;">' + data.omitidos + ' usuario(s) omitidos (ya existían).</div>';
+        if (data.errores && data.errores.length > 0) {
+            html += '<div class="alert alert-danger" style="padding:10px;font-size:13px;"><ul>';
+            data.errores.forEach(function(e) { html += '<li>' + e + '</li>'; });
+            html += '</ul></div>';
+        }
+        div.innerHTML = html;
+        if (data.creados > 0) {
+            cmUsuarios = [];
+            cmRenderTabla();
+        }
+    })
+    .catch(function(err) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Crear Usuarios';
+        alert('Error al crear usuarios: ' + err);
+    });
+}
+
+function cmPasteFromExcel() {
+    var text = document.getElementById('cmPasteArea').value.trim();
+    if (!text) { alert('Pegue los datos copiados desde Excel primero'); return; }
+    var rol = document.getElementById('cmRol').value;
+    if (!rol) { alert('Seleccione un tipo de usuario primero'); return; }
+    var lines = text.split('\n').filter(function(l) { return l.trim(); });
+    if (lines.length === 0) { alert('No hay datos para procesar'); return; }
+
+    var fichaSelect = document.getElementById('cmFicha');
+    var fichasContainer = document.getElementById('cmFichasList');
+
+    var agregados = 0;
+    var errores = [];
+    for (var li = 0; li < lines.length; li++) {
+        var cols = lines[li].split('\t');
+        if (cols.length < 3) { errores.push('Fila ' + (li+1) + ': muy pocas columnas'); continue; }
+        var tipoDoc = cols[0].trim().toUpperCase();
+        if (['CC','TI','CE','PASAPORTE'].indexOf(tipoDoc) === -1) tipoDoc = 'CC';
+        var cedula = cols[1].trim();
+        var nombre = cols[2].trim();
+        var apellido = cols.length > 3 ? cols[3].trim() : '';
+        var email = cols.length > 4 ? cols[4].trim() : '';
+        var telefono = cols.length > 5 ? cols[5].trim() : '';
+        if (!cedula || !nombre) { errores.push('Fila ' + (li+1) + ': cédula o nombre vacíos'); continue; }
+
+        var fichasLabel = '';
+        var fichasIds = [];
+        var fichaId = null;
+
+        if (rol === 'aprendiz' || rol === 'instructor') {
+            if (cols.length < 7 || !cols[6].trim()) {
+                errores.push('Fila ' + (li+1) + ' (' + nombre + ' ' + apellido + '): falta nÃºmero de ficha');
+                continue;
+            }
+            var fichaNum = cols[6].trim();
+            if (rol === 'aprendiz' && fichaSelect) {
+                for (var opti = 0; opti < fichaSelect.options.length; opti++) {
+                    if (fichaSelect.options[opti].text.trim() === fichaNum) {
+                        fichaId = fichaSelect.options[opti].value;
+                        fichasLabel = fichaNum;
+                        break;
+                    }
+                }
+                if (!fichaId) fichasLabel = fichaNum;
+            } else if (rol === 'instructor' && fichasContainer) {
+                var fichaNums = fichaNum.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
+                var items = fichasContainer.querySelectorAll('.ficha-list-item');
+                for (var pi = 0; pi < items.length; pi++) {
+                    var item = items[pi];
+                    var numEl = item.querySelector('.ficha-numero');
+                    if (numEl && fichaNums.indexOf(numEl.textContent.trim()) !== -1) {
+                        fichasIds.push(item.getAttribute('data-id'));
+                        fichasLabel += (fichasLabel ? ', ' : '') + numEl.textContent.trim();
+                    }
+                }
+                if (fichasIds.length === 0) fichasLabel = fichaNum;
+            }
+        }
+
+        cmUsuarios.push({
+            tipo_documento: tipoDoc,
+            cedula: cedula,
+            nombre: nombre,
+            apellido: apellido,
+            correo: email,
+            telefono: telefono,
+            ficha_id: fichaId,
+            fichas_ids: fichasIds,
+            fichasLabel: fichasLabel
+        });
+        agregados++;
+    }
+
+    cmRenderTabla();
+    document.getElementById('cmPasteArea').value = '';
+    var msg = agregados + ' fila(s) agregadas.';
+    if (errores.length > 0) msg += ' Errores: ' + errores.join(' | ');
+    alert(msg);
 }
 
 document.addEventListener('click', function(e) {
@@ -573,6 +1074,65 @@ $(document).ready(function() {
 $('#modalCrearUsuario').on('shown.bs.modal', function() {
     actualizarRolesDropdown();
 });
+
+$('#modalCargaMasiva').on('shown.bs.modal', function() {
+    cmUsuarios = [];
+    cmRenderTabla();
+    cmUltimoRol = '';
+    document.getElementById('cmRol').value = '';
+    document.getElementById('cmPasteArea').value = '';
+    document.getElementById('cmResultado').style.display = 'none';
+    document.getElementById('cmResultado').innerHTML = '';
+    document.getElementById('cmFormFields').style.display = 'none';
+    document.getElementById('cmFieldFicha').style.display = 'block';
+    document.getElementById('cmFieldFichasInstructor').style.display = 'none';
+    var hint = document.getElementById('cmPasteFichaHint');
+    if (hint) hint.style.display = 'inline';
+});
+
+function verDetalle(idUsuario) {
+    var modalEl = document.getElementById('modalDetalleUsuario');
+    if (!modalEl) return;
+    var body = document.getElementById('detalleBody');
+    body.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x text-success"></i><p class="mt-2">Cargando...</p></div>';
+    try { var modal = bootstrap.Modal.getOrCreateInstance(modalEl); modal.show(); } catch(e) {}
+    fetch('/gestor_sistema/usuario-detalle/' + idUsuario + '/')
+    .then(function(r) {
+        return r.json().then(function(d) { if (!r.ok) throw new Error(d.error || 'Error del servidor'); return d; });
+    })
+    .then(function(d) {
+        if (d.error) { body.innerHTML = '<div class="alert alert-danger">' + d.error + '</div>'; return; }
+        var rolesHtml = d.roles.map(function(r) { return '<span class="dt-role-badge">' + r.name + '</span>'; }).join('') || '<span class="dt-role-badge" style="background:#f1f5f9;color:#475569;">Sin rol</span>';
+        var fichasHtml = '';
+        if (d.ficha) {
+            fichasHtml += '<div class="form-group-app full"><label>Ficha</label><div class="dt-value-static">' + d.ficha.numero + '</div></div>';
+        }
+        if (d.fichas_instructor && d.fichas_instructor.length > 0) {
+            var nums = d.fichas_instructor.map(function(f) { return f.numero; }).join(', ');
+            fichasHtml += '<div class="form-group-app full"><label>Fichas asignadas</label><div class="dt-value-static">' + nums + '</div></div>';
+        }
+        var estadoCls = d.estado === 'Activo' ? 'dt-status-active' : 'dt-status-inactive';
+        var huellaCls = d.tiene_huella ? 'dt-huella-yes' : 'dt-huella-no';
+        var huellaIcon = d.tiene_huella ? 'fa-check-circle' : 'fa-times-circle';
+        var huellaText = d.tiene_huella ? 'Registrada' : 'No registrada';
+        body.innerHTML =
+            '<div class="form-grid-app">' +
+                '<div class="form-group-app"><label>Tipo de Documento</label><div class="dt-value-static">' + (d.tipo_documento || '-') + '</div></div>' +
+                '<div class="form-group-app"><label>C\u00e9dula</label><div class="dt-value-static">' + d.cedula + '</div></div>' +
+                '<div class="form-group-app"><label>Nombre</label><div class="dt-value-static">' + d.nombre + '</div></div>' +
+                '<div class="form-group-app"><label>Apellido</label><div class="dt-value-static">' + d.apellido + '</div></div>' +
+                '<div class="form-group-app full"><label>Correo</label><div class="dt-value-static">' + (d.correo || '-') + '</div></div>' +
+                '<div class="form-group-app full" id="dtTelRow"><label>Tel\u00e9fono</label><div class="dt-value-static">' + (d.telefono || '-') + '</div></div>' +
+                '<div class="form-group-app full"><label>Rol(es)</label><div class="dt-value-static">' + rolesHtml + '</div></div>' +
+                fichasHtml +
+                '<div class="form-group-app"><label>Estado</label><div class="dt-value-static"><span class="dt-status-badge ' + estadoCls + '">' + d.estado + '</span></div></div>' +
+                '<div class="form-group-app"><label>Huella</label><div class="dt-value-static"><span class="dt-status-badge ' + huellaCls + '"><i class="fas ' + huellaIcon + '"></i> ' + huellaText + '</span></div></div>' +
+            '</div>';
+    })
+    .catch(function(err) {
+        body.innerHTML = '<div class="alert alert-danger">Error: ' + err.message + '</div>';
+    });
+}
 
 function registrarHuella(idUsuario) {
     const statusCell = document.getElementById(`status-${idUsuario}`);

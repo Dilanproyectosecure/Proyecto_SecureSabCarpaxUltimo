@@ -2,8 +2,9 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from datetime import date
+import os
 
-from apps.reporte_monitoreo.coordinador.models import Competencia
+from apps.reporte_monitoreo.coordinador.models import Competencia, PeticionJustificacion, AsistenciaAmbiente
 
 from .selectors.asistencia_selector import obtener_asistencias_usuario
 from .selectors.inasistencias_selector import obtener_inasistencias_usuario
@@ -84,7 +85,19 @@ def radicar_justificacion(request):
         else:
             inasistencia.estado_justificacion = None
             inasistencia.observacion_justificacion = ""
-            inasistencia.tiene_habilitacion = False
+
+        if inasistencia.peticiones:
+            ultima_pet = inasistencia.peticiones[0]
+            inasistencia.peticion_estado = ultima_pet.estado
+            inasistencia.peticion_id = ultima_pet.id_peticion
+            inasistencia.peticion_motivo = ultima_pet.motivo_extension
+        else:
+            inasistencia.peticion_estado = None
+            inasistencia.peticion_id = None
+            inasistencia.peticion_motivo = ""
+
+        inasistencia.expirada = inasistencia.dias_pasados > 3
+        inasistencia.peticion_aprobada = inasistencia.peticion_estado == 'Aprobado'
 
     if request.method == 'POST':
 
@@ -99,6 +112,26 @@ def radicar_justificacion(request):
                 'competencias': competencias,
                 'inasistencias': inasistencias
             })
+
+        for aid in inasistencias_ids:
+            try:
+                asis = AsistenciaAmbiente.objects.get(id_asistencia_ambiente=aid, id_usuario=request.user)
+                dias_pasados = (hoy - asis.fecha).days
+                if dias_pasados > 3:
+                    pet_ok = PeticionJustificacion.objects.filter(
+                        id_asistencia_ambiente=asis,
+                        id_aprendiz=request.user,
+                        estado='Aprobado'
+                    ).exists()
+                    if not pet_ok:
+                        messages.error(request, f'La inasistencia del {asis.fecha} supera los 3 días. Debe solicitar una petición al instructor.')
+                        return render(request, 'radicar_justificacion.html', {
+                            'usuario': request.user,
+                            'competencias': competencias,
+                            'inasistencias': inasistencias
+                        })
+            except AsistenciaAmbiente.DoesNotExist:
+                continue
 
         if not motivo:
             messages.error(request, 'Debe seleccionar un motivo')
@@ -116,18 +149,9 @@ def radicar_justificacion(request):
                 'inasistencias': inasistencias
             })
 
-        extensiones_permitidas = ('.pdf', '.png')
-        if not soporte.name.lower().endswith(extensiones_permitidas):
+        ext = os.path.splitext(soporte.name)[1].lower()
+        if ext not in ('.pdf', '.png'):
             messages.error(request, 'Solo se permiten archivos PDF o PNG')
-            return render(request, 'radicar_justificacion.html', {
-                'usuario': request.user,
-                'competencias': competencias,
-                'inasistencias': inasistencias
-            })
-
-        TAMANO_MAXIMO = 5 * 1024 * 1024
-        if soporte.size > TAMANO_MAXIMO:
-            messages.error(request, 'El archivo no debe superar los 5MB')
             return render(request, 'radicar_justificacion.html', {
                 'usuario': request.user,
                 'competencias': competencias,
@@ -163,3 +187,36 @@ def radicar_justificacion(request):
         'competencias': competencias,
         'inasistencias': inasistencias
     })
+
+
+@login_required
+def solicitar_peticion(request):
+    if request.method != 'POST':
+        return redirect('aprendiz:radicar_justificacion')
+
+    asistencia_id = request.POST.get('asistencia_id')
+    motivo = request.POST.get('motivo_extension', '').strip()
+
+    if not asistencia_id or not motivo:
+        messages.error(request, 'Debe proporcionar un motivo')
+        return redirect('aprendiz:radicar_justificacion')
+
+    hoy = date.today()
+    PeticionJustificacion.objects.create(
+        id_asistencia_ambiente_id=asistencia_id,
+        id_aprendiz=request.user,
+        motivo_extension=motivo,
+        fecha_creacion=hoy,
+        estado='Pendiente'
+    )
+
+    registrar_actividad(
+        usuario=request.user,
+        tipo_accion='PETICION_JUSTIFICACION',
+        actividad='Solicitud de petición para justificar',
+        descripcion=f'El aprendiz {request.user.nombre} {request.user.apellido} solicitó permiso para justificar inasistencia #{asistencia_id}',
+        request=request
+    )
+
+    messages.success(request, 'Petición enviada al instructor. Espera su aprobación.')
+    return redirect('aprendiz:radicar_justificacion')

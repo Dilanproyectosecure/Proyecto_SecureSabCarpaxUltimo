@@ -284,3 +284,23 @@ class Novedad(models.Model):
     class Meta:
         db_table = 'novedad'
         managed = False
+
+
+class PeticionJustificacion(models.Model):
+    id_peticion = models.BigAutoField(primary_key=True)
+    id_asistencia_ambiente = models.ForeignKey(
+        AsistenciaAmbiente, on_delete=models.CASCADE,
+        db_column='id_asistencia_ambiente', blank=True, null=True
+    )
+    id_aprendiz = models.ForeignKey(
+        Usuarios, on_delete=models.CASCADE,
+        db_column='id_aprendiz', blank=True, null=True
+    )
+    motivo_extension = models.TextField(blank=True, null=True)
+    fecha_creacion = models.DateField(blank=True, null=True)
+    estado = models.CharField(max_length=255, blank=True, null=True)
+    observaciones_instructor = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        db_table = 'peticion_justificacion'
+        managed = False

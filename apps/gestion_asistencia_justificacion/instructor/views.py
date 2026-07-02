@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from datetime import date, timedelta
 from django.db.models import Q, Subquery, OuterRef
 from apps.login.models import Usuarios
-from apps.reporte_monitoreo.coordinador.models import ( Ficha, AsistenciaAmbiente, Competencia, Justificacion, Jornada, AsistenciaSede)
+from apps.reporte_monitoreo.coordinador.models import ( Ficha, AsistenciaAmbiente, Competencia, Justificacion, Jornada, AsistenciaSede, PeticionJustificacion)
 from .models import LlamadoAtencion
 from .selectors.fichas_selector import obtener_fichas_con_estadisticas
 from .selectors.fichas_selector import obtener_datos_ficha
@@ -571,4 +571,58 @@ def enviar_correo_retardo_view(request):
     return JsonResponse({'enviado': False, 'mensaje': 'No se pudo enviar el correo'}, status=400)
 
 
+# ==================== GESTIONAR PETICIONES DE JUSTIFICACIÓN (EXTEMPORÁNEAS) ====================
+@login_required
+def gestionar_peticiones(request):
+    peticiones = PeticionJustificacion.objects.select_related(
+        'id_asistencia_ambiente__id_usuario',
+        'id_asistencia_ambiente__id_competencia',
+        'id_asistencia_ambiente__id_instructor'
+    ).order_by('-fecha_creacion', '-id_peticion')
 
+    paginator = Paginator(peticiones, 15)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
+
+    return render(request, 'gestionar_peticiones.html', {
+        'peticiones': page_obj,
+    })
+
+
+@login_required
+def procesar_peticion(request):
+    if request.method != 'POST':
+        return redirect('instructor:gestionar_peticiones')
+
+    peticion_id = request.POST.get('peticion_id')
+    accion = request.POST.get('accion')
+    observaciones = request.POST.get('observaciones', '')
+
+    try:
+        peticion = PeticionJustificacion.objects.get(id_peticion=peticion_id)
+    except PeticionJustificacion.DoesNotExist:
+        messages.error(request, 'Petición no encontrada')
+        return redirect('instructor:gestionar_peticiones')
+
+    if accion == 'aprobar':
+        peticion.estado = 'Aprobado'
+        msg = 'Petición aprobada'
+    elif accion == 'rechazar':
+        peticion.estado = 'Rechazado'
+        msg = 'Petición rechazada'
+    else:
+        messages.error(request, 'Acción inválida')
+        return redirect('instructor:gestionar_peticiones')
+
+    peticion.observaciones_instructor = observaciones
+    peticion.save()
+
+    registrar_actividad(
+        usuario=request.user,
+        tipo_accion='PETICION_' + accion.upper(),
+        actividad=msg,
+        descripcion=f'Instructor {request.user.nombre} {request.user.apellido} {msg.lower()} (ID: {peticion_id})',
+        request=request
+    )
+
+    messages.success(request, msg)
+    return redirect('instructor:gestionar_peticiones')

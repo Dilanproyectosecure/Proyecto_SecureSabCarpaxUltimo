@@ -10,12 +10,11 @@
 {% block content %}
 <div class="content-card">
     <h1>Radicar Justificación</h1>
-    
-    
+
     <form method="post" enctype="multipart/form-data" class="justificacion-form">
         {% csrf_token %}
 
-    <!-- DATOS DEL APRENDIZ (SOLO CÉDULA) -->
+    <!-- DATOS DEL APRENDIZ -->
     <div class="fila-datos">
         <div class="aprendiz-info">
             <div class="info-item">
@@ -51,17 +50,18 @@
                     <th>Competencia</th>
                     <th>Instructor</th>
                     <th>Estado</th>
+                    <th>Petición</th>
                 </tr>
             </thead>
             <tbody>
                 {% for inasistencia in inasistencias %}
-                <tr class="{% if inasistencia.dias_pasados > 3 and not inasistencia.tiene_habilitacion %}expirada{% endif %}">
+                <tr class="{% if inasistencia.expirada and not inasistencia.peticion_aprobada %}expirada{% endif %}">
                     <td class="checkbox-cell">
                         <input type="checkbox" 
                                name="inasistencias" 
                                value="{{ inasistencia.id_asistencia_ambiente }}"
                                id="inasistencia_{{ inasistencia.id_asistencia_ambiente }}"
-                               {% if inasistencia.estado_justificacion == 'Pendiente' or inasistencia.estado_justificacion == 'Aprobado' %}disabled{% endif %}>
+                               {% if inasistencia.expirada and not inasistencia.peticion_aprobada or inasistencia.estado_justificacion == 'Pendiente' or inasistencia.estado_justificacion == 'Aprobado' %}disabled{% endif %}>
                     </td>
                     <td>{{ inasistencia.fecha|date:"d/m/Y" }}</td>
                     <td>{{ inasistencia.id_competencia.nombre_competencia }}</td>
@@ -69,28 +69,37 @@
                     <td>
                         {% if inasistencia.estado_justificacion == 'Pendiente' %}
                             <span class="badge-en-revision">En revisión</span>
-                                            
                         {% elif inasistencia.estado_justificacion == 'Aprobado' %}
                             <span class="badge-aprobada">Justificada</span>
-                                            
                         {% elif inasistencia.estado_justificacion == 'Rechazado' %}
                             <span class="badge-rechazada">Rechazada</span>
-
-                        {% elif inasistencia.tiene_habilitacion %}
-                            <span class="badge-habilitado">Habilitado</span>
-                                            
-                        {% elif inasistencia.dias_pasados > 3 %}
+                        {% elif inasistencia.expirada and not inasistencia.peticion_aprobada %}
                             <span class="badge-expirada">Expirada</span>
-                                            
                         {% else %}
                             <span class="badge-pendiente">Pendiente</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if inasistencia.expirada and not inasistencia.peticion_aprobada %}
+                            {% if inasistencia.peticion_estado == 'Pendiente' %}
+                                <span class="badge-en-revision">Pendiente</span>
+                            {% elif inasistencia.peticion_estado == 'Rechazado' %}
+                                <span class="badge-rechazada">Rechazada</span>
+                                <button type="button" class="btn-peticion" onclick="abrirModalPeticion('{{ inasistencia.id_asistencia_ambiente }}')">Solicitar</button>
+                            {% else %}
+                                <button type="button" class="btn-peticion" onclick="abrirModalPeticion('{{ inasistencia.id_asistencia_ambiente }}')">Generar Petición</button>
+                            {% endif %}
+                        {% elif inasistencia.expirada and inasistencia.peticion_aprobada %}
+                            <span class="badge-aprobada">Aprobada</span>
+                        {% else %}
+                            <span class="text-muted">—</span>
                         {% endif %}
                     </td>
                 </tr>
 
                 {% if inasistencia.estado_justificacion == 'Rechazado' and inasistencia.observacion_justificacion %}
                     <tr class="fila-observacion">
-                        <td colspan="5">
+                        <td colspan="6">
                             <div class="observacion-box">
                                 <strong>Observación del instructor: </strong>
                                 <span>{{ inasistencia.observacion_justificacion }}</span>
@@ -100,7 +109,7 @@
                     {% endif %}
                 {% empty %}
                 <tr>
-                    <td colspan="5" class="sin-datos">No hay inasistencias registradas.</td>
+                    <td colspan="6" class="sin-datos">No hay inasistencias registradas.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -111,9 +120,9 @@
 
         <!-- ARCHIVO SOPORTE -->
         <div class="form-group">
-            <label for="soporte">Soporte (PDF):</label>
+            <label for="soporte">Soporte (PDF o PNG):</label>
             <input type="file" name="soporte" id="soporte" class="form-control" accept=".pdf,.png" required>
-            <small class="form-text text-muted">Solo se permite archivos en formato PDF o PNG (máx. 5MB)</small>
+            <small class="form-text text-muted">Solo se permiten archivos PDF o PNG (máx. 5MB)</small>
         </div>
 
         <!-- BOTÓN DE ENVÍO -->
@@ -122,5 +131,75 @@
         </div>
     </form>
 </div>
+
+<!-- MODAL PETICIÓN -->
+<div id="modalPeticion" class="modal" style="display:none;">
+    <div class="modal-content" style="max-width:450px;">
+        <div class="modal-header">
+            <h2>Solicitar permiso para justificar</h2>
+            <span class="close" onclick="cerrarModalPeticion()">&times;</span>
+        </div>
+        <form method="post" action="{% url 'aprendiz:solicitar_peticion' %}">
+            {% csrf_token %}
+            <div class="modal-body">
+                <p>Esta inasistencia superó los 3 días. Explica el motivo para que el instructor habilite el envío tardío.</p>
+                <input type="hidden" name="asistencia_id" id="peticionAsistenciaId">
+                <div class="form-group">
+                    <label for="motivo_extension">Motivo:</label>
+                    <textarea name="motivo_extension" id="motivo_extension" class="form-control" rows="4" required placeholder="Ej: Estuve hospitalizado..."></textarea>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn-filtro">Enviar Petición</button>
+                <button type="button" class="btn-cancelar" onclick="cerrarModalPeticion()">Cancelar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.btn-peticion {
+    background: #178202;
+    color: #fff;
+    border: none;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.btn-peticion:hover { background: #0f6b00; }
+.btn-cancelar {
+    background: #6c757d;
+    color: #fff;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.badge-en-revision, .badge-rechazada {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.badge-en-revision { background: #fef3c7; color: #92400e; }
+.badge-rechazada { background: #fee2e2; color: #991b1b; }
+</style>
+
+<script>
+function abrirModalPeticion(asistenciaId) {
+    document.getElementById('peticionAsistenciaId').value = asistenciaId;
+    document.getElementById('modalPeticion').style.display = 'block';
+}
+function cerrarModalPeticion() {
+    document.getElementById('modalPeticion').style.display = 'none';
+}
+window.onclick = function(e) {
+    var m = document.getElementById('modalPeticion');
+    if (e.target == m) m.style.display = 'none';
+}
+</script>
 
 {% endblock %}
